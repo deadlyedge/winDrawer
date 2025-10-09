@@ -5,10 +5,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -33,21 +29,8 @@
               "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.cs [\u8BBE\u8BA1]",
               "RelativeToolTip": "MainWindow.cs [\u8BBE\u8BA1]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T07:43:56.297Z",
+              "WhenOpened": "2025-10-09T11:15:33.386Z",
               "EditorCaption": " [\u8BBE\u8BA1]"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "MainWindow.cs",
-              "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.cs",
-              "RelativeDocumentMoniker": "MainWindow.cs",
-              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.cs",
-              "RelativeToolTip": "MainWindow.cs",
-              "ViewState": "AgIAAPgAAAAAAAAAAIAywAgBAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T07:37:38.871Z",
-              "EditorCaption": ""
             }
           ]
         }

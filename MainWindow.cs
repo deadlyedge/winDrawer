@@ -37,6 +37,9 @@ namespace winDrawer
         {
             InitializeComponent();
 
+            // 去除滚动条背景色
+            drawerListBox.ScrollBarBackColor = Color.Orange;
+
             FormBorderStyle = FormBorderStyle.None;
             DoubleBuffered = true;
             Opacity = 0.92;
@@ -51,7 +54,6 @@ namespace winDrawer
 
             LoadBrandingAssets();
             WireDragHandlers();
-            PopulateDrawerNavMenu(_sampleDrawerNames);
 
             FormClosed += (_, _) =>
             {
@@ -59,6 +61,9 @@ namespace winDrawer
                 // _headerGlyph?.Dispose();
                 _fontCollection.Dispose();
             };
+
+            // 在窗体加载完成后填充菜单，避免默认打开
+            this.Load += (s, e) => PopulateDrawerList(_sampleDrawerNames);
         }
 
         private void LoadBrandingAssets()
@@ -108,17 +113,27 @@ namespace winDrawer
         //     headerIcon.Visible = true;
         // }
 
-        private void PopulateDrawerNavMenu(IEnumerable<string> drawerNames)
+        private void PopulateDrawerList(IEnumerable<string> drawerNames)
         {
-            drawerListMenu.Nodes.Clear();
+            drawerListBox.Items.Clear();
 
             foreach (var drawerName in drawerNames)
             {
-                var node = new TreeNode(drawerName);
-                drawerListMenu.Nodes.Add(node);
+                drawerListBox.Items.Add(drawerName);
             }
 
-            drawerListMenu.AfterSelect += DrawerListMenu_AfterSelect;
+            // 添加点击事件处理器
+            drawerListBox.SelectedIndexChanged += (s, e) =>
+            {
+                if (s is UIListBox lb && lb.SelectedIndex >= 0 && lb.SelectedIndex < lb.Items.Count)
+                {
+                    string drawerName = lb.Items[lb.SelectedIndex] as string ?? string.Empty;
+                    BeginInvoke(new Action(() =>
+                    {
+                        ShowDrawerDetails(drawerName);
+                    }));
+                }
+            };
         }
 
         private void ShowDrawerDetails(string drawerName)
@@ -222,12 +237,6 @@ namespace winDrawer
             addDrawerButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(opaqueAccent);
         }
 
-        private void DrawerListMenu_AfterSelect(object sender, EventArgs e)
-        {
-            if (drawerListMenu.SelectedNode != null)
-            {
-                ShowDrawerDetails(drawerListMenu.SelectedNode.Text);
-            }
-        }
+
     }
 }

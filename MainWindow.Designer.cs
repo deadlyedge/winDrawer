@@ -33,7 +33,7 @@ namespace winDrawer
             settingsButton = new Button();
             logoLabel = new Label();
             addDrawerButton = new Button();
-            drawerListMenu = new UINavMenu();
+            drawerListBox = new UIListBox();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             tableLayoutPanel1 = new TableLayoutPanel();
             tableLayoutPanel2 = new TableLayoutPanel();
@@ -49,10 +49,10 @@ namespace winDrawer
             settingsButton.FlatStyle = FlatStyle.Flat;
             settingsButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             settingsButton.ForeColor = Color.White;
-            settingsButton.Location = new Point(202, 0);
+            settingsButton.Location = new Point(303, 0);
             settingsButton.Margin = new Padding(0);
             settingsButton.Name = "settingsButton";
-            settingsButton.Size = new Size(84, 32);
+            settingsButton.Size = new Size(131, 58);
             settingsButton.TabIndex = 1;
             settingsButton.Text = "Settings";
             settingsButton.UseVisualStyleBackColor = false;
@@ -68,9 +68,9 @@ namespace winDrawer
             logoLabel.Location = new Point(0, 0);
             logoLabel.Margin = new Padding(0);
             logoLabel.Name = "logoLabel";
-            logoLabel.Size = new Size(111, 32);
+            logoLabel.Size = new Size(240, 58);
             logoLabel.TabIndex = 0;
-            logoLabel.Text = "goDrawer";
+            logoLabel.Text = "winDrawer";
             // 
             // addDrawerButton
             // 
@@ -80,24 +80,35 @@ namespace winDrawer
             addDrawerButton.FlatStyle = FlatStyle.Flat;
             addDrawerButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             addDrawerButton.ForeColor = Color.White;
-            addDrawerButton.Location = new Point(78, 253);
-            addDrawerButton.Margin = new Padding(0, 4, 0, 4);
+            addDrawerButton.Location = new Point(88, 343);
+            addDrawerButton.Margin = new Padding(0, 7, 0, 7);
             addDrawerButton.Name = "addDrawerButton";
-            addDrawerButton.Size = new Size(129, 24);
+            addDrawerButton.Size = new Size(258, 44);
             addDrawerButton.TabIndex = 3;
             addDrawerButton.Text = "Add Drawer";
             addDrawerButton.UseVisualStyleBackColor = false;
             addDrawerButton.Click += addDrawerButton_Click;
-            //
-            // drawerListMenu
-            //
-            drawerListMenu.Dock = DockStyle.Fill;
-            drawerListMenu.Location = new Point(0, 32);
-            drawerListMenu.Margin = new Padding(0);
-            drawerListMenu.Name = "drawerListMenu";
-            drawerListMenu.Size = new Size(286, 217);
-            drawerListMenu.TabIndex = 1;
-            // Event handling will be done in MainWindow.cs
+            // 
+            // drawerListBox
+            // 
+            drawerListBox.Dock = DockStyle.Fill;
+            drawerListBox.FillColor = Color.Orange;
+            drawerListBox.Font = new Font("微软雅黑", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            drawerListBox.HoverColor = Color.FromArgb(155, 200, 255);
+            drawerListBox.ItemHeight = 36;
+            drawerListBox.ItemSelectForeColor = Color.White;
+            drawerListBox.Location = new Point(0, 58);
+            drawerListBox.Margin = new Padding(0);
+            drawerListBox.MinimumSize = new Size(2, 2);
+            drawerListBox.Name = "drawerListBox";
+            drawerListBox.Padding = new Padding(4, 4, 4, 4);
+            drawerListBox.ScrollBarBackColor = Color.FromArgb(255, 128, 0);
+            drawerListBox.ScrollBarHandleWidth = 8;
+            drawerListBox.ScrollBarStyleInherited = false;
+            drawerListBox.ShowText = false;
+            drawerListBox.Size = new Size(434, 278);
+            drawerListBox.TabIndex = 1;
+            drawerListBox.Text = null;
             // 
             // tableLayoutPanel1
             // 
@@ -105,15 +116,16 @@ namespace winDrawer
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle());
             tableLayoutPanel1.Controls.Add(addDrawerButton, 0, 2);
             tableLayoutPanel1.Controls.Add(tableLayoutPanel2, 0, 0);
-            tableLayoutPanel1.Controls.Add(drawerListMenu, 1, 0);
+            tableLayoutPanel1.Controls.Add(drawerListBox, 1, 0);
             tableLayoutPanel1.Dock = DockStyle.Fill;
             tableLayoutPanel1.Location = new Point(0, 0);
+            tableLayoutPanel1.Margin = new Padding(6, 5, 6, 5);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 3;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
-            tableLayoutPanel1.Size = new Size(286, 281);
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
+            tableLayoutPanel1.Size = new Size(434, 394);
             tableLayoutPanel1.TabIndex = 2;
             // 
             // tableLayoutPanel2
@@ -129,18 +141,18 @@ namespace winDrawer
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 1;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel2.Size = new Size(286, 32);
+            tableLayoutPanel2.Size = new Size(434, 58);
             tableLayoutPanel2.TabIndex = 3;
             // 
             // MainWindow
             // 
-            AutoScaleDimensions = new SizeF(7F, 17F);
+            AutoScaleDimensions = new SizeF(14F, 31F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(242, 143, 45);
-            ClientSize = new Size(286, 281);
+            ClientSize = new Size(434, 394);
             Controls.Add(tableLayoutPanel1);
             ForeColor = Color.White;
-            Margin = new Padding(2);
+            Margin = new Padding(4, 4, 4, 4);
             Name = "MainWindow";
             Opacity = 0.8D;
             StartPosition = FormStartPosition.CenterScreen;
@@ -155,7 +167,7 @@ namespace winDrawer
         private Button settingsButton;
         private Label logoLabel;
         private Button addDrawerButton;
-        private UINavMenu drawerListMenu;
+        private UIListBox drawerListBox;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private TableLayoutPanel tableLayoutPanel1;
         private TableLayoutPanel tableLayoutPanel2;

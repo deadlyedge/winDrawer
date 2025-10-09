@@ -38,11 +38,11 @@
   width = 96
   height = 96
 
-# [theme]
-#   h = 194
-#   s = 100
-#   l = 41
-#   a = 60
+[theme]
+  h = 194
+  s = 100
+  l = 41
+  a = 60
 
 # [extension_icon_map]
 #   ".url" = "asset/icons/browser_url.png"

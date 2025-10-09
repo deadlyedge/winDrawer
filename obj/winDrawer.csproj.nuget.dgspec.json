@@ -49,6 +49,10 @@
             "SunnyUI": {
               "target": "Package",
               "version": "[3.8.8, )"
+            },
+            "Tomlyn": {
+              "target": "Package",
+              "version": "[0.11.0, )"
             }
           },
           "imports": [

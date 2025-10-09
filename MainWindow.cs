@@ -1,10 +1,11 @@
-using Sunny.UI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Text;
 using System.IO;
 using System.Windows.Forms;
+using Sunny.UI;
+using winDrawer.Configuration;
 
 namespace winDrawer
 {
@@ -33,8 +34,14 @@ namespace winDrawer
             "Drawer name here"
         };
 
+        private readonly SettingsRepository _settingsRepository;
+        private SettingsSnapshot _settingsSnapshot;
+
         public MainWindow()
         {
+            _settingsRepository = new SettingsRepository(SettingsRepository.GetDefaultPath());
+            _settingsSnapshot = _settingsRepository.GetSnapshot();
+
             InitializeComponent();
 
             // 去除滚动条背景色
@@ -54,6 +61,7 @@ namespace winDrawer
 
             LoadBrandingAssets();
             WireDragHandlers();
+            ApplySettings(_settingsSnapshot);
 
             FormClosed += (_, _) =>
             {
@@ -158,6 +166,11 @@ namespace winDrawer
 
         private void HeaderDragBegin(object? sender, MouseEventArgs args)
         {
+            if (_settingsSnapshot.WindowLocked)
+            {
+                return;
+            }
+
             if (args.Button != MouseButtons.Left)
             {
                 return;
@@ -190,7 +203,7 @@ namespace winDrawer
 
         private void settingsButton_Click(object sender, EventArgs e)
         {
-            using var settings = new SettingsForm();
+            using var settings = new SettingsForm(_settingsSnapshot);
             var dialogResult = settings.ShowDialog(this);
 
             if (settings.ShutdownRequested)
@@ -201,7 +214,10 @@ namespace winDrawer
 
             if (dialogResult == DialogResult.OK)
             {
-                ApplyAccentColor(settings.SelectedAccentColor);
+                _settingsSnapshot = settings.ResultSettings;
+                _settingsRepository.Update(_settingsSnapshot);
+                _settingsRepository.Save();
+                ApplySettings(_settingsSnapshot);
             }
         }
 
@@ -235,6 +251,11 @@ namespace winDrawer
             // accentStripe.BackColor = opaqueAccent;
             addDrawerButton.FlatAppearance.MouseOverBackColor = ControlPaint.Light(opaqueAccent);
             addDrawerButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(opaqueAccent);
+        }
+
+        private void ApplySettings(SettingsSnapshot snapshot)
+        {
+            ApplyAccentColor(snapshot.GetAccentColor());
         }
 
 

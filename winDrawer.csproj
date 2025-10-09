@@ -12,6 +12,13 @@
 
   <ItemGroup>
     <PackageReference Include="SunnyUI" Version="3.8.8" />
+    <PackageReference Include="Tomlyn" Version="0.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Drawer-settings.toml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

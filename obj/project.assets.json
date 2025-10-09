@@ -25,6 +25,19 @@
         "runtime": {
           "lib/net9.0/SunnyUI.Common.dll": {}
         }
+      },
+      "Tomlyn/0.11.0": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Tomlyn.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Tomlyn.dll": {
+            "related": ".xml"
+          }
+        }
       }
     }
   },
@@ -63,11 +76,29 @@
         "sunnyui.common.3.8.8.nupkg.sha512",
         "sunnyui.common.nuspec"
       ]
+    },
+    "Tomlyn/0.11.0": {
+      "sha512": "ECcscGbaXK7fu2Hbq+rmntPpbY8V7r8Y93lg81NFZuKu78PngYYr+TizNe0t/tXzr4p8CstdeqcGFPaE1AohaQ==",
+      "type": "package",
+      "path": "tomlyn/0.11.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net6.0/Tomlyn.dll",
+        "lib/net6.0/Tomlyn.xml",
+        "lib/netstandard2.0/Tomlyn.dll",
+        "lib/netstandard2.0/Tomlyn.xml",
+        "logo.png",
+        "readme.md",
+        "tomlyn.0.11.0.nupkg.sha512",
+        "tomlyn.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "net9.0-windows7.0": [
-      "SunnyUI >= 3.8.8"
+      "SunnyUI >= 3.8.8",
+      "Tomlyn >= 0.11.0"
     ]
   },
   "packageFolders": {
@@ -118,6 +149,10 @@
           "SunnyUI": {
             "target": "Package",
             "version": "[3.8.8, )"
+          },
+          "Tomlyn": {
+            "target": "Package",
+            "version": "[0.11.0, )"
           }
         },
         "imports": [

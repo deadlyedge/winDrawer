@@ -1,0 +1,16 @@
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\winDrawer.exe
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\winDrawer.deps.json
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\winDrawer.runtimeconfig.json
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\winDrawer.dll
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\winDrawer.pdb
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.MainWindow.resources
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.csproj.GenerateResource.cache
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.GeneratedMSBuildEditorConfig.editorconfig
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.AssemblyInfoInputs.cache
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.AssemblyInfo.cs
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.csproj.CoreCompileInputs.cache
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.dll
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\refint\winDrawer.dll
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.pdb
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.genruntimeconfig.cache
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\ref\winDrawer.dll

@@ -5,7 +5,42 @@
   },
   "compilationOptions": {},
   "targets": {
-    ".NETCoreApp,Version=v8.0": {}
+    ".NETCoreApp,Version=v8.0": {
+      "SunnyUI/3.8.8": {
+        "dependencies": {
+          "SunnyUI.Common": "3.8.8"
+        },
+        "runtime": {
+          "lib/net8.0-windows7.0/SunnyUI.dll": {
+            "assemblyVersion": "3.8.8.0",
+            "fileVersion": "3.8.8.0"
+          }
+        }
+      },
+      "SunnyUI.Common/3.8.8": {
+        "runtime": {
+          "lib/net8.0/SunnyUI.Common.dll": {
+            "assemblyVersion": "3.8.8.0",
+            "fileVersion": "3.8.8.0"
+          }
+        }
+      }
+    }
   },
-  "libraries": {}
+  "libraries": {
+    "SunnyUI/3.8.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-uQh8xSyHDF6glmRO666LDbDRrOlj0zzcBfsyrrZTFk5FkZcyzqD8eZbZ1NwwH4Y02CC3PcDtx21P7WWEgKFbGQ==",
+      "path": "sunnyui/3.8.8",
+      "hashPath": "sunnyui.3.8.8.nupkg.sha512"
+    },
+    "SunnyUI.Common/3.8.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LfsfXpGVr5eDEfN0KwbxyXlOcE86XxAR3Y7I0oVLhC0XPTvwQSRHmyMMLi6HMmVHiYb3ilIjGOiCDxiSU6c64A==",
+      "path": "sunnyui.common/3.8.8",
+      "hashPath": "sunnyui.common.3.8.8.nupkg.sha512"
+    }
+  }
 }

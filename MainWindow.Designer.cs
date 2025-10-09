@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using System.Windows.Forms;
+﻿using Sunny.UI;
 
 namespace winDrawer
 {
@@ -34,7 +33,7 @@ namespace winDrawer
             settingsButton = new Button();
             logoLabel = new Label();
             addDrawerButton = new Button();
-            drawerListPanel = new FlowLayoutPanel();
+            drawerListMenu = new UINavMenu();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             tableLayoutPanel1 = new TableLayoutPanel();
             tableLayoutPanel2 = new TableLayoutPanel();
@@ -89,20 +88,16 @@ namespace winDrawer
             addDrawerButton.Text = "Add Drawer";
             addDrawerButton.UseVisualStyleBackColor = false;
             addDrawerButton.Click += addDrawerButton_Click;
-            // 
-            // drawerListPanel
-            // 
-            drawerListPanel.AutoScroll = true;
-            drawerListPanel.BackColor = Color.Orange;
-            drawerListPanel.Dock = DockStyle.Fill;
-            drawerListPanel.FlowDirection = FlowDirection.TopDown;
-            drawerListPanel.Location = new Point(0, 32);
-            drawerListPanel.Margin = new Padding(0);
-            drawerListPanel.Name = "drawerListPanel";
-            drawerListPanel.Padding = new Padding(4);
-            drawerListPanel.Size = new Size(286, 217);
-            drawerListPanel.TabIndex = 1;
-            drawerListPanel.Paint += drawerListPanel_Paint;
+            //
+            // drawerListMenu
+            //
+            drawerListMenu.Dock = DockStyle.Fill;
+            drawerListMenu.Location = new Point(0, 32);
+            drawerListMenu.Margin = new Padding(0);
+            drawerListMenu.Name = "drawerListMenu";
+            drawerListMenu.Size = new Size(286, 217);
+            drawerListMenu.TabIndex = 1;
+            // Event handling will be done in MainWindow.cs
             // 
             // tableLayoutPanel1
             // 
@@ -110,7 +105,7 @@ namespace winDrawer
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle());
             tableLayoutPanel1.Controls.Add(addDrawerButton, 0, 2);
             tableLayoutPanel1.Controls.Add(tableLayoutPanel2, 0, 0);
-            tableLayoutPanel1.Controls.Add(drawerListPanel, 1, 0);
+            tableLayoutPanel1.Controls.Add(drawerListMenu, 1, 0);
             tableLayoutPanel1.Dock = DockStyle.Fill;
             tableLayoutPanel1.Location = new Point(0, 0);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -160,7 +155,7 @@ namespace winDrawer
         private Button settingsButton;
         private Label logoLabel;
         private Button addDrawerButton;
-        private FlowLayoutPanel drawerListPanel;
+        private UINavMenu drawerListMenu;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private TableLayoutPanel tableLayoutPanel1;
         private TableLayoutPanel tableLayoutPanel2;

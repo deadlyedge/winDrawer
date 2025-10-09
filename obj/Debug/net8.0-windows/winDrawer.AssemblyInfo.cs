@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("winDrawer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4180830a44bdf4c5561c403110e57a7448ade908")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b2cfe986b2fb23e933f2606069ec69b662bb5bf3")]
 [assembly: System.Reflection.AssemblyProductAttribute("winDrawer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("winDrawer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

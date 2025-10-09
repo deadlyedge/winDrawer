@@ -14,3 +14,8 @@ Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\refint\winDrawer.dll
 Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.pdb
 Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.genruntimeconfig.cache
 Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\ref\winDrawer.dll
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.sourcelink.json
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\SunnyUI.dll
+Z:\CodeBase\projects.C#\winDrawer\bin\Debug\net8.0-windows\SunnyUI.Common.dll
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.csproj.AssemblyReference.cache
+Z:\CodeBase\projects.C#\winDrawer\obj\Debug\net8.0-windows\winDrawer.csproj.Up2Date

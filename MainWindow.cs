@@ -1,3 +1,4 @@
+using Sunny.UI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -50,7 +51,7 @@ namespace winDrawer
 
             LoadBrandingAssets();
             WireDragHandlers();
-            PopulateDrawerList(_sampleDrawerNames);
+            PopulateDrawerNavMenu(_sampleDrawerNames);
 
             FormClosed += (_, _) =>
             {
@@ -107,56 +108,17 @@ namespace winDrawer
         //     headerIcon.Visible = true;
         // }
 
-        private void PopulateDrawerList(IEnumerable<string> drawerNames)
+        private void PopulateDrawerNavMenu(IEnumerable<string> drawerNames)
         {
-            drawerListPanel.SuspendLayout();
-            drawerListPanel.Controls.Clear();
+            drawerListMenu.Nodes.Clear();
 
             foreach (var drawerName in drawerNames)
             {
-                drawerListPanel.Controls.Add(CreateDrawerChip(drawerName));
+                var node = new TreeNode(drawerName);
+                drawerListMenu.Nodes.Add(node);
             }
 
-            drawerListPanel.ResumeLayout();
-        }
-
-        private Control CreateDrawerChip(string drawerName)
-        {
-            var availableWidth = drawerListPanel.ClientSize.Width - drawerListPanel.Padding.Horizontal;
-            if (availableWidth <= 0)
-            {
-                availableWidth = drawerListPanel.Width - drawerListPanel.Padding.Horizontal - drawerListPanel.Margin.Horizontal;
-            }
-            availableWidth = Math.Max(150, availableWidth);
-
-            var wrapper = new Panel
-            {
-                Width = availableWidth,
-                Height = 40,
-                Margin = new Padding(0, 0, 0, 10),
-                // BackColor = Color.FromArgb(80, 51, 31)
-            };
-
-            var label = new Label
-            {
-                AutoSize = false,
-                Dock = DockStyle.Fill,
-                Text = drawerName,
-                ForeColor = Color.WhiteSmoke,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(10, 0, 10, 0)
-            };
-
-            wrapper.Controls.Add(label);
-
-            wrapper.MouseEnter += (_, _) => wrapper.BackColor = Color.FromArgb(96, 62, 37);
-            wrapper.MouseLeave += (_, _) => wrapper.BackColor = Color.FromArgb(80, 51, 31);
-            wrapper.Cursor = Cursors.Hand;
-            wrapper.Click += (_, _) => ShowDrawerDetails(drawerName);
-            label.Click += (_, _) => ShowDrawerDetails(drawerName);
-
-            return wrapper;
+            drawerListMenu.AfterSelect += DrawerListMenu_AfterSelect;
         }
 
         private void ShowDrawerDetails(string drawerName)
@@ -260,9 +222,12 @@ namespace winDrawer
             addDrawerButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(opaqueAccent);
         }
 
-        private void drawerListPanel_Paint(object sender, PaintEventArgs e)
+        private void DrawerListMenu_AfterSelect(object sender, EventArgs e)
         {
-
+            if (drawerListMenu.SelectedNode != null)
+            {
+                ShowDrawerDetails(drawerListMenu.SelectedNode.Text);
+            }
         }
     }
 }

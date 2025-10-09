@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "EAHWSAA9LJc=",
+  "dgSpecHash": "Ja1lgThc3i4=",
   "success": true,
   "projectFilePath": "Z:\\CodeBase\\projects.C#\\winDrawer\\winDrawer.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\xdrea\\.nuget\\packages\\sunnyui\\3.8.8\\sunnyui.3.8.8.nupkg.sha512",
+    "C:\\Users\\xdrea\\.nuget\\packages\\sunnyui.common\\3.8.8\\sunnyui.common.3.8.8.nupkg.sha512"
+  ],
   "logs": []
 }

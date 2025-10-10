@@ -44,9 +44,6 @@ namespace winDrawer
 
             InitializeComponent();
 
-            // 去除滚动条背景色
-            // drawerListBox.ScrollBarBackColor = Color.Tomato;
-
             FormBorderStyle = FormBorderStyle.None;
             DoubleBuffered = true;
             Opacity = 0.92;

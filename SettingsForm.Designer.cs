@@ -326,7 +326,7 @@ partial class SettingsForm
         saturationLabel.TabIndex = 1;
         saturationLabel.Text = "Saturation";
         saturationLabel.TextAlign = ContentAlignment.MiddleLeft;
-        saturationLabel.Click += uiLabel1_Click;
+        // saturationLabel.Click += uiLabel1_Click;
         // 
         // hueLabel
         // 

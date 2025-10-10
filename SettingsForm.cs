@@ -162,16 +162,16 @@ public partial class SettingsForm : UIForm
         Console.WriteLine("[SettingsForm] lightness value label clicked.");
     }
 
-    private void uiLabel1_Click(object? sender, EventArgs e)
-    {
-        Console.WriteLine("[SettingsForm] saturation label clicked.");
-    }
+    // private void uiLabel1_Click(object? sender, EventArgs e)
+    // {
+    //     Console.WriteLine("[SettingsForm] saturation label clicked.");
+    // }
 
     private void UpdatePreview()
     {
         SelectedAccentColor = _workingSnapshot.GetAccentColor();
         previewPanel.FillColor = SelectedAccentColor;
-        previewLabel.Text = $"hsla({_workingSnapshot.ThemeHue}, {_workingSnapshot.ThemeSaturation}%, {_workingSnapshot.ThemeLightness}%, {_workingSnapshot.ThemeAlpha / 100f:0.00})";
+        // previewLabel.Text = $"hsla({_workingSnapshot.ThemeHue}, {_workingSnapshot.ThemeSaturation}%, {_workingSnapshot.ThemeLightness}%, {_workingSnapshot.ThemeAlpha / 100f:0.00})";
     }
 
     private void SyncWorkingSnapshotFromUi()

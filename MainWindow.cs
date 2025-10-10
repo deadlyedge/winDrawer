@@ -16,26 +16,10 @@ namespace winDrawer
         // private Image? _headerGlyph;
         private bool _isDragging;
         private Point _dragOffset;
-        private readonly string[] _sampleDrawerNames =
-        {
-            "Drawer name here",
-            "Project: Icon Drawer this one is pretty long",
-            "Archive / 2024",
-            "UI Concepts",
-            "Marketing Pack",
-            "UI Concepts",
-            "Marketing Pack",
-            "UI Concepts",
-            "Marketing Pack",
-            "UI Concepts",
-            "Marketing Pack",
-            "UI Concepts",
-            "Marketing Pack",
-            "Drawer name here"
-        };
-
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
+        private readonly List<DrawerDefinition> _currentDrawers = new();
+        private bool _suppressDrawerSelection;
 
         public MainWindow()
         {
@@ -43,6 +27,7 @@ namespace winDrawer
             _settingsSnapshot = _settingsRepository.GetSnapshot();
 
             InitializeComponent();
+            drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
 
             FormBorderStyle = FormBorderStyle.None;
             DoubleBuffered = true;
@@ -83,7 +68,6 @@ namespace winDrawer
             };
 
             // 在窗体加载完成后填充菜单，避免默认打开
-            this.Load += (s, e) => PopulateDrawerList(_sampleDrawerNames);
         }
 
         private void LoadBrandingAssets()
@@ -132,33 +116,109 @@ namespace winDrawer
         //     headerIcon.Image = _headerGlyph;
         //     headerIcon.Visible = true;
         // }
-
-        private void PopulateDrawerList(IEnumerable<string> drawerNames)
+        private void PopulateDrawerList(IEnumerable<DrawerDefinition> drawers)
         {
-            drawerListBox.Items.Clear();
+            drawerListBox.SelectedIndexChanged -= DrawerListBox_SelectedIndexChanged;
 
-            foreach (var drawerName in drawerNames)
+            drawerListBox.Items.Clear();
+            _currentDrawers.Clear();
+
+            if (drawers != null)
             {
-                drawerListBox.Items.Add(drawerName);
+                foreach (var drawer in drawers)
+                {
+                    if (drawer == null)
+                    {
+                        continue;
+                    }
+
+                    var displayName = string.IsNullOrWhiteSpace(drawer.Name)
+                        ? "(unnamed drawer)"
+                        : drawer.Name;
+
+                    _currentDrawers.Add(drawer);
+                    var itemLabel = Directory.Exists(drawer.Path)
+                        ? displayName
+                        : $"{displayName} (missing)";
+                    drawerListBox.Items.Add(itemLabel);
+                }
             }
 
-            // 添加点击事件处理器
-            drawerListBox.SelectedIndexChanged += (s, e) =>
+            if (_currentDrawers.Count == 0)
             {
-                if (s is UIListBox lb && lb.SelectedIndex >= 0 && lb.SelectedIndex < lb.Items.Count)
-                {
-                    string drawerName = lb.Items[lb.SelectedIndex] as string ?? string.Empty;
-                    BeginInvoke(new Action(() =>
-                    {
-                        ShowDrawerDetails(drawerName);
-                    }));
-                }
-            };
+                drawerListBox.Items.Add("No drawers configured");
+                drawerListBox.Enabled = false;
+            }
+            else
+            {
+                drawerListBox.Enabled = true;
+            }
+
+            drawerListBox.SelectedIndex = -1;
+            drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
         }
 
-        private void ShowDrawerDetails(string drawerName)
+        private void DrawerListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            MessageBox.Show($"Open drawer: {drawerName}", "Drawer Preview", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (_suppressDrawerSelection)
+            {
+                return;
+            }
+
+            var selectedIndex = drawerListBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _currentDrawers.Count)
+            {
+                return;
+            }
+
+            var selectedDrawer = _currentDrawers[selectedIndex];
+            OpenDrawer(selectedDrawer);
+
+            _suppressDrawerSelection = true;
+            BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    drawerListBox.SelectedIndex = -1;
+                }
+                finally
+                {
+                    _suppressDrawerSelection = false;
+                }
+            }));
+        }
+
+        private void OpenDrawer(DrawerDefinition drawer)
+        {
+            if (string.IsNullOrWhiteSpace(drawer.Path))
+            {
+                return;
+            }
+
+            if (!Directory.Exists(drawer.Path))
+            {
+                MessageBox.Show($"Folder not found:{Environment.NewLine}{drawer.Path}", "Drawer Missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                var drawerWindow = new DrawerWindow(drawer)
+                {
+                    StartPosition = FormStartPosition.CenterScreen
+                };
+
+                if (drawer.PreferredSize is Size preferred && preferred.Width > 100 && preferred.Height > 100)
+                {
+                    drawerWindow.Size = preferred;
+                }
+
+                drawerWindow.Show(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open drawer '{drawer.Name}': {ex.Message}", "Drawer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void WireDragHandlers()
@@ -269,6 +329,7 @@ namespace winDrawer
         private void ApplySettings(SettingsSnapshot snapshot)
         {
             ApplyAccentColor(snapshot.GetAccentColor());
+            PopulateDrawerList(snapshot.Drawers);
         }
 
 

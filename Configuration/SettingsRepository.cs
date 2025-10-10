@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -129,7 +130,16 @@ internal sealed class SettingsRepository
 
 public sealed class SettingsSnapshot
 {
-    public SettingsSnapshot(bool startWithWindows, bool windowLocked, int themeHue, int themeSaturation, int themeLightness, int themeAlpha)
+    private readonly List<DrawerDefinition> _drawers;
+
+    public SettingsSnapshot(
+        bool startWithWindows,
+        bool windowLocked,
+        int themeHue,
+        int themeSaturation,
+        int themeLightness,
+        int themeAlpha,
+        IEnumerable<DrawerDefinition>? drawers = null)
     {
         StartWithWindows = startWithWindows;
         WindowLocked = windowLocked;
@@ -137,6 +147,9 @@ public sealed class SettingsSnapshot
         ThemeSaturation = themeSaturation;
         ThemeLightness = themeLightness;
         ThemeAlpha = themeAlpha;
+        _drawers = drawers != null
+            ? new List<DrawerDefinition>(drawers)
+            : new List<DrawerDefinition>();
     }
 
     public bool StartWithWindows { get; set; }
@@ -145,6 +158,7 @@ public sealed class SettingsSnapshot
     public int ThemeSaturation { get; set; }
     public int ThemeLightness { get; set; }
     public int ThemeAlpha { get; set; }
+    public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public Color GetAccentColor()
     {
@@ -156,7 +170,7 @@ public sealed class SettingsSnapshot
 
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, _drawers);
     }
 
     internal static SettingsSnapshot FromModel(TomlTable root)
@@ -167,6 +181,9 @@ public sealed class SettingsSnapshot
         var theme = root.TryGetValue("theme", out var themeObj) && themeObj is TomlTable th
             ? th
             : new TomlTable();
+        var drawers = root.TryGetValue("drawers", out var drawersObj) && drawersObj is TomlTableArray drawerArray
+            ? ParseDrawers(drawerArray)
+            : Array.Empty<DrawerDefinition>();
 
         return new SettingsSnapshot(
             startWithWindows: GetBoolean(startup, "start_with_windows"),
@@ -174,7 +191,51 @@ public sealed class SettingsSnapshot
             themeHue: GetInt(theme, "h", 0, 360, 194),
             themeSaturation: GetInt(theme, "s", 0, 100, 100),
             themeLightness: GetInt(theme, "l", 0, 100, 41),
-            themeAlpha: GetInt(theme, "a", 0, 100, 60));
+            themeAlpha: GetInt(theme, "a", 0, 100, 60),
+            drawers: drawers);
+    }
+
+    private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray tableArray)
+    {
+        var results = new List<DrawerDefinition>();
+
+        foreach (var entry in tableArray)
+        {
+            if (entry is not TomlTable drawerTable)
+            {
+                continue;
+            }
+
+            var name = GetString(drawerTable, "name").Trim();
+            var pathValue = GetString(drawerTable, "path").Trim();
+
+            if (string.IsNullOrWhiteSpace(pathValue))
+            {
+                continue;
+            }
+
+            var expandedPath = Environment.ExpandEnvironmentVariables(pathValue);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                name = Path.GetFileName(expandedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    name = expandedPath;
+                }
+            }
+
+            Size? preferredSize = null;
+            if (drawerTable.TryGetValue("size", out var sizeObj) && sizeObj is TomlTable sizeTable)
+            {
+                var width = GetInt(sizeTable, "width", 200, 4000, 800);
+                var height = GetInt(sizeTable, "height", 200, 4000, 600);
+                preferredSize = new Size(width, height);
+            }
+
+            results.Add(new DrawerDefinition(name, expandedPath, preferredSize));
+        }
+
+        return results;
     }
 
     private static bool GetBoolean(TomlTable table, string key, bool fallback = false)
@@ -213,6 +274,20 @@ public sealed class SettingsSnapshot
         }
 
         return Math.Clamp(fallback, min, max);
+    }
+
+    private static string GetString(TomlTable table, string key, string fallback = "")
+    {
+        if (!table.TryGetValue(key, out var value) || value is null)
+        {
+            return fallback;
+        }
+
+        return value switch
+        {
+            string s => s,
+            _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? fallback
+        };
     }
 
     private static Color ColorFromHsla(int hue, float saturation, float lightness, float alpha)
@@ -257,4 +332,20 @@ public sealed class SettingsSnapshot
         }
         return p;
     }
+}
+
+public sealed class DrawerDefinition
+{
+    public DrawerDefinition(string name, string path, Size? preferredSize)
+    {
+        Name = name;
+        Path = path;
+        PreferredSize = preferredSize;
+    }
+
+    public string Name { get; }
+    public string Path { get; }
+    public Size? PreferredSize { get; }
+
+    public override string ToString() => Name;
 }

@@ -19,7 +19,7 @@ namespace winDrawer
         private readonly string[] _sampleDrawerNames =
         {
             "Drawer name here",
-            "Project: Icon Drawer",
+            "Project: Icon Drawer this one is pretty long",
             "Archive / 2024",
             "UI Concepts",
             "Marketing Pack",

@@ -32,12 +32,12 @@ namespace winDrawer
         /// </summary>
         private void InitializeComponent()
         {
-            mainTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
-            headerTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
-            logoLabel = new Sunny.UI.UILabel();
-            settingsButton = new Sunny.UI.UIButton();
-            drawerListBox = new Sunny.UI.UIListBox();
-            addDrawerButton = new Sunny.UI.UIButton();
+            mainTableLayoutPanel = new UITableLayoutPanel();
+            headerTableLayoutPanel = new UITableLayoutPanel();
+            logoLabel = new UILabel();
+            settingsButton = new UIButton();
+            drawerListBox = new UIListBox();
+            addDrawerButton = new UIButton();
             mainTableLayoutPanel.SuspendLayout();
             headerTableLayoutPanel.SuspendLayout();
             SuspendLayout();
@@ -87,7 +87,7 @@ namespace winDrawer
             logoLabel.Location = new Point(3, 0);
             logoLabel.Name = "logoLabel";
             logoLabel.Size = new Size(278, 44);
-            logoLabel.Style = Sunny.UI.UIStyle.Custom;
+            logoLabel.Style = UIStyle.Custom;
             logoLabel.TabIndex = 0;
             logoLabel.Text = "winDrawer";
             logoLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -111,35 +111,34 @@ namespace winDrawer
             settingsButton.RectPressColor = Color.Transparent;
             settingsButton.RectSelectedColor = Color.Transparent;
             settingsButton.Size = new Size(117, 38);
-            settingsButton.Style = Sunny.UI.UIStyle.Custom;
+            settingsButton.Style = UIStyle.Custom;
             settingsButton.TabIndex = 1;
             settingsButton.Text = "settings";
             settingsButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            settingsButton.ZoomScaleRect = new Rectangle(0, 0, 0, 0);
             settingsButton.Click += settingsButton_Click;
             // 
             // drawerListBox
             // 
             drawerListBox.Dock = DockStyle.Fill;
-            drawerListBox.FillColor = Color.FromArgb(255, 224, 200);
-            drawerListBox.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            drawerListBox.FillColor = Color.White;
+            drawerListBox.Font = new Font("微软雅黑", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
             drawerListBox.HoverColor = Color.FromArgb(155, 200, 255);
+            drawerListBox.ItemHeight = 50;
             drawerListBox.ItemSelectForeColor = Color.White;
-            drawerListBox.Location = new Point(4, 55);
-            drawerListBox.Margin = new Padding(4, 5, 4, 5);
+            drawerListBox.Location = new Point(4, 50);
+            drawerListBox.Margin = new Padding(4, 0, 4, 0);
             drawerListBox.MinimumSize = new Size(1, 1);
             drawerListBox.Name = "drawerListBox";
-            drawerListBox.Opacity = 50;
+            drawerListBox.Opacity = 100;
             drawerListBox.Padding = new Padding(2);
-            drawerListBox.ScrollBarBackColor = Color.Orange;
+            drawerListBox.ScrollBarBackColor = Color.Tomato;
             drawerListBox.ScrollBarHandleWidth = 8;
             drawerListBox.ScrollBarStyleInherited = false;
+            drawerListBox.ScrollBarWidth = 10;
             drawerListBox.ShowText = false;
-            drawerListBox.Size = new Size(405, 290);
-            drawerListBox.Style = Sunny.UI.UIStyle.Custom;
+            drawerListBox.Size = new Size(405, 300);
             drawerListBox.TabIndex = 2;
             drawerListBox.Text = "drawerListBox";
-            drawerListBox.ZoomScaleRect = new Rectangle(0, 0, 0, 0);
             // 
             // addDrawerButton
             // 
@@ -160,11 +159,10 @@ namespace winDrawer
             addDrawerButton.RectPressColor = Color.Transparent;
             addDrawerButton.RectSelectedColor = Color.Transparent;
             addDrawerButton.Size = new Size(407, 44);
-            addDrawerButton.Style = Sunny.UI.UIStyle.Custom;
+            addDrawerButton.Style = UIStyle.Custom;
             addDrawerButton.TabIndex = 1;
             addDrawerButton.Text = "add drawer";
             addDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            addDrawerButton.ZoomScaleRect = new Rectangle(0, 0, 0, 0);
             addDrawerButton.Click += addDrawerButton_Click;
             // 
             // MainWindow

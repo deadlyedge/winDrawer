@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using Sunny.UI;
@@ -8,6 +9,9 @@ namespace winDrawer;
 
 public partial class SettingsForm : UIForm
 {
+    private const int StartWithWindowsIndex = 0;
+    private const int LockPositionIndex = 1;
+
     private readonly SettingsSnapshot _originalSnapshot;
     private readonly SettingsSnapshot _workingSnapshot;
 
@@ -22,13 +26,14 @@ public partial class SettingsForm : UIForm
         ConfigureControls();
         ApplySnapshotToUi();
         WireEvents();
+
         ResultSettings = _originalSnapshot.Clone();
         UpdatePreview();
     }
 
     public Color SelectedAccentColor { get; private set; }
 
-    public bool LaunchOnStartup => autoLaunchSwitch.Active;
+    public bool LaunchOnStartup => IsBehaviorChecked(StartWithWindowsIndex);
 
     public bool ShutdownRequested { get; private set; }
 
@@ -45,8 +50,10 @@ public partial class SettingsForm : UIForm
         lightnessTrackBar.Minimum = 0;
         lightnessTrackBar.Maximum = 100;
 
-        alphaTrackBar.Minimum = 0;
-        alphaTrackBar.Maximum = 100;
+        opacityTrackBar.Minimum = 0;
+        opacityTrackBar.Maximum = 100;
+
+        behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
     }
 
     private void WireEvents()
@@ -54,35 +61,43 @@ public partial class SettingsForm : UIForm
         hueTrackBar.ValueChanged += OnThemeTrackValueChanged;
         saturationTrackBar.ValueChanged += OnThemeTrackValueChanged;
         lightnessTrackBar.ValueChanged += OnThemeTrackValueChanged;
-        alphaTrackBar.ValueChanged += OnThemeTrackValueChanged;
+        opacityTrackBar.ValueChanged += OnThemeTrackValueChanged;
 
-        autoLaunchSwitch.ActiveChanged += OnAutoLaunchChanged;
-        windowLockSwitch.ActiveChanged += OnWindowLockChanged;
-
-        okButton.Click += okButton_Click;
+        saveButton.Click += saveButton_Click;
         cancelButton.Click += cancelButton_Click;
-        shutdownButton.Click += shutdownButton_Click;
+        shutDownButton.Click += shutDownButton_Click;
+        defautlSettingsButton.Click += defautlSettingsButton_Click;
     }
 
     private void ApplySnapshotToUi()
     {
-        autoLaunchSwitch.Active = _workingSnapshot.StartWithWindows;
-        windowLockSwitch.Active = _workingSnapshot.WindowLocked;
+        var selected = new List<int>();
+        if (_workingSnapshot.StartWithWindows)
+        {
+            selected.Add(StartWithWindowsIndex);
+        }
+
+        if (_workingSnapshot.WindowLocked)
+        {
+            selected.Add(LockPositionIndex);
+        }
+
+        behaviorCheckBoxGroup.SelectedIndexes = selected;
 
         hueTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeHue, hueTrackBar.Minimum, hueTrackBar.Maximum);
         saturationTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeSaturation, saturationTrackBar.Minimum, saturationTrackBar.Maximum);
         lightnessTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeLightness, lightnessTrackBar.Minimum, lightnessTrackBar.Maximum);
-        alphaTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeAlpha, alphaTrackBar.Minimum, alphaTrackBar.Maximum);
+        opacityTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeAlpha, opacityTrackBar.Minimum, opacityTrackBar.Maximum);
 
         UpdateValueLabels();
     }
 
     private void UpdateValueLabels()
     {
-        hueValueLabel.Text = $"{hueTrackBar.Value}°";
+        hueValueLabel.Text = $"{hueTrackBar.Value}\u00B0";
         saturationValueLabel.Text = $"{saturationTrackBar.Value}%";
         lightnessValueLabel.Text = $"{lightnessTrackBar.Value}%";
-        alphaValueLabel.Text = $"{alphaTrackBar.Value}%";
+        opacityValueLabel.Text = $"{opacityTrackBar.Value}%";
     }
 
     private void OnThemeTrackValueChanged(object? sender, EventArgs e)
@@ -90,24 +105,15 @@ public partial class SettingsForm : UIForm
         _workingSnapshot.ThemeHue = hueTrackBar.Value;
         _workingSnapshot.ThemeSaturation = saturationTrackBar.Value;
         _workingSnapshot.ThemeLightness = lightnessTrackBar.Value;
-        _workingSnapshot.ThemeAlpha = alphaTrackBar.Value;
+        _workingSnapshot.ThemeAlpha = opacityTrackBar.Value;
 
         UpdateValueLabels();
         UpdatePreview();
     }
 
-    private void OnAutoLaunchChanged(object? sender, EventArgs e)
+    private void saveButton_Click(object? sender, EventArgs e)
     {
-        _workingSnapshot.StartWithWindows = autoLaunchSwitch.Active;
-    }
-
-    private void OnWindowLockChanged(object? sender, EventArgs e)
-    {
-        _workingSnapshot.WindowLocked = windowLockSwitch.Active;
-    }
-
-    private void okButton_Click(object? sender, EventArgs e)
-    {
+        SyncWorkingSnapshotFromUi();
         ResultSettings = _workingSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
         DialogResult = DialogResult.OK;
@@ -122,11 +128,26 @@ public partial class SettingsForm : UIForm
         Close();
     }
 
-    private void shutdownButton_Click(object? sender, EventArgs e)
+    private void shutDownButton_Click(object? sender, EventArgs e)
     {
         ShutdownRequested = true;
         DialogResult = DialogResult.Abort;
         Close();
+    }
+
+    private void defautlSettingsButton_Click(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[SettingsForm] default settings button clicked.");
+    }
+
+    private void uiLabel5_Click(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[SettingsForm] lightness value label clicked.");
+    }
+
+    private void uiLabel1_Click(object? sender, EventArgs e)
+    {
+        Console.WriteLine("[SettingsForm] saturation label clicked.");
     }
 
     private void UpdatePreview()
@@ -134,5 +155,18 @@ public partial class SettingsForm : UIForm
         SelectedAccentColor = _workingSnapshot.GetAccentColor();
         previewPanel.FillColor = SelectedAccentColor;
         previewLabel.Text = $"hsla({_workingSnapshot.ThemeHue}, {_workingSnapshot.ThemeSaturation}%, {_workingSnapshot.ThemeLightness}%, {_workingSnapshot.ThemeAlpha / 100f:0.00})";
+    }
+
+    private void SyncWorkingSnapshotFromUi()
+    {
+        var selected = behaviorCheckBoxGroup.SelectedIndexes ?? new List<int>();
+
+        _workingSnapshot.StartWithWindows = selected.Contains(StartWithWindowsIndex);
+        _workingSnapshot.WindowLocked = selected.Contains(LockPositionIndex);
+    }
+
+    private bool IsBehaviorChecked(int index)
+    {
+        return behaviorCheckBoxGroup.SelectedIndexes != null && behaviorCheckBoxGroup.SelectedIndexes.Contains(index);
     }
 }

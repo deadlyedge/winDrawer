@@ -1,5 +1,8 @@
-using Sunny.UI;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
+using System.Windows.Forms;
+using Sunny.UI;
 
 #nullable disable
 
@@ -22,449 +25,475 @@ partial class SettingsForm
 
     private void InitializeComponent()
     {
-        generalGroup = new UIGroupBox();
-        windowLockLabel = new UILabel();
-        windowLockSwitch = new UISwitch();
-        autoLaunchLabel = new UILabel();
-        autoLaunchSwitch = new UISwitch();
-        themeGroup = new UIGroupBox();
-        alphaValueLabel = new UILabel();
-        lightnessValueLabel = new UILabel();
-        saturationValueLabel = new UILabel();
-        hueValueLabel = new UILabel();
-        alphaTrackBar = new UITrackBar();
-        lightnessTrackBar = new UITrackBar();
-        saturationTrackBar = new UITrackBar();
-        hueTrackBar = new UITrackBar();
-        alphaLabel = new UILabel();
-        lightnessLabel = new UILabel();
-        saturationLabel = new UILabel();
-        hueLabel = new UILabel();
-        previewPanel = new UIPanel();
-        previewTitleLabel = new UILabel();
-        previewLabel = new UILabel();
-        okButton = new UIButton();
-        cancelButton = new UIButton();
-        shutdownButton = new UIButton();
-        generalGroup.SuspendLayout();
-        themeGroup.SuspendLayout();
-        previewPanel.SuspendLayout();
+        ComponentResourceManager resources = new ComponentResourceManager(typeof(SettingsForm));
+        mainTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
+        headerTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
+        headerSettings = new Sunny.UI.UILabel();
+        settingsTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
+        behaviorCheckBoxGroup = new Sunny.UI.UICheckBoxGroup();
+        visualGroupBox = new Sunny.UI.UIGroupBox();
+        visualTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
+        lightnessValueLabel = new Sunny.UI.UILabel();
+        opacityValueLabel = new Sunny.UI.UILabel();
+        saturationValueLabel = new Sunny.UI.UILabel();
+        hueValueLabel = new Sunny.UI.UILabel();
+        previewLabel = new Sunny.UI.UILabel();
+        saturationTrackBar = new Sunny.UI.UITrackBar();
+        opacityTrackBar = new Sunny.UI.UITrackBar();
+        lightnessTrackBar = new Sunny.UI.UITrackBar();
+        opacityLabel = new Sunny.UI.UILabel();
+        lightnessLabel = new Sunny.UI.UILabel();
+        saturationLabel = new Sunny.UI.UILabel();
+        hueLabel = new Sunny.UI.UILabel();
+        hueTrackBar = new Sunny.UI.UITrackBar();
+        previewPanel = new Sunny.UI.UIPanel();
+        footerGroupBox = new Sunny.UI.UIGroupBox();
+        cancelButton = new Sunny.UI.UIButton();
+        saveButton = new Sunny.UI.UIButton();
+        defautlSettingsButton = new Sunny.UI.UIButton();
+        shutDownButton = new Sunny.UI.UIButton();
+        mainTableLayoutPanel.SuspendLayout();
+        headerTableLayoutPanel.SuspendLayout();
+        settingsTableLayoutPanel.SuspendLayout();
+        visualGroupBox.SuspendLayout();
+        visualTableLayoutPanel.SuspendLayout();
+        footerGroupBox.SuspendLayout();
         SuspendLayout();
         // 
-        // generalGroup
+        // mainTableLayoutPanel
         // 
-        generalGroup.Controls.Add(windowLockLabel);
-        generalGroup.Controls.Add(windowLockSwitch);
-        generalGroup.Controls.Add(autoLaunchLabel);
-        generalGroup.Controls.Add(autoLaunchSwitch);
-        generalGroup.FillColor = Color.FromArgb(38, 45, 54);
-        generalGroup.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        generalGroup.Location = new Point(24, 64);
-        generalGroup.Margin = new Padding(0, 12, 0, 12);
-        generalGroup.MinimumSize = new Size(1, 1);
-        generalGroup.Name = "generalGroup";
-        generalGroup.Padding = new Padding(0, 32, 0, 0);
-        generalGroup.RectColor = Color.FromArgb(56, 63, 72);
-        generalGroup.Size = new Size(576, 120);
-        generalGroup.Style = UIStyle.Custom;
-        generalGroup.StyleCustomMode = true;
-        generalGroup.TabIndex = 0;
-        generalGroup.Text = "³£¹æ";
-        generalGroup.TextAlignment = ContentAlignment.MiddleLeft;
+        mainTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
+        mainTableLayoutPanel.ColumnCount = 1;
+        mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        mainTableLayoutPanel.Controls.Add(headerTableLayoutPanel, 0, 0);
+        mainTableLayoutPanel.Controls.Add(settingsTableLayoutPanel, 0, 1);
+        mainTableLayoutPanel.Controls.Add(footerGroupBox, 0, 2);
+        mainTableLayoutPanel.Dock = DockStyle.Fill;
+        mainTableLayoutPanel.Location = new Point(0, 0);
+        mainTableLayoutPanel.Name = "mainTableLayoutPanel";
+        mainTableLayoutPanel.RowCount = 3;
+        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+        mainTableLayoutPanel.Size = new Size(783, 583);
+        mainTableLayoutPanel.TabIndex = 1;
+        mainTableLayoutPanel.TagString = null;
         // 
-        // windowLockLabel
+        // headerTableLayoutPanel
         // 
-        windowLockLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        windowLockLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        windowLockLabel.Location = new Point(76, 76);
-        windowLockLabel.Name = "windowLockLabel";
-        windowLockLabel.Size = new Size(298, 24);
-        windowLockLabel.Style = UIStyle.Custom;
-        windowLockLabel.StyleCustomMode = true;
-        windowLockLabel.TabIndex = 3;
-        windowLockLabel.Text = "Ëø¶¨´°¿ÚÎ»ÖÃ";
-        windowLockLabel.TextAlign = ContentAlignment.MiddleLeft;
+        headerTableLayoutPanel.ColumnCount = 2;
+        headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+        headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+        headerTableLayoutPanel.Controls.Add(headerSettings, 0, 0);
+        headerTableLayoutPanel.Dock = DockStyle.Fill;
+        headerTableLayoutPanel.Location = new Point(3, 3);
+        headerTableLayoutPanel.Name = "headerTableLayoutPanel";
+        headerTableLayoutPanel.RowCount = 1;
+        headerTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        headerTableLayoutPanel.Size = new Size(777, 44);
+        headerTableLayoutPanel.TabIndex = 0;
+        headerTableLayoutPanel.TagString = null;
         // 
-        // windowLockSwitch
+        // headerSettings
         // 
-        windowLockSwitch.Font = new Font("ËÎÌå", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        windowLockSwitch.Location = new Point(20, 72);
-        windowLockSwitch.Margin = new Padding(4);
-        windowLockSwitch.MinimumSize = new Size(1, 1);
-        windowLockSwitch.Name = "windowLockSwitch";
-        windowLockSwitch.Size = new Size(48, 28);
-        windowLockSwitch.Style = UIStyle.Custom;
-        windowLockSwitch.StyleCustomMode = true;
-        windowLockSwitch.TabIndex = 2;
+        headerSettings.Cursor = Cursors.SizeAll;
+        headerSettings.Dock = DockStyle.Left;
+        headerSettings.Font = new Font("Lobster", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        headerSettings.ForeColor = Color.White;
+        headerSettings.Location = new Point(3, 0);
+        headerSettings.Name = "headerSettings";
+        headerSettings.Size = new Size(303, 44);
+        headerSettings.TabIndex = 0;
+        headerSettings.Text = "winDrawer settings";
+        headerSettings.TextAlign = ContentAlignment.MiddleLeft;
         // 
-        // autoLaunchLabel
+        // settingsTableLayoutPanel
         // 
-        autoLaunchLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        autoLaunchLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        autoLaunchLabel.Location = new Point(76, 40);
-        autoLaunchLabel.Name = "autoLaunchLabel";
-        autoLaunchLabel.Size = new Size(298, 24);
-        autoLaunchLabel.Style = UIStyle.Custom;
-        autoLaunchLabel.StyleCustomMode = true;
-        autoLaunchLabel.TabIndex = 1;
-        autoLaunchLabel.Text = "¿ª»úÊ±×Ô¶¯Æô¶¯Ó¦ÓÃ";
-        autoLaunchLabel.TextAlign = ContentAlignment.MiddleLeft;
+        settingsTableLayoutPanel.ColumnCount = 1;
+        settingsTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        settingsTableLayoutPanel.Controls.Add(behaviorCheckBoxGroup, 0, 0);
+        settingsTableLayoutPanel.Controls.Add(visualGroupBox, 0, 1);
+        settingsTableLayoutPanel.Dock = DockStyle.Fill;
+        settingsTableLayoutPanel.Location = new Point(3, 53);
+        settingsTableLayoutPanel.Name = "settingsTableLayoutPanel";
+        settingsTableLayoutPanel.RowCount = 2;
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
+        settingsTableLayoutPanel.Size = new Size(777, 477);
+        settingsTableLayoutPanel.TabIndex = 2;
+        settingsTableLayoutPanel.TagString = null;
         // 
-        // autoLaunchSwitch
+        // behaviorCheckBoxGroup
         // 
-        autoLaunchSwitch.Font = new Font("ËÎÌå", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        autoLaunchSwitch.Location = new Point(20, 36);
-        autoLaunchSwitch.Margin = new Padding(4);
-        autoLaunchSwitch.MinimumSize = new Size(1, 1);
-        autoLaunchSwitch.Name = "autoLaunchSwitch";
-        autoLaunchSwitch.Size = new Size(48, 28);
-        autoLaunchSwitch.Style = UIStyle.Custom;
-        autoLaunchSwitch.StyleCustomMode = true;
-        autoLaunchSwitch.TabIndex = 0;
+        behaviorCheckBoxGroup.CheckBoxSize = 32;
+        behaviorCheckBoxGroup.ColumnCount = 2;
+        behaviorCheckBoxGroup.ColumnInterval = 200;
+        behaviorCheckBoxGroup.Dock = DockStyle.Fill;
+        behaviorCheckBoxGroup.FillColor = Color.FromArgb(64, 64, 64);
+        behaviorCheckBoxGroup.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        behaviorCheckBoxGroup.ForeColor = Color.FromArgb(224, 224, 224);
+        behaviorCheckBoxGroup.HoverColor = Color.Gray;
+        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with windows", "Lock position" });
+        behaviorCheckBoxGroup.Location = new Point(10, 10);
+        behaviorCheckBoxGroup.Margin = new Padding(10);
+        behaviorCheckBoxGroup.MinimumSize = new Size(1, 1);
+        behaviorCheckBoxGroup.Name = "behaviorCheckBoxGroup";
+        behaviorCheckBoxGroup.Padding = new Padding(0, 32, 0, 0);
+        behaviorCheckBoxGroup.SelectedIndexes = (List<int>)resources.GetObject("behaviorCheckBoxGroup.SelectedIndexes");
+        behaviorCheckBoxGroup.Size = new Size(757, 116);
+        behaviorCheckBoxGroup.StartPos = new Point(12, 40);
+        behaviorCheckBoxGroup.TabIndex = 0;
+        behaviorCheckBoxGroup.Text = "behavior";
+        behaviorCheckBoxGroup.TextAlignment = ContentAlignment.MiddleLeft;
         // 
-        // themeGroup
+        // visualGroupBox
         // 
-        themeGroup.Controls.Add(alphaValueLabel);
-        themeGroup.Controls.Add(lightnessValueLabel);
-        themeGroup.Controls.Add(saturationValueLabel);
-        themeGroup.Controls.Add(hueValueLabel);
-        themeGroup.Controls.Add(alphaTrackBar);
-        themeGroup.Controls.Add(lightnessTrackBar);
-        themeGroup.Controls.Add(saturationTrackBar);
-        themeGroup.Controls.Add(hueTrackBar);
-        themeGroup.Controls.Add(alphaLabel);
-        themeGroup.Controls.Add(lightnessLabel);
-        themeGroup.Controls.Add(saturationLabel);
-        themeGroup.Controls.Add(hueLabel);
-        themeGroup.Controls.Add(previewPanel);
-        themeGroup.FillColor = Color.FromArgb(38, 45, 54);
-        themeGroup.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        themeGroup.Location = new Point(24, 204);
-        themeGroup.Margin = new Padding(0, 12, 0, 12);
-        themeGroup.MinimumSize = new Size(1, 1);
-        themeGroup.Name = "themeGroup";
-        themeGroup.Padding = new Padding(0, 32, 0, 0);
-        themeGroup.RectColor = Color.FromArgb(56, 63, 72);
-        themeGroup.Size = new Size(576, 244);
-        themeGroup.Style = UIStyle.Custom;
-        themeGroup.StyleCustomMode = true;
-        themeGroup.TabIndex = 1;
-        themeGroup.Text = "Ö÷ÌâÑÕÉ«";
-        themeGroup.TextAlignment = ContentAlignment.MiddleLeft;
+        visualGroupBox.Controls.Add(visualTableLayoutPanel);
+        visualGroupBox.Dock = DockStyle.Fill;
+        visualGroupBox.FillColor = Color.FromArgb(64, 64, 64);
+        visualGroupBox.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        visualGroupBox.ForeColor = Color.FromArgb(224, 224, 224);
+        visualGroupBox.Location = new Point(10, 146);
+        visualGroupBox.Margin = new Padding(10);
+        visualGroupBox.MinimumSize = new Size(1, 1);
+        visualGroupBox.Name = "visualGroupBox";
+        visualGroupBox.Padding = new Padding(32, 64, 32, 32);
+        visualGroupBox.Size = new Size(757, 321);
+        visualGroupBox.TabIndex = 1;
+        visualGroupBox.Text = "visual";
+        visualGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         // 
-        // alphaValueLabel
+        // visualTableLayoutPanel
         // 
-        alphaValueLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        alphaValueLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        alphaValueLabel.Location = new Point(320, 196);
-        alphaValueLabel.Name = "alphaValueLabel";
-        alphaValueLabel.Size = new Size(64, 24);
-        alphaValueLabel.Style = UIStyle.Custom;
-        alphaValueLabel.StyleCustomMode = true;
-        alphaValueLabel.TabIndex = 12;
-        alphaValueLabel.Text = "60%";
-        alphaValueLabel.TextAlign = ContentAlignment.MiddleRight;
+        visualTableLayoutPanel.ColumnCount = 4;
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+        visualTableLayoutPanel.Controls.Add(lightnessValueLabel, 2, 2);
+        visualTableLayoutPanel.Controls.Add(opacityValueLabel, 2, 3);
+        visualTableLayoutPanel.Controls.Add(saturationValueLabel, 2, 1);
+        visualTableLayoutPanel.Controls.Add(hueValueLabel, 2, 0);
+        visualTableLayoutPanel.Controls.Add(previewLabel, 3, 0);
+        visualTableLayoutPanel.Controls.Add(saturationTrackBar, 1, 1);
+        visualTableLayoutPanel.Controls.Add(opacityTrackBar, 1, 3);
+        visualTableLayoutPanel.Controls.Add(lightnessTrackBar, 1, 2);
+        visualTableLayoutPanel.Controls.Add(opacityLabel, 0, 3);
+        visualTableLayoutPanel.Controls.Add(lightnessLabel, 0, 2);
+        visualTableLayoutPanel.Controls.Add(saturationLabel, 0, 1);
+        visualTableLayoutPanel.Controls.Add(hueLabel, 0, 0);
+        visualTableLayoutPanel.Controls.Add(hueTrackBar, 1, 0);
+        visualTableLayoutPanel.Controls.Add(previewPanel, 3, 1);
+        visualTableLayoutPanel.Dock = DockStyle.Fill;
+        visualTableLayoutPanel.Location = new Point(32, 64);
+        visualTableLayoutPanel.Name = "visualTableLayoutPanel";
+        visualTableLayoutPanel.RowCount = 4;
+        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+        visualTableLayoutPanel.Size = new Size(693, 225);
+        visualTableLayoutPanel.TabIndex = 0;
+        visualTableLayoutPanel.TagString = null;
         // 
         // lightnessValueLabel
         // 
-        lightnessValueLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        lightnessValueLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        lightnessValueLabel.Location = new Point(320, 152);
+        lightnessValueLabel.Dock = DockStyle.Left;
+        lightnessValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        lightnessValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        lightnessValueLabel.Location = new Point(418, 112);
         lightnessValueLabel.Name = "lightnessValueLabel";
-        lightnessValueLabel.Size = new Size(64, 24);
-        lightnessValueLabel.Style = UIStyle.Custom;
-        lightnessValueLabel.StyleCustomMode = true;
-        lightnessValueLabel.TabIndex = 11;
-        lightnessValueLabel.Text = "41%";
-        lightnessValueLabel.TextAlign = ContentAlignment.MiddleRight;
+        lightnessValueLabel.Size = new Size(63, 56);
+        lightnessValueLabel.TabIndex = 12;
+        lightnessValueLabel.Text = "100";
+        lightnessValueLabel.TextAlign = ContentAlignment.MiddleLeft;
+        lightnessValueLabel.Click += uiLabel5_Click;
+        // 
+        // opacityValueLabel
+        // 
+        opacityValueLabel.Dock = DockStyle.Left;
+        opacityValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        opacityValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        opacityValueLabel.Location = new Point(418, 168);
+        opacityValueLabel.Name = "opacityValueLabel";
+        opacityValueLabel.Size = new Size(63, 57);
+        opacityValueLabel.TabIndex = 11;
+        opacityValueLabel.Text = "100";
+        opacityValueLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // saturationValueLabel
         // 
-        saturationValueLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        saturationValueLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        saturationValueLabel.Location = new Point(320, 108);
+        saturationValueLabel.Dock = DockStyle.Left;
+        saturationValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        saturationValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        saturationValueLabel.Location = new Point(418, 56);
         saturationValueLabel.Name = "saturationValueLabel";
-        saturationValueLabel.Size = new Size(64, 24);
-        saturationValueLabel.Style = UIStyle.Custom;
-        saturationValueLabel.StyleCustomMode = true;
+        saturationValueLabel.Size = new Size(63, 56);
         saturationValueLabel.TabIndex = 10;
-        saturationValueLabel.Text = "100%";
-        saturationValueLabel.TextAlign = ContentAlignment.MiddleRight;
+        saturationValueLabel.Text = "90";
+        saturationValueLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // hueValueLabel
         // 
-        hueValueLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        hueValueLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        hueValueLabel.Location = new Point(320, 64);
+        hueValueLabel.Dock = DockStyle.Left;
+        hueValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        hueValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        hueValueLabel.Location = new Point(418, 0);
         hueValueLabel.Name = "hueValueLabel";
-        hueValueLabel.Size = new Size(64, 24);
-        hueValueLabel.Style = UIStyle.Custom;
-        hueValueLabel.StyleCustomMode = true;
+        hueValueLabel.Size = new Size(63, 56);
         hueValueLabel.TabIndex = 9;
-        hueValueLabel.Text = "194¡ã";
-        hueValueLabel.TextAlign = ContentAlignment.MiddleRight;
+        hueValueLabel.Text = "80";
+        hueValueLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
-        // alphaTrackBar
+        // previewLabel
         // 
-        alphaTrackBar.FillColor = Color.FromArgb(24, 27, 34);
-        alphaTrackBar.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        alphaTrackBar.Location = new Point(112, 192);
-        alphaTrackBar.Margin = new Padding(4);
-        alphaTrackBar.MinimumSize = new Size(1, 1);
-        alphaTrackBar.Name = "alphaTrackBar";
-        alphaTrackBar.RectColor = Color.FromArgb(70, 75, 82);
-        alphaTrackBar.Size = new Size(204, 28);
-        alphaTrackBar.Style = UIStyle.Custom;
-        alphaTrackBar.StyleCustomMode = true;
-        alphaTrackBar.TabIndex = 8;
-        // 
-        // lightnessTrackBar
-        // 
-        lightnessTrackBar.FillColor = Color.FromArgb(24, 27, 34);
-        lightnessTrackBar.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        lightnessTrackBar.Location = new Point(112, 148);
-        lightnessTrackBar.Margin = new Padding(4);
-        lightnessTrackBar.MinimumSize = new Size(1, 1);
-        lightnessTrackBar.Name = "lightnessTrackBar";
-        lightnessTrackBar.RectColor = Color.FromArgb(70, 75, 82);
-        lightnessTrackBar.Size = new Size(204, 28);
-        lightnessTrackBar.Style = UIStyle.Custom;
-        lightnessTrackBar.StyleCustomMode = true;
-        lightnessTrackBar.TabIndex = 6;
+        previewLabel.Dock = DockStyle.Fill;
+        previewLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        previewLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        previewLabel.Location = new Point(487, 0);
+        previewLabel.Name = "previewLabel";
+        previewLabel.Size = new Size(203, 56);
+        previewLabel.TabIndex = 8;
+        previewLabel.Text = "Preview";
+        previewLabel.TextAlign = ContentAlignment.MiddleCenter;
         // 
         // saturationTrackBar
         // 
-        saturationTrackBar.FillColor = Color.FromArgb(24, 27, 34);
-        saturationTrackBar.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        saturationTrackBar.Location = new Point(112, 104);
-        saturationTrackBar.Margin = new Padding(4);
+        saturationTrackBar.Dock = DockStyle.Fill;
+        saturationTrackBar.FillColor = Color.FromArgb(64, 64, 64);
+        saturationTrackBar.Font = new Font("ï¿½ï¿½ï¿½ï¿½", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        saturationTrackBar.Location = new Point(141, 59);
         saturationTrackBar.MinimumSize = new Size(1, 1);
         saturationTrackBar.Name = "saturationTrackBar";
-        saturationTrackBar.RectColor = Color.FromArgb(70, 75, 82);
-        saturationTrackBar.Size = new Size(204, 28);
-        saturationTrackBar.Style = UIStyle.Custom;
-        saturationTrackBar.StyleCustomMode = true;
-        saturationTrackBar.TabIndex = 4;
+        saturationTrackBar.Size = new Size(271, 50);
+        saturationTrackBar.TabIndex = 7;
         // 
-        // hueTrackBar
+        // opacityTrackBar
         // 
-        hueTrackBar.FillColor = Color.FromArgb(24, 27, 34);
-        hueTrackBar.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        hueTrackBar.Location = new Point(112, 60);
-        hueTrackBar.Margin = new Padding(4);
-        hueTrackBar.MinimumSize = new Size(1, 1);
-        hueTrackBar.Name = "hueTrackBar";
-        hueTrackBar.RectColor = Color.FromArgb(70, 75, 82);
-        hueTrackBar.Size = new Size(204, 28);
-        hueTrackBar.Style = UIStyle.Custom;
-        hueTrackBar.StyleCustomMode = true;
-        hueTrackBar.TabIndex = 2;
+        opacityTrackBar.Dock = DockStyle.Fill;
+        opacityTrackBar.FillColor = Color.FromArgb(64, 64, 64);
+        opacityTrackBar.Font = new Font("ï¿½ï¿½ï¿½ï¿½", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        opacityTrackBar.Location = new Point(141, 171);
+        opacityTrackBar.MinimumSize = new Size(1, 1);
+        opacityTrackBar.Name = "opacityTrackBar";
+        opacityTrackBar.Size = new Size(271, 51);
+        opacityTrackBar.TabIndex = 6;
         // 
-        // alphaLabel
+        // lightnessTrackBar
         // 
-        alphaLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        alphaLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        alphaLabel.Location = new Point(20, 196);
-        alphaLabel.Name = "alphaLabel";
-        alphaLabel.Size = new Size(88, 24);
-        alphaLabel.Style = UIStyle.Custom;
-        alphaLabel.StyleCustomMode = true;
-        alphaLabel.TabIndex = 7;
-        alphaLabel.Text = "Í¸Ã÷¶È";
-        alphaLabel.TextAlign = ContentAlignment.MiddleLeft;
+        lightnessTrackBar.Dock = DockStyle.Fill;
+        lightnessTrackBar.FillColor = Color.FromArgb(64, 64, 64);
+        lightnessTrackBar.Font = new Font("ï¿½ï¿½ï¿½ï¿½", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        lightnessTrackBar.Location = new Point(141, 115);
+        lightnessTrackBar.MinimumSize = new Size(1, 1);
+        lightnessTrackBar.Name = "lightnessTrackBar";
+        lightnessTrackBar.Size = new Size(271, 50);
+        lightnessTrackBar.TabIndex = 5;
+        // 
+        // opacityLabel
+        // 
+        opacityLabel.Dock = DockStyle.Left;
+        opacityLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        opacityLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        opacityLabel.Location = new Point(3, 168);
+        opacityLabel.Name = "opacityLabel";
+        opacityLabel.Size = new Size(132, 57);
+        opacityLabel.TabIndex = 3;
+        opacityLabel.Text = "Opacity";
+        opacityLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // lightnessLabel
         // 
-        lightnessLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        lightnessLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        lightnessLabel.Location = new Point(20, 152);
+        lightnessLabel.Dock = DockStyle.Left;
+        lightnessLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        lightnessLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        lightnessLabel.Location = new Point(3, 112);
         lightnessLabel.Name = "lightnessLabel";
-        lightnessLabel.Size = new Size(88, 24);
-        lightnessLabel.Style = UIStyle.Custom;
-        lightnessLabel.StyleCustomMode = true;
-        lightnessLabel.TabIndex = 5;
-        lightnessLabel.Text = "ÁÁ¶È";
+        lightnessLabel.Size = new Size(132, 56);
+        lightnessLabel.TabIndex = 2;
+        lightnessLabel.Text = "Lightness";
         lightnessLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // saturationLabel
         // 
-        saturationLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        saturationLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        saturationLabel.Location = new Point(20, 108);
+        saturationLabel.Dock = DockStyle.Left;
+        saturationLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        saturationLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        saturationLabel.Location = new Point(3, 56);
         saturationLabel.Name = "saturationLabel";
-        saturationLabel.Size = new Size(88, 24);
-        saturationLabel.Style = UIStyle.Custom;
-        saturationLabel.StyleCustomMode = true;
-        saturationLabel.TabIndex = 3;
-        saturationLabel.Text = "±¥ºÍ¶È";
+        saturationLabel.Size = new Size(132, 56);
+        saturationLabel.TabIndex = 1;
+        saturationLabel.Text = "Saturation";
         saturationLabel.TextAlign = ContentAlignment.MiddleLeft;
+        saturationLabel.Click += uiLabel1_Click;
         // 
         // hueLabel
         // 
-        hueLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        hueLabel.ForeColor = Color.FromArgb(48, 48, 48);
-        hueLabel.Location = new Point(20, 64);
+        hueLabel.Dock = DockStyle.Left;
+        hueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        hueLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        hueLabel.Location = new Point(3, 0);
         hueLabel.Name = "hueLabel";
-        hueLabel.Size = new Size(88, 24);
-        hueLabel.Style = UIStyle.Custom;
-        hueLabel.StyleCustomMode = true;
-        hueLabel.TabIndex = 1;
-        hueLabel.Text = "É«Ïà";
+        hueLabel.Size = new Size(132, 56);
+        hueLabel.TabIndex = 0;
+        hueLabel.Text = "Hue";
         hueLabel.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // hueTrackBar
+        // 
+        hueTrackBar.Dock = DockStyle.Fill;
+        hueTrackBar.FillColor = Color.FromArgb(64, 64, 64);
+        hueTrackBar.Font = new Font("ï¿½ï¿½ï¿½ï¿½", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        hueTrackBar.Location = new Point(141, 3);
+        hueTrackBar.MinimumSize = new Size(1, 1);
+        hueTrackBar.Name = "hueTrackBar";
+        hueTrackBar.Size = new Size(271, 50);
+        hueTrackBar.TabIndex = 4;
         // 
         // previewPanel
         // 
-        previewPanel.Controls.Add(previewTitleLabel);
-        previewPanel.Controls.Add(previewLabel);
-        previewPanel.FillColor = Color.FromArgb(30, 34, 41);
-        previewPanel.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        previewPanel.Location = new Point(376, 60);
-        previewPanel.Margin = new Padding(4);
+        previewPanel.Dock = DockStyle.Fill;
+        previewPanel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        previewPanel.ForeColor = Color.Gray;
+        previewPanel.Location = new Point(488, 61);
+        previewPanel.Margin = new Padding(4, 5, 4, 5);
         previewPanel.MinimumSize = new Size(1, 1);
         previewPanel.Name = "previewPanel";
-        previewPanel.RectColor = Color.FromArgb(70, 75, 82);
-        previewPanel.Size = new Size(196, 160);
-        previewPanel.Style = UIStyle.Custom;
-        previewPanel.StyleCustomMode = true;
-        previewPanel.TabIndex = 0;
-        previewPanel.Text = null;
+        previewPanel.Padding = new Padding(10);
+        visualTableLayoutPanel.SetRowSpan(previewPanel, 3);
+        previewPanel.Size = new Size(201, 159);
+        previewPanel.TabIndex = 13;
+        previewPanel.Text = "color preview";
         previewPanel.TextAlignment = ContentAlignment.MiddleCenter;
         // 
-        // previewTitleLabel
+        // footerGroupBox
         // 
-        previewTitleLabel.Font = new Font("Î¢ÈíÑÅºÚ", 9F, FontStyle.Bold);
-        previewTitleLabel.ForeColor = Color.White;
-        previewTitleLabel.Location = new Point(12, 12);
-        previewTitleLabel.Name = "previewTitleLabel";
-        previewTitleLabel.Size = new Size(96, 24);
-        previewTitleLabel.Style = UIStyle.Custom;
-        previewTitleLabel.StyleCustomMode = true;
-        previewTitleLabel.TabIndex = 1;
-        previewTitleLabel.Text = "Ô¤ÀÀ";
-        previewTitleLabel.TextAlign = ContentAlignment.MiddleCenter;
-        // 
-        // previewLabel
-        // 
-        previewLabel.Font = new Font("Consolas", 9F);
-        previewLabel.ForeColor = Color.White;
-        previewLabel.Location = new Point(12, 52);
-        previewLabel.Name = "previewLabel";
-        previewLabel.Size = new Size(170, 92);
-        previewLabel.Style = UIStyle.Custom;
-        previewLabel.StyleCustomMode = true;
-        previewLabel.TabIndex = 0;
-        previewLabel.Text = "hsla(194, 100%, 41%, 0.60)";
-        previewLabel.TextAlign = ContentAlignment.MiddleCenter;
-        // 
-        // okButton
-        // 
-        okButton.Cursor = Cursors.Hand;
-        okButton.FillColor = Color.FromArgb(0, 168, 95);
-        okButton.FillHoverColor = Color.FromArgb(0, 186, 106);
-        okButton.FillPressColor = Color.FromArgb(0, 143, 80);
-        okButton.Font = new Font("Î¢ÈíÑÅºÚ", 9F, FontStyle.Bold);
-        okButton.Location = new Point(236, 468);
-        okButton.MinimumSize = new Size(1, 1);
-        okButton.Name = "okButton";
-        okButton.RectColor = Color.Transparent;
-        okButton.Size = new Size(96, 34);
-        okButton.Style = UIStyle.Custom;
-        okButton.StyleCustomMode = true;
-        okButton.TabIndex = 2;
-        okButton.Text = "±£´æ";
-        okButton.TipsFont = new Font("ËÎÌå", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        footerGroupBox.Controls.Add(shutDownButton);
+        footerGroupBox.Controls.Add(defautlSettingsButton);
+        footerGroupBox.Controls.Add(cancelButton);
+        footerGroupBox.Controls.Add(saveButton);
+        footerGroupBox.Dock = DockStyle.Fill;
+        footerGroupBox.FillColor = Color.FromArgb(64, 64, 64);
+        footerGroupBox.Font = new Font("ï¿½ï¿½ï¿½ï¿½", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        footerGroupBox.Location = new Point(4, 538);
+        footerGroupBox.Margin = new Padding(4, 5, 4, 5);
+        footerGroupBox.MinimumSize = new Size(1, 1);
+        footerGroupBox.Name = "footerGroupBox";
+        footerGroupBox.Padding = new Padding(0, 32, 0, 0);
+        footerGroupBox.RectSides = ToolStripStatusLabelBorderSides.None;
+        footerGroupBox.Size = new Size(775, 40);
+        footerGroupBox.TabIndex = 3;
+        footerGroupBox.Text = null;
+        footerGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         // 
         // cancelButton
         // 
-        cancelButton.Cursor = Cursors.Hand;
-        cancelButton.FillColor = Color.FromArgb(64, 70, 78);
-        cancelButton.FillHoverColor = Color.FromArgb(82, 88, 96);
-        cancelButton.FillPressColor = Color.FromArgb(52, 58, 66);
-        cancelButton.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        cancelButton.Location = new Point(348, 468);
+        cancelButton.FillColor = Color.Red;
+        cancelButton.FillDisableColor = Color.DarkGray;
+        cancelButton.FillHoverColor = Color.LightCoral;
+        cancelButton.FillPressColor = Color.DarkRed;
+        cancelButton.FillSelectedColor = Color.Brown;
+        cancelButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        cancelButton.Location = new Point(509, 0);
         cancelButton.MinimumSize = new Size(1, 1);
         cancelButton.Name = "cancelButton";
-        cancelButton.RectColor = Color.Transparent;
-        cancelButton.Size = new Size(96, 34);
-        cancelButton.Style = UIStyle.Custom;
-        cancelButton.StyleCustomMode = true;
-        cancelButton.TabIndex = 3;
-        cancelButton.Text = "È¡Ïû";
-        cancelButton.TipsFont = new Font("ËÎÌå", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        cancelButton.Radius = 20;
+        cancelButton.Size = new Size(120, 40);
+        cancelButton.TabIndex = 2;
+        cancelButton.Text = "cancel";
+        cancelButton.TipsFont = new Font("ï¿½ï¿½ï¿½ï¿½", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
         // 
-        // shutdownButton
+        // saveButton
         // 
-        shutdownButton.Cursor = Cursors.Hand;
-        shutdownButton.FillColor = Color.FromArgb(208, 72, 72);
-        shutdownButton.FillHoverColor = Color.FromArgb(224, 96, 96);
-        shutdownButton.FillPressColor = Color.FromArgb(176, 56, 56);
-        shutdownButton.Font = new Font("Î¢ÈíÑÅºÚ", 9F);
-        shutdownButton.Location = new Point(460, 468);
-        shutdownButton.MinimumSize = new Size(1, 1);
-        shutdownButton.Name = "shutdownButton";
-        shutdownButton.RectColor = Color.Transparent;
-        shutdownButton.Size = new Size(96, 34);
-        shutdownButton.Style = UIStyle.Custom;
-        shutdownButton.StyleCustomMode = true;
-        shutdownButton.TabIndex = 4;
-        shutdownButton.Text = "ÍË³ö³ÌÐò";
-        shutdownButton.TipsFont = new Font("ËÎÌå", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        saveButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        saveButton.Location = new Point(643, 0);
+        saveButton.MinimumSize = new Size(1, 1);
+        saveButton.Name = "saveButton";
+        saveButton.Radius = 20;
+        saveButton.Size = new Size(120, 40);
+        saveButton.TabIndex = 1;
+        saveButton.Text = "save";
+        saveButton.TipsFont = new Font("ï¿½ï¿½ï¿½ï¿½", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        // 
+        // defautlSettingsButton
+        // 
+        defautlSettingsButton.FillColor = Color.YellowGreen;
+        defautlSettingsButton.FillDisableColor = Color.DarkGray;
+        defautlSettingsButton.FillHoverColor = Color.LightCoral;
+        defautlSettingsButton.FillPressColor = Color.DarkRed;
+        defautlSettingsButton.FillSelectedColor = Color.Brown;
+        defautlSettingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        defautlSettingsButton.Location = new Point(375, 0);
+        defautlSettingsButton.MinimumSize = new Size(1, 1);
+        defautlSettingsButton.Name = "defautlSettingsButton";
+        defautlSettingsButton.Radius = 20;
+        defautlSettingsButton.Size = new Size(120, 40);
+        defautlSettingsButton.TabIndex = 3;
+        defautlSettingsButton.Text = "default";
+        defautlSettingsButton.TipsFont = new Font("ï¿½ï¿½ï¿½ï¿½", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        // 
+        // shutDownButton
+        // 
+        shutDownButton.FillColor = Color.DarkRed;
+        shutDownButton.FillDisableColor = Color.DarkGray;
+        shutDownButton.FillHoverColor = Color.LightCoral;
+        shutDownButton.FillPressColor = Color.DarkRed;
+        shutDownButton.FillSelectedColor = Color.Brown;
+        shutDownButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        shutDownButton.Location = new Point(9, 0);
+        shutDownButton.MinimumSize = new Size(1, 1);
+        shutDownButton.Name = "shutDownButton";
+        shutDownButton.Radius = 20;
+        shutDownButton.Size = new Size(215, 40);
+        shutDownButton.TabIndex = 4;
+        shutDownButton.Text = "shut down app";
+        shutDownButton.TipsFont = new Font("ï¿½ï¿½ï¿½ï¿½", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
         // 
         // SettingsForm
         // 
-        AutoScaleMode = AutoScaleMode.None;
-        BackColor = Color.FromArgb(24, 27, 34);
-        ClientSize = new Size(624, 560);
-        Controls.Add(shutdownButton);
-        Controls.Add(cancelButton);
-        Controls.Add(okButton);
-        Controls.Add(themeGroup);
-        Controls.Add(generalGroup);
-        ForeColor = Color.White;
-        MinimumSize = new Size(624, 560);
+        AutoScaleDimensions = new SizeF(14F, 31F);
+        AutoScaleMode = AutoScaleMode.Font;
+        BackColor = Color.DimGray;
+        ClientSize = new Size(783, 583);
+        Controls.Add(mainTableLayoutPanel);
         Name = "SettingsForm";
-        Padding = new Padding(24, 16, 24, 24);
-        RectColor = Color.FromArgb(56, 63, 72);
-        Style = UIStyle.Custom;
-        StyleCustomMode = true;
-        Text = "ÉèÖÃ";
-        ZoomScaleRect = new Rectangle(0, 0, 614, 590);
-        generalGroup.ResumeLayout(false);
-        themeGroup.ResumeLayout(false);
-        previewPanel.ResumeLayout(false);
+        Text = "SettingsWindow";
+        mainTableLayoutPanel.ResumeLayout(false);
+        headerTableLayoutPanel.ResumeLayout(false);
+        settingsTableLayoutPanel.ResumeLayout(false);
+        visualGroupBox.ResumeLayout(false);
+        visualTableLayoutPanel.ResumeLayout(false);
+        footerGroupBox.ResumeLayout(false);
         ResumeLayout(false);
     }
 
     #endregion
 
-    private UIGroupBox generalGroup;
-    private UILabel windowLockLabel;
-    private UISwitch windowLockSwitch;
-    private UILabel autoLaunchLabel;
-    private UISwitch autoLaunchSwitch;
-    private UIGroupBox themeGroup;
-    private UILabel alphaValueLabel;
-    private UILabel lightnessValueLabel;
-    private UILabel saturationValueLabel;
-    private UILabel hueValueLabel;
-    private UITrackBar alphaTrackBar;
-    private UITrackBar lightnessTrackBar;
-    private UITrackBar saturationTrackBar;
-    private UITrackBar hueTrackBar;
-    private UILabel alphaLabel;
-    private UILabel lightnessLabel;
-    private UILabel saturationLabel;
-    private UILabel hueLabel;
-    private UIPanel previewPanel;
-    private UILabel previewTitleLabel;
-    private UILabel previewLabel;
-    private UIButton okButton;
-    private UIButton cancelButton;
-    private UIButton shutdownButton;
-
-
+    private Sunny.UI.UITableLayoutPanel mainTableLayoutPanel;
+    private Sunny.UI.UITableLayoutPanel headerTableLayoutPanel;
+    private Sunny.UI.UILabel headerSettings;
+    private Sunny.UI.UITableLayoutPanel settingsTableLayoutPanel;
+    private Sunny.UI.UICheckBoxGroup behaviorCheckBoxGroup;
+    private Sunny.UI.UIGroupBox visualGroupBox;
+    private Sunny.UI.UITableLayoutPanel visualTableLayoutPanel;
+    private Sunny.UI.UILabel lightnessValueLabel;
+    private Sunny.UI.UILabel opacityValueLabel;
+    private Sunny.UI.UILabel saturationValueLabel;
+    private Sunny.UI.UILabel hueValueLabel;
+    private Sunny.UI.UILabel previewLabel;
+    private Sunny.UI.UITrackBar saturationTrackBar;
+    private Sunny.UI.UITrackBar opacityTrackBar;
+    private Sunny.UI.UITrackBar lightnessTrackBar;
+    private Sunny.UI.UILabel opacityLabel;
+    private Sunny.UI.UILabel lightnessLabel;
+    private Sunny.UI.UILabel saturationLabel;
+    private Sunny.UI.UILabel hueLabel;
+    private Sunny.UI.UITrackBar hueTrackBar;
+    private Sunny.UI.UIPanel previewPanel;
+    private Sunny.UI.UIGroupBox footerGroupBox;
+    private Sunny.UI.UIButton cancelButton;
+    private Sunny.UI.UIButton saveButton;
+    private Sunny.UI.UIButton defautlSettingsButton;
+    private Sunny.UI.UIButton shutDownButton;
 }
-
-
-
-

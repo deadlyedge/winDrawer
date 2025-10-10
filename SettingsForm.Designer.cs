@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
-// using System.Drawing;
-// using System.Windows.Forms;
+using System.Drawing;
+using System.Windows.Forms;
 using Sunny.UI;
 
 #nullable disable
@@ -69,13 +69,13 @@ partial class SettingsForm
         mainTableLayoutPanel.Controls.Add(settingsTableLayoutPanel, 0, 1);
         mainTableLayoutPanel.Controls.Add(footerGroupBox, 0, 2);
         mainTableLayoutPanel.Dock = DockStyle.Fill;
-        mainTableLayoutPanel.Location = new Point(0, 35);
+        mainTableLayoutPanel.Location = new Point(0, 0);
         mainTableLayoutPanel.Name = "mainTableLayoutPanel";
         mainTableLayoutPanel.RowCount = 3;
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
-        mainTableLayoutPanel.Size = new Size(783, 548);
+        mainTableLayoutPanel.Size = new Size(783, 583);
         mainTableLayoutPanel.TabIndex = 1;
         mainTableLayoutPanel.TagString = null;
         // 
@@ -457,8 +457,10 @@ partial class SettingsForm
         ClientSize = new Size(783, 583);
         Controls.Add(mainTableLayoutPanel);
         Name = "SettingsForm";
-        Text = "Settings";
-        ZoomScaleRect = new Rectangle(30, 30, 783, 583);
+        RectColor = Color.Transparent;
+        ShowTitle = false;
+        Text = "";
+        ZoomScaleRect = new Rectangle(0, 0, 783, 583);
         mainTableLayoutPanel.ResumeLayout(false);
         headerTableLayoutPanel.ResumeLayout(false);
         settingsTableLayoutPanel.ResumeLayout(false);

@@ -1,12 +1,7 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "Z:\\CodeBase\\projects.C#\\winDrawer\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -14,23 +9,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": -1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SettingsForm.cs [\u8BBE\u8BA1]",
-              "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs",
-              "RelativeDocumentMoniker": "SettingsForm.cs",
-              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs [\u8BBE\u8BA1]",
-              "RelativeToolTip": "SettingsForm.cs [\u8BBE\u8BA1]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-09T12:45:39.772Z",
-              "EditorCaption": " [\u8BBE\u8BA1]"
             }
           ]
         }

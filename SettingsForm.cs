@@ -14,6 +14,8 @@ public partial class SettingsForm : UIForm
 
     private readonly SettingsSnapshot _originalSnapshot;
     private readonly SettingsSnapshot _workingSnapshot;
+    private bool _isDragging;
+    private Point _dragOffset;
 
     public SettingsForm(SettingsSnapshot snapshot)
     {
@@ -26,6 +28,7 @@ public partial class SettingsForm : UIForm
         ConfigureControls();
         ApplySnapshotToUi();
         WireEvents();
+        WireDragHandlers();
 
         ResultSettings = _originalSnapshot.Clone();
         UpdatePreview();
@@ -67,6 +70,20 @@ public partial class SettingsForm : UIForm
         cancelButton.Click += cancelButton_Click;
         shutDownButton.Click += shutDownButton_Click;
         defautlSettingsButton.Click += defautlSettingsButton_Click;
+    }
+
+    private void WireDragHandlers()
+    {
+        headerTableLayoutPanel.Cursor = Cursors.SizeAll;
+        headerSettings.Cursor = Cursors.SizeAll;
+
+        headerTableLayoutPanel.MouseDown += HeaderDragBegin;
+        headerTableLayoutPanel.MouseMove += HeaderDragMove;
+        headerTableLayoutPanel.MouseUp += HeaderDragEnd;
+
+        headerSettings.MouseDown += HeaderDragBegin;
+        headerSettings.MouseMove += HeaderDragMove;
+        headerSettings.MouseUp += HeaderDragEnd;
     }
 
     private void ApplySnapshotToUi()
@@ -168,5 +185,37 @@ public partial class SettingsForm : UIForm
     private bool IsBehaviorChecked(int index)
     {
         return behaviorCheckBoxGroup.SelectedIndexes != null && behaviorCheckBoxGroup.SelectedIndexes.Contains(index);
+    }
+
+    private void HeaderDragBegin(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left)
+        {
+            return;
+        }
+
+        _isDragging = true;
+        _dragOffset = e.Location;
+    }
+
+    private void HeaderDragMove(object? sender, MouseEventArgs e)
+    {
+        if (!_isDragging)
+        {
+            return;
+        }
+
+        var screenPoint = PointToScreen(e.Location);
+        Location = new Point(screenPoint.X - _dragOffset.X, screenPoint.Y - _dragOffset.Y);
+    }
+
+    private void HeaderDragEnd(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left)
+        {
+            return;
+        }
+
+        _isDragging = false;
     }
 }

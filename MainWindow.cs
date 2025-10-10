@@ -236,6 +236,7 @@ namespace winDrawer
         private void addDrawerButton_Click(object sender, EventArgs e)
         {
             MessageBox.Show("Add Drawer flow goes here.", "Coming Soon", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // System.Diagnostics.Process.Start("explorer.exe", @"C:\");
         }
 
         private void openDrawerFolderButton_Click(object sender, EventArgs e)

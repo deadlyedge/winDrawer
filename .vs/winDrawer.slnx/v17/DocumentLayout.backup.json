@@ -3,12 +3,24 @@
   "WorkspaceRootPath": "Z:\\CodeBase\\projects.C#\\winDrawer\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\drawerwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:drawerwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\drawerwindow.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:drawerwindow.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|Z:\\CodeBase\\projects.C#\\winDrawer\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,8 +30,34 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 3,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SettingsForm.cs",
+              "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs",
+              "RelativeDocumentMoniker": "SettingsForm.cs",
+              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs",
+              "RelativeToolTip": "SettingsForm.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-10T09:24:51.32Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "DrawerWindow.Designer.cs",
+              "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\DrawerWindow.Designer.cs",
+              "RelativeDocumentMoniker": "DrawerWindow.Designer.cs",
+              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\DrawerWindow.Designer.cs",
+              "RelativeToolTip": "DrawerWindow.Designer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-10T09:21:54.865Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
@@ -27,25 +65,38 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "DrawerWindow.cs [\u8BBE\u8BA1]",
+              "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\DrawerWindow.cs",
+              "RelativeDocumentMoniker": "DrawerWindow.cs",
+              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\DrawerWindow.cs [\u8BBE\u8BA1]",
+              "RelativeToolTip": "DrawerWindow.cs [\u8BBE\u8BA1]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-10T09:19:10.979Z",
+              "EditorCaption": " [\u8BBE\u8BA1]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "MainWindow.cs [\u8BBE\u8BA1]",
               "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.cs",
               "RelativeDocumentMoniker": "MainWindow.cs",
-              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.cs [\u8BBE\u8BA1]*",
-              "RelativeToolTip": "MainWindow.cs [\u8BBE\u8BA1]*",
+              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.cs [\u8BBE\u8BA1]",
+              "RelativeToolTip": "MainWindow.cs [\u8BBE\u8BA1]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-10T07:20:43.289Z",
               "EditorCaption": " [\u8BBE\u8BA1]"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "SettingsForm.cs [\u8BBE\u8BA1]",
               "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs",
               "RelativeDocumentMoniker": "SettingsForm.cs",
               "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs [\u8BBE\u8BA1]",
               "RelativeToolTip": "SettingsForm.cs [\u8BBE\u8BA1]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-10T07:20:36.498Z"
+              "WhenOpened": "2025-10-10T07:20:36.498Z",
+              "EditorCaption": " [\u8BBE\u8BA1]"
             }
           ]
         }

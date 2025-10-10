@@ -1,4 +1,6 @@
-﻿using Sunny.UI;
+using System.Drawing;
+using System.Windows.Forms;
+using Sunny.UI;
 
 namespace winDrawer
 {
@@ -30,146 +32,161 @@ namespace winDrawer
         /// </summary>
         private void InitializeComponent()
         {
-            settingsButton = new Button();
-            logoLabel = new Label();
-            addDrawerButton = new Button();
-            drawerListBox = new UIListBox();
-            backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            tableLayoutPanel1 = new TableLayoutPanel();
-            tableLayoutPanel2 = new TableLayoutPanel();
-            tableLayoutPanel1.SuspendLayout();
-            tableLayoutPanel2.SuspendLayout();
+            mainTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
+            headerTableLayoutPanel = new Sunny.UI.UITableLayoutPanel();
+            logoLabel = new Sunny.UI.UILabel();
+            settingsButton = new Sunny.UI.UIButton();
+            drawerListBox = new Sunny.UI.UIListBox();
+            addDrawerButton = new Sunny.UI.UIButton();
+            mainTableLayoutPanel.SuspendLayout();
+            headerTableLayoutPanel.SuspendLayout();
             SuspendLayout();
             // 
-            // settingsButton
+            // mainTableLayoutPanel
             // 
-            settingsButton.BackColor = Color.FromArgb(66, 66, 66);
-            settingsButton.Dock = DockStyle.Right;
-            settingsButton.FlatAppearance.BorderSize = 0;
-            settingsButton.FlatStyle = FlatStyle.Flat;
-            settingsButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            settingsButton.ForeColor = Color.White;
-            settingsButton.Location = new Point(303, 0);
-            settingsButton.Margin = new Padding(0);
-            settingsButton.Name = "settingsButton";
-            settingsButton.Size = new Size(131, 58);
-            settingsButton.TabIndex = 1;
-            settingsButton.Text = "Settings";
-            settingsButton.UseVisualStyleBackColor = false;
-            settingsButton.Click += settingsButton_Click;
+            mainTableLayoutPanel.BackColor = Color.Tomato;
+            mainTableLayoutPanel.ColumnCount = 1;
+            mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            mainTableLayoutPanel.Controls.Add(headerTableLayoutPanel, 0, 0);
+            mainTableLayoutPanel.Controls.Add(drawerListBox, 0, 1);
+            mainTableLayoutPanel.Controls.Add(addDrawerButton, 0, 2);
+            mainTableLayoutPanel.Dock = DockStyle.Fill;
+            mainTableLayoutPanel.Location = new Point(0, 0);
+            mainTableLayoutPanel.Name = "mainTableLayoutPanel";
+            mainTableLayoutPanel.RowCount = 3;
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+            mainTableLayoutPanel.Size = new Size(413, 400);
+            mainTableLayoutPanel.TabIndex = 0;
+            mainTableLayoutPanel.TagString = null;
+            // 
+            // headerTableLayoutPanel
+            // 
+            headerTableLayoutPanel.BackColor = Color.Transparent;
+            headerTableLayoutPanel.ColumnCount = 2;
+            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            headerTableLayoutPanel.Controls.Add(logoLabel, 0, 0);
+            headerTableLayoutPanel.Controls.Add(settingsButton, 1, 0);
+            headerTableLayoutPanel.Dock = DockStyle.Fill;
+            headerTableLayoutPanel.Location = new Point(3, 3);
+            headerTableLayoutPanel.Name = "headerTableLayoutPanel";
+            headerTableLayoutPanel.RowCount = 1;
+            headerTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            headerTableLayoutPanel.Size = new Size(407, 44);
+            headerTableLayoutPanel.TabIndex = 0;
+            headerTableLayoutPanel.TagString = null;
             // 
             // logoLabel
             // 
-            logoLabel.AutoSize = true;
             logoLabel.Cursor = Cursors.SizeAll;
-            logoLabel.Dock = DockStyle.Left;
-            logoLabel.Font = new Font("Lobster", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            logoLabel.ForeColor = Color.White;
-            logoLabel.Location = new Point(0, 0);
-            logoLabel.Margin = new Padding(0);
+            logoLabel.Dock = DockStyle.Fill;
+            logoLabel.Font = new Font("Lobster", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            logoLabel.ForeColor = SystemColors.ButtonFace;
+            logoLabel.Location = new Point(3, 0);
             logoLabel.Name = "logoLabel";
-            logoLabel.Size = new Size(240, 58);
+            logoLabel.Size = new Size(278, 44);
+            logoLabel.Style = Sunny.UI.UIStyle.Custom;
             logoLabel.TabIndex = 0;
             logoLabel.Text = "winDrawer";
+            logoLabel.TextAlign = ContentAlignment.MiddleLeft;
             // 
-            // addDrawerButton
+            // settingsButton
             // 
-            addDrawerButton.Anchor = AnchorStyles.None;
-            addDrawerButton.BackColor = Color.FromArgb(0, 115, 176);
-            addDrawerButton.FlatAppearance.BorderSize = 0;
-            addDrawerButton.FlatStyle = FlatStyle.Flat;
-            addDrawerButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            addDrawerButton.ForeColor = Color.White;
-            addDrawerButton.Location = new Point(88, 343);
-            addDrawerButton.Margin = new Padding(0, 7, 0, 7);
-            addDrawerButton.Name = "addDrawerButton";
-            addDrawerButton.Size = new Size(258, 44);
-            addDrawerButton.TabIndex = 3;
-            addDrawerButton.Text = "Add Drawer";
-            addDrawerButton.UseVisualStyleBackColor = false;
-            addDrawerButton.Click += addDrawerButton_Click;
+            settingsButton.Cursor = Cursors.Hand;
+            settingsButton.Dock = DockStyle.Right;
+            settingsButton.FillColor = Color.FromArgb(66, 66, 66);
+            settingsButton.FillHoverColor = Color.FromArgb(84, 84, 84);
+            settingsButton.FillPressColor = Color.FromArgb(63, 63, 63);
+            settingsButton.FillSelectedColor = Color.FromArgb(63, 63, 63);
+            settingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            settingsButton.Location = new Point(287, 3);
+            settingsButton.MinimumSize = new Size(1, 1);
+            settingsButton.Name = "settingsButton";
+            settingsButton.Radius = 12;
+            settingsButton.RectColor = Color.Transparent;
+            settingsButton.RectDisableColor = Color.Transparent;
+            settingsButton.RectHoverColor = Color.Transparent;
+            settingsButton.RectPressColor = Color.Transparent;
+            settingsButton.RectSelectedColor = Color.Transparent;
+            settingsButton.Size = new Size(117, 38);
+            settingsButton.Style = Sunny.UI.UIStyle.Custom;
+            settingsButton.TabIndex = 1;
+            settingsButton.Text = "settings";
+            settingsButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            settingsButton.ZoomScaleRect = new Rectangle(0, 0, 0, 0);
+            settingsButton.Click += settingsButton_Click;
             // 
             // drawerListBox
             // 
             drawerListBox.Dock = DockStyle.Fill;
-            drawerListBox.FillColor = Color.Orange;
-            drawerListBox.Font = new Font("微软雅黑", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            drawerListBox.FillColor = Color.FromArgb(255, 224, 200);
+            drawerListBox.Font = new Font("微软雅黑", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
             drawerListBox.HoverColor = Color.FromArgb(155, 200, 255);
-            drawerListBox.ItemHeight = 36;
             drawerListBox.ItemSelectForeColor = Color.White;
-            drawerListBox.Location = new Point(0, 58);
-            drawerListBox.Margin = new Padding(0);
-            drawerListBox.MinimumSize = new Size(2, 2);
+            drawerListBox.Location = new Point(4, 55);
+            drawerListBox.Margin = new Padding(4, 5, 4, 5);
+            drawerListBox.MinimumSize = new Size(1, 1);
             drawerListBox.Name = "drawerListBox";
-            drawerListBox.Padding = new Padding(4, 4, 4, 4);
-            drawerListBox.ScrollBarBackColor = Color.FromArgb(255, 128, 0);
+            drawerListBox.Opacity = 50;
+            drawerListBox.Padding = new Padding(2);
+            drawerListBox.ScrollBarBackColor = Color.Orange;
             drawerListBox.ScrollBarHandleWidth = 8;
             drawerListBox.ScrollBarStyleInherited = false;
             drawerListBox.ShowText = false;
-            drawerListBox.Size = new Size(434, 278);
-            drawerListBox.TabIndex = 1;
-            drawerListBox.Text = null;
+            drawerListBox.Size = new Size(405, 290);
+            drawerListBox.Style = Sunny.UI.UIStyle.Custom;
+            drawerListBox.TabIndex = 2;
+            drawerListBox.Text = "drawerListBox";
+            drawerListBox.ZoomScaleRect = new Rectangle(0, 0, 0, 0);
             // 
-            // tableLayoutPanel1
+            // addDrawerButton
             // 
-            tableLayoutPanel1.ColumnCount = 1;
-            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle());
-            tableLayoutPanel1.Controls.Add(addDrawerButton, 0, 2);
-            tableLayoutPanel1.Controls.Add(tableLayoutPanel2, 0, 0);
-            tableLayoutPanel1.Controls.Add(drawerListBox, 1, 0);
-            tableLayoutPanel1.Dock = DockStyle.Fill;
-            tableLayoutPanel1.Location = new Point(0, 0);
-            tableLayoutPanel1.Margin = new Padding(6, 5, 6, 5);
-            tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 3;
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
-            tableLayoutPanel1.Size = new Size(434, 394);
-            tableLayoutPanel1.TabIndex = 2;
-            // 
-            // tableLayoutPanel2
-            // 
-            tableLayoutPanel2.ColumnCount = 2;
-            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
-            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
-            tableLayoutPanel2.Controls.Add(settingsButton, 1, 0);
-            tableLayoutPanel2.Controls.Add(logoLabel, 0, 0);
-            tableLayoutPanel2.Dock = DockStyle.Fill;
-            tableLayoutPanel2.Location = new Point(0, 0);
-            tableLayoutPanel2.Margin = new Padding(0);
-            tableLayoutPanel2.Name = "tableLayoutPanel2";
-            tableLayoutPanel2.RowCount = 1;
-            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel2.Size = new Size(434, 58);
-            tableLayoutPanel2.TabIndex = 3;
+            addDrawerButton.Cursor = Cursors.Hand;
+            addDrawerButton.Dock = DockStyle.Bottom;
+            addDrawerButton.FillColor = Color.FromArgb(9, 140, 210);
+            addDrawerButton.FillHoverColor = Color.FromArgb(0, 94, 140);
+            addDrawerButton.FillPressColor = Color.FromArgb(0, 94, 140);
+            addDrawerButton.FillSelectedColor = Color.FromArgb(0, 94, 140);
+            addDrawerButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            addDrawerButton.Location = new Point(3, 353);
+            addDrawerButton.MinimumSize = new Size(1, 1);
+            addDrawerButton.Name = "addDrawerButton";
+            addDrawerButton.Radius = 20;
+            addDrawerButton.RectColor = Color.Transparent;
+            addDrawerButton.RectDisableColor = Color.Transparent;
+            addDrawerButton.RectHoverColor = Color.Transparent;
+            addDrawerButton.RectPressColor = Color.Transparent;
+            addDrawerButton.RectSelectedColor = Color.Transparent;
+            addDrawerButton.Size = new Size(407, 44);
+            addDrawerButton.Style = Sunny.UI.UIStyle.Custom;
+            addDrawerButton.TabIndex = 1;
+            addDrawerButton.Text = "add drawer";
+            addDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            addDrawerButton.ZoomScaleRect = new Rectangle(0, 0, 0, 0);
+            addDrawerButton.Click += addDrawerButton_Click;
             // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(14F, 31F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(242, 143, 45);
-            ClientSize = new Size(434, 394);
-            Controls.Add(tableLayoutPanel1);
-            ForeColor = Color.White;
-            Margin = new Padding(4, 4, 4, 4);
+            ClientSize = new Size(413, 400);
+            Controls.Add(mainTableLayoutPanel);
             Name = "MainWindow";
-            Opacity = 0.8D;
-            StartPosition = FormStartPosition.CenterScreen;
-            Text = "goDrawer";
-            tableLayoutPanel1.ResumeLayout(false);
-            tableLayoutPanel2.ResumeLayout(false);
-            tableLayoutPanel2.PerformLayout();
+            Text = "winDrawerMainWindow";
+            mainTableLayoutPanel.ResumeLayout(false);
+            headerTableLayoutPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
-        private Button settingsButton;
-        private Label logoLabel;
-        private Button addDrawerButton;
-        private UIListBox drawerListBox;
-        private System.ComponentModel.BackgroundWorker backgroundWorker1;
-        private TableLayoutPanel tableLayoutPanel1;
-        private TableLayoutPanel tableLayoutPanel2;
+
+        private Sunny.UI.UITableLayoutPanel mainTableLayoutPanel;
+        private Sunny.UI.UITableLayoutPanel headerTableLayoutPanel;
+        private Sunny.UI.UILabel logoLabel;
+        private Sunny.UI.UIButton settingsButton;
+        private Sunny.UI.UIListBox drawerListBox;
+        private Sunny.UI.UIButton addDrawerButton;
     }
 }

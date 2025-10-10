@@ -51,11 +51,26 @@ namespace winDrawer
             DoubleBuffered = true;
             Opacity = 0.92;
 
-            settingsButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(84, 84, 84);
-            settingsButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(63, 63, 63);
-            addDrawerButton.FlatAppearance.BorderSize = 0;
-            addDrawerButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(9, 140, 210);
-            addDrawerButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(0, 94, 140);
+            settingsButton.FillColor = Color.FromArgb(66, 66, 66);
+            settingsButton.FillHoverColor = Color.FromArgb(84, 84, 84);
+            settingsButton.FillPressColor = Color.FromArgb(63, 63, 63);
+            settingsButton.FillSelectedColor = settingsButton.FillPressColor;
+            settingsButton.RectColor = Color.Transparent;
+            settingsButton.RectDisableColor = Color.Transparent;
+            settingsButton.RectHoverColor = Color.Transparent;
+            settingsButton.RectPressColor = Color.Transparent;
+            settingsButton.RectSelectedColor = Color.Transparent;
+
+            var defaultAccent = Color.FromArgb(9, 140, 210);
+            addDrawerButton.RectColor = Color.Transparent;
+            addDrawerButton.RectDisableColor = Color.Transparent;
+            addDrawerButton.RectHoverColor = Color.Transparent;
+            addDrawerButton.RectPressColor = Color.Transparent;
+            addDrawerButton.RectSelectedColor = Color.Transparent;
+            addDrawerButton.FillColor = defaultAccent;
+            addDrawerButton.FillHoverColor = ControlPaint.Light(defaultAccent);
+            addDrawerButton.FillPressColor = Color.FromArgb(0, 94, 140);
+            addDrawerButton.FillSelectedColor = addDrawerButton.FillPressColor;
             // openDrawerFolderButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(112, 79, 54);
             // openDrawerFolderButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(86, 59, 39);
 
@@ -247,10 +262,10 @@ namespace winDrawer
             }
 
             var opaqueAccent = Color.FromArgb(255, accent.R, accent.G, accent.B);
-            // headerPanel.BackColor = opaqueAccent;
-            // accentStripe.BackColor = opaqueAccent;
-            addDrawerButton.FlatAppearance.MouseOverBackColor = ControlPaint.Light(opaqueAccent);
-            addDrawerButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(opaqueAccent);
+            addDrawerButton.FillColor = opaqueAccent;
+            addDrawerButton.FillHoverColor = ControlPaint.Light(opaqueAccent);
+            addDrawerButton.FillPressColor = ControlPaint.Dark(opaqueAccent);
+            addDrawerButton.FillSelectedColor = addDrawerButton.FillPressColor;
         }
 
         private void ApplySettings(SettingsSnapshot snapshot)

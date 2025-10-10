@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Tomlyn;
 using Tomlyn.Model;
 
@@ -40,6 +41,43 @@ internal sealed class SettingsRepository
         theme["s"] = snapshot.ThemeSaturation;
         theme["l"] = snapshot.ThemeLightness;
         theme["a"] = snapshot.ThemeAlpha;
+
+        var thumbnails = EnsureTable(_root, "thumbnail_size");
+        thumbnails["width"] = snapshot.ThumbnailWidth;
+        thumbnails["height"] = snapshot.ThumbnailHeight;
+    }
+
+    public bool UpdateDrawerSize(string drawerPath, Size size)
+    {
+        if (string.IsNullOrWhiteSpace(drawerPath))
+        {
+            return false;
+        }
+
+        if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
+        {
+            return false;
+        }
+
+        foreach (var entry in drawerArray.OfType<TomlTable>())
+        {
+            var candidatePath = ReadString(entry, "path");
+            if (!PathsEqual(candidatePath, drawerPath))
+            {
+                continue;
+            }
+
+            var sizeTable = entry.TryGetValue("size", out var sizeObj) && sizeObj is TomlTable st
+                ? st
+                : new TomlTable();
+
+            sizeTable["width"] = size.Width;
+            sizeTable["height"] = size.Height;
+            entry["size"] = sizeTable;
+            return true;
+        }
+
+        return false;
     }
 
     public void Save()
@@ -126,7 +164,34 @@ internal sealed class SettingsRepository
         root[key] = created;
         return created;
     }
+
+    private static string ReadString(TomlTable table, string key, string fallback = "")
+    {
+        if (!table.TryGetValue(key, out var value) || value is null)
+        {
+            return fallback;
+        }
+
+        return value switch
+        {
+            string s => s,
+            _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? fallback
+        };
+    }
+
+    private static bool PathsEqual(string? first, string? second)
+    {
+        var expandedFirst = Environment.ExpandEnvironmentVariables(first ?? string.Empty).Trim();
+        var expandedSecond = Environment.ExpandEnvironmentVariables(second ?? string.Empty).Trim();
+
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        return string.Equals(expandedFirst, expandedSecond, comparison);
+    }
 }
+
 
 public sealed class SettingsSnapshot
 {
@@ -139,6 +204,8 @@ public sealed class SettingsSnapshot
         int themeSaturation,
         int themeLightness,
         int themeAlpha,
+        int thumbnailWidth,
+        int thumbnailHeight,
         IEnumerable<DrawerDefinition>? drawers = null)
     {
         StartWithWindows = startWithWindows;
@@ -147,6 +214,8 @@ public sealed class SettingsSnapshot
         ThemeSaturation = themeSaturation;
         ThemeLightness = themeLightness;
         ThemeAlpha = themeAlpha;
+        ThumbnailWidth = thumbnailWidth;
+        ThumbnailHeight = thumbnailHeight;
         _drawers = drawers != null
             ? new List<DrawerDefinition>(drawers)
             : new List<DrawerDefinition>();
@@ -158,6 +227,8 @@ public sealed class SettingsSnapshot
     public int ThemeSaturation { get; set; }
     public int ThemeLightness { get; set; }
     public int ThemeAlpha { get; set; }
+    public int ThumbnailWidth { get; set; }
+    public int ThumbnailHeight { get; set; }
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public Color GetAccentColor()
@@ -168,9 +239,16 @@ public sealed class SettingsSnapshot
         return ColorFromHsla(ThemeHue, saturation, lightness, alpha);
     }
 
+    public Size GetThumbnailSize()
+    {
+        var width = Math.Clamp(ThumbnailWidth, 16, 512);
+        var height = Math.Clamp(ThumbnailHeight, 16, 512);
+        return new Size(width, height);
+    }
+
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, _drawers);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, ThumbnailWidth, ThumbnailHeight, _drawers);
     }
 
     internal static SettingsSnapshot FromModel(TomlTable root)
@@ -180,6 +258,9 @@ public sealed class SettingsSnapshot
             : new TomlTable();
         var theme = root.TryGetValue("theme", out var themeObj) && themeObj is TomlTable th
             ? th
+            : new TomlTable();
+        var thumbnails = root.TryGetValue("thumbnail_size", out var thumbObj) && thumbObj is TomlTable ts
+            ? ts
             : new TomlTable();
         var drawers = root.TryGetValue("drawers", out var drawersObj) && drawersObj is TomlTableArray drawerArray
             ? ParseDrawers(drawerArray)
@@ -192,6 +273,8 @@ public sealed class SettingsSnapshot
             themeSaturation: GetInt(theme, "s", 0, 100, 100),
             themeLightness: GetInt(theme, "l", 0, 100, 41),
             themeAlpha: GetInt(theme, "a", 0, 100, 60),
+            thumbnailWidth: GetInt(thumbnails, "width", 32, 512, 96),
+            thumbnailHeight: GetInt(thumbnails, "height", 32, 512, 96),
             drawers: drawers);
     }
 

@@ -203,16 +203,9 @@ namespace winDrawer
 
             try
             {
-                var drawerWindow = new DrawerWindow(drawer)
-                {
-                    StartPosition = FormStartPosition.CenterScreen
-                };
-
-                if (drawer.PreferredSize is Size preferred && preferred.Width > 100 && preferred.Height > 100)
-                {
-                    drawerWindow.Size = preferred;
-                }
-
+                var iconSize = _settingsSnapshot.GetThumbnailSize();
+                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, iconSize);
+                drawerWindow.FormClosed += (_, _) => ReloadSettingsFromStorage();
                 drawerWindow.Show(this);
             }
             catch (Exception ex)
@@ -310,6 +303,32 @@ namespace winDrawer
             {
                 MessageBox.Show($"Selected folder: {dialog.SelectedPath}", "Drawer Source", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+
+        private void ReloadSettingsFromStorage()
+        {
+            try
+            {
+                var snapshot = _settingsRepository.GetSnapshot();
+                if (InvokeRequired)
+                {
+                    BeginInvoke(new Action(() => ApplySnapshot(snapshot)));
+                }
+                else
+                {
+                    ApplySnapshot(snapshot);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Failed to refresh drawers: {ex.Message}", "Settings Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ApplySnapshot(SettingsSnapshot snapshot)
+        {
+            _settingsSnapshot = snapshot;
+            ApplySettings(_settingsSnapshot);
         }
 
         private void ApplyAccentColor(Color accent)

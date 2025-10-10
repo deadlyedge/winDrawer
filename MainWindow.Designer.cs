@@ -120,7 +120,7 @@ namespace winDrawer
             // drawerListBox
             // 
             drawerListBox.Dock = DockStyle.Fill;
-            drawerListBox.FillColor = Color.White;
+            drawerListBox.FillColor = Color.DarkSalmon;
             drawerListBox.Font = new Font("微软雅黑", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 134);
             drawerListBox.HoverColor = Color.FromArgb(155, 200, 255);
             drawerListBox.ItemHeight = 50;
@@ -131,10 +131,11 @@ namespace winDrawer
             drawerListBox.Name = "drawerListBox";
             drawerListBox.Opacity = 100;
             drawerListBox.Padding = new Padding(2);
-            drawerListBox.ScrollBarBackColor = Color.Tomato;
-            drawerListBox.ScrollBarHandleWidth = 8;
+            drawerListBox.RectColor = Color.DimGray;
+            drawerListBox.ScrollBarBackColor = Color.DarkSalmon;
+            drawerListBox.ScrollBarColor = Color.DimGray;
+            drawerListBox.ScrollBarHandleWidth = 10;
             drawerListBox.ScrollBarStyleInherited = false;
-            drawerListBox.ScrollBarWidth = 10;
             drawerListBox.ShowText = false;
             drawerListBox.Size = new Size(405, 300);
             drawerListBox.TabIndex = 2;
@@ -142,14 +143,14 @@ namespace winDrawer
             // 
             // addDrawerButton
             // 
+            addDrawerButton.Anchor = AnchorStyles.None;
             addDrawerButton.Cursor = Cursors.Hand;
-            addDrawerButton.Dock = DockStyle.Bottom;
             addDrawerButton.FillColor = Color.FromArgb(9, 140, 210);
             addDrawerButton.FillHoverColor = Color.FromArgb(0, 94, 140);
             addDrawerButton.FillPressColor = Color.FromArgb(0, 94, 140);
             addDrawerButton.FillSelectedColor = Color.FromArgb(0, 94, 140);
             addDrawerButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            addDrawerButton.Location = new Point(3, 353);
+            addDrawerButton.Location = new Point(121, 353);
             addDrawerButton.MinimumSize = new Size(1, 1);
             addDrawerButton.Name = "addDrawerButton";
             addDrawerButton.Radius = 20;
@@ -158,7 +159,7 @@ namespace winDrawer
             addDrawerButton.RectHoverColor = Color.Transparent;
             addDrawerButton.RectPressColor = Color.Transparent;
             addDrawerButton.RectSelectedColor = Color.Transparent;
-            addDrawerButton.Size = new Size(407, 44);
+            addDrawerButton.Size = new Size(170, 44);
             addDrawerButton.Style = UIStyle.Custom;
             addDrawerButton.TabIndex = 1;
             addDrawerButton.Text = "add drawer";

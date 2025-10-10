@@ -7,11 +7,7 @@
       "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:mainwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\mainwindow.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:mainwindow.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|z:\\codebase\\projects.c#\\windrawer\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "AbsoluteMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|Z:\\CodeBase\\projects.C#\\winDrawer\\settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{897C6A62-7021-6A2A-A0F6-587227FEFF8E}|winDrawer.csproj|solutionrelative:settingsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     }
   ],
@@ -22,24 +18,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "MainWindow.Designer.cs",
-              "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.Designer.cs",
-              "RelativeDocumentMoniker": "MainWindow.Designer.cs",
-              "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\MainWindow.Designer.cs*",
-              "RelativeToolTip": "MainWindow.Designer.cs*",
-              "ViewState": "AgIAACQAAAAAAAAAAAAYwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-10T07:33:42.026Z",
-              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -55,15 +38,14 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "SettingsForm.cs [\u8BBE\u8BA1]",
               "DocumentMoniker": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs",
               "RelativeDocumentMoniker": "SettingsForm.cs",
               "ToolTip": "Z:\\CodeBase\\projects.C#\\winDrawer\\SettingsForm.cs [\u8BBE\u8BA1]",
               "RelativeToolTip": "SettingsForm.cs [\u8BBE\u8BA1]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-10T07:20:36.498Z",
-              "EditorCaption": " [\u8BBE\u8BA1]"
+              "WhenOpened": "2025-10-10T07:20:36.498Z"
             }
           ]
         }

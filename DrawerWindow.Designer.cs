@@ -53,7 +53,7 @@ namespace winDrawer
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
-            mainTableLayoutPanel.Size = new Size(783, 583);
+            mainTableLayoutPanel.Size = new Size(762, 583);
             mainTableLayoutPanel.TabIndex = 0;
             mainTableLayoutPanel.TagString = null;
             // 
@@ -69,7 +69,7 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.Name = "drawerHeaderTableLayoutPanel";
             drawerHeaderTableLayoutPanel.RowCount = 1;
             drawerHeaderTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            drawerHeaderTableLayoutPanel.Size = new Size(777, 44);
+            drawerHeaderTableLayoutPanel.Size = new Size(756, 44);
             drawerHeaderTableLayoutPanel.TabIndex = 0;
             drawerHeaderTableLayoutPanel.TagString = null;
             // 
@@ -81,7 +81,7 @@ namespace winDrawer
             fullPathLabel.Location = new Point(3, 0);
             fullPathLabel.Name = "fullPathLabel";
             fullPathLabel.Padding = new Padding(6, 0, 6, 0);
-            fullPathLabel.Size = new Size(533, 44);
+            fullPathLabel.Size = new Size(523, 44);
             fullPathLabel.TabIndex = 0;
             fullPathLabel.Text = "folderFullPath";
             fullPathLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -94,11 +94,11 @@ namespace winDrawer
             drawerButtonTableLayoutPanel.Controls.Add(refreshDrawerButton, 0, 0);
             drawerButtonTableLayoutPanel.Controls.Add(closeDrawerButton, 1, 0);
             drawerButtonTableLayoutPanel.Dock = DockStyle.Fill;
-            drawerButtonTableLayoutPanel.Location = new Point(542, 3);
+            drawerButtonTableLayoutPanel.Location = new Point(532, 3);
             drawerButtonTableLayoutPanel.Name = "drawerButtonTableLayoutPanel";
             drawerButtonTableLayoutPanel.RowCount = 1;
             drawerButtonTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            drawerButtonTableLayoutPanel.Size = new Size(232, 38);
+            drawerButtonTableLayoutPanel.Size = new Size(221, 38);
             drawerButtonTableLayoutPanel.TabIndex = 1;
             drawerButtonTableLayoutPanel.TagString = null;
             // 
@@ -121,7 +121,7 @@ namespace winDrawer
             closeDrawerButton.Cursor = Cursors.Hand;
             closeDrawerButton.Dock = DockStyle.Right;
             closeDrawerButton.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            closeDrawerButton.Location = new Point(129, 3);
+            closeDrawerButton.Location = new Point(118, 3);
             closeDrawerButton.MinimumSize = new Size(1, 1);
             closeDrawerButton.Name = "closeDrawerButton";
             closeDrawerButton.Radius = 24;
@@ -135,15 +135,17 @@ namespace winDrawer
             drawerContentFlowLayoutPanel.Controls.Add(drawerContentsListView);
             drawerContentFlowLayoutPanel.Dock = DockStyle.Fill;
             drawerContentFlowLayoutPanel.FillColor = Color.FromArgb(56, 56, 56);
+            drawerContentFlowLayoutPanel.Font = new Font("宋体", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
             drawerContentFlowLayoutPanel.Location = new Point(4, 55);
             drawerContentFlowLayoutPanel.Margin = new Padding(4, 5, 4, 5);
             drawerContentFlowLayoutPanel.MinimumSize = new Size(1, 1);
             drawerContentFlowLayoutPanel.Name = "drawerContentFlowLayoutPanel";
             drawerContentFlowLayoutPanel.Padding = new Padding(4);
             drawerContentFlowLayoutPanel.RectColor = Color.DimGray;
-            drawerContentFlowLayoutPanel.Size = new Size(775, 523);
+            drawerContentFlowLayoutPanel.Size = new Size(754, 523);
             drawerContentFlowLayoutPanel.TabIndex = 1;
             drawerContentFlowLayoutPanel.Text = "drawerContentPanel";
+            drawerContentFlowLayoutPanel.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // drawerContentsListView
             // 
@@ -151,17 +153,15 @@ namespace winDrawer
             drawerContentsListView.BorderStyle = BorderStyle.None;
             drawerContentsListView.Dock = DockStyle.Fill;
             drawerContentsListView.ForeColor = Color.WhiteSmoke;
-            drawerContentsListView.HideSelection = false;
+            drawerContentsListView.LargeImageList = drawerImageList;
             drawerContentsListView.Location = new Point(4, 4);
             drawerContentsListView.Margin = new Padding(0);
             drawerContentsListView.MultiSelect = false;
             drawerContentsListView.Name = "drawerContentsListView";
-            drawerContentsListView.Size = new Size(767, 515);
+            drawerContentsListView.Size = new Size(746, 515);
+            drawerContentsListView.SmallImageList = drawerImageList;
             drawerContentsListView.TabIndex = 0;
             drawerContentsListView.UseCompatibleStateImageBehavior = false;
-            drawerContentsListView.View = View.LargeIcon;
-            drawerContentsListView.LargeImageList = drawerImageList;
-            drawerContentsListView.SmallImageList = drawerImageList;
             // 
             // drawerImageList
             // 
@@ -173,10 +173,11 @@ namespace winDrawer
             // 
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.DimGray;
-            ClientSize = new Size(783, 583);
+            ClientSize = new Size(762, 583);
             ControlBox = false;
             Controls.Add(mainTableLayoutPanel);
             FormBorderStyle = FormBorderStyle.None;
+            MinimumSize = new Size(530, 0);
             Name = "DrawerWindow";
             ShowIcon = false;
             ShowInTaskbar = false;

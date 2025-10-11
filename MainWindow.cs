@@ -20,6 +20,7 @@ namespace winDrawer
         private SettingsSnapshot _settingsSnapshot;
         private readonly List<DrawerDefinition> _currentDrawers = new();
         private bool _suppressDrawerSelection;
+        private DrawerWindow? _currentDrawerWindow;
 
         public MainWindow()
         {
@@ -59,6 +60,8 @@ namespace winDrawer
             LoadBrandingAssets();
             WireDragHandlers();
             ApplySettings(_settingsSnapshot);
+
+            LocationChanged += MainWindow_LocationChanged;
 
             FormClosed += (_, _) =>
             {
@@ -205,7 +208,14 @@ namespace winDrawer
             {
                 var iconSize = _settingsSnapshot.GetThumbnailSize();
                 var drawerWindow = new DrawerWindow(_settingsRepository, drawer, iconSize);
-                drawerWindow.FormClosed += (_, _) => ReloadSettingsFromStorage();
+                drawerWindow.StartPosition = FormStartPosition.Manual;
+                drawerWindow.Location = new Point(Right, Top);
+                _currentDrawerWindow = drawerWindow;
+                drawerWindow.FormClosed += (_, _) => 
+                {
+                    ReloadSettingsFromStorage();
+                    _currentDrawerWindow = null;
+                };
                 drawerWindow.Show(this);
             }
             catch (Exception ex)
@@ -356,6 +366,13 @@ namespace winDrawer
             PopulateDrawerList(snapshot.Drawers);
         }
 
+        private void MainWindow_LocationChanged(object? sender, EventArgs e)
+        {
+            if (_currentDrawerWindow != null && _currentDrawerWindow.Visible && _currentDrawerWindow.WindowState == FormWindowState.Normal)
+            {
+                _currentDrawerWindow.Location = new Point(Right, Top);
+            }
+        }
 
     }
 }

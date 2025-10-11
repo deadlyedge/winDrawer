@@ -39,7 +39,6 @@ namespace winDrawer
             closeDrawerButton.Click += (_, _) => Close();
 
             drawerHeaderTableLayoutPanel.MouseDown += Header_MouseDown;
-            fullPathLabel.MouseDown += Header_MouseDown;
 
             Size = _drawer.PreferredSize ?? Size;
             _lastPersistedSize = Size;

@@ -64,8 +64,6 @@ namespace winDrawer
             _lastPersistedSize = Size;
 
             PopulateFileList();
-            // Diagnostic: add hard-coded test items to verify layout (always enabled for testing)
-            AddDiagnosticItems();
         }
 
         protected override void OnShown(EventArgs e)
@@ -181,62 +179,6 @@ namespace winDrawer
             itemPanel.Controls.Add(lbl);
 
             drawerContentsListView.Add(itemPanel);
-        }
-
-        private void AddDiagnosticItems()
-        {
-            // Add a few hard-coded colored items to verify UIFlowLayoutPanel rendering
-            var colors = new[] { Color.Red, Color.Green, Color.Blue, Color.Orange, Color.Purple };
-            for (int i = 0; i < colors.Length; i++)
-            {
-                var name = $"Test Item {i + 1}";
-                // create a simple colored bitmap
-                var bmp = new Bitmap(_iconSize.Width, _iconSize.Height);
-                using (var g = Graphics.FromImage(bmp))
-                {
-                    g.Clear(colors[i]);
-                }
-
-                var key = $"T::Test::{i}";
-                if (!drawerImageList.Images.ContainsKey(key))
-                {
-                    drawerImageList.Images.Add(key, bmp);
-                }
-
-                var itemPanel = new UIPanel
-                {
-                    Width = _iconSize.Width + 12,
-                    Height = _iconSize.Height + 28,
-                    BackColor = Color.FromArgb(56, 56, 56),
-                    Margin = new Padding(6)
-                };
-
-                var pb = new PictureBox
-                {
-                    Image = drawerImageList.Images[key],
-                    Size = _iconSize,
-                    SizeMode = PictureBoxSizeMode.Zoom,
-                    Location = new Point(6, 4)
-                };
-
-                var lbl = new UILabel
-                {
-                    Text = name,
-                    ForeColor = Color.WhiteSmoke,
-                    BackColor = Color.Transparent,
-                    AutoSize = false,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Width = itemPanel.Width,
-                    Height = 20,
-                    Location = new Point(0, _iconSize.Height + 6)
-                };
-
-                itemPanel.Tag = name;
-                itemPanel.Controls.Add(pb);
-                itemPanel.Controls.Add(lbl);
-
-                drawerContentsListView.Add(itemPanel);
-            }
         }
 
         private void PersistWindowSize()

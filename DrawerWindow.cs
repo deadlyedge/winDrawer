@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Sunny.UI;
+using System.Diagnostics;
 using winDrawer.Configuration;
 
 namespace winDrawer
@@ -36,6 +38,11 @@ namespace winDrawer
             fullPathLabel.Text = _drawer.Path;
 
             drawerImageList.ImageSize = _iconSize;
+            // Ensure FlowLayoutPanel layout behavior at runtime (in case Designer values are missing)
+            drawerContentsListView.AutoScroll = true;
+            drawerContentsListView.FlowDirection = FlowDirection.LeftToRight;
+            drawerContentsListView.WrapContents = true;
+            drawerContentsListView.Padding = new Padding(6);
 
             refreshDrawerButton.Click += (_, _) => PopulateFileList();
             closeDrawerButton.Click += (_, _) => Close();
@@ -57,6 +64,8 @@ namespace winDrawer
             _lastPersistedSize = Size;
 
             PopulateFileList();
+            // Diagnostic: add hard-coded test items to verify layout (always enabled for testing)
+            AddDiagnosticItems();
         }
 
         protected override void OnShown(EventArgs e)
@@ -86,7 +95,7 @@ namespace winDrawer
             drawerContentsListView.SuspendLayout();
             try
             {
-                drawerContentsListView.Controls.Clear();
+                drawerContentsListView.Clear();
                 drawerImageList.Images.Clear();
                 fullPathLabel.Text = _drawer.Path;
 
@@ -115,7 +124,9 @@ namespace winDrawer
             }
             finally
             {
-                drawerContentsListView.ResumeLayout();
+                drawerContentsListView.ResumeLayout(performLayout: true);
+                drawerContentsListView.PerformLayout();
+                drawerContentsListView.Invalidate();
             }
         }
 
@@ -137,7 +148,7 @@ namespace winDrawer
 
             var img = drawerImageList.Images[key];
 
-            var itemPanel = new Panel
+            var itemPanel = new UIPanel
             {
                 Width = _iconSize.Width + 12,
                 Height = _iconSize.Height + 28,
@@ -153,7 +164,7 @@ namespace winDrawer
                 Location = new Point(6, 4)
             };
 
-            var lbl = new Label
+            var lbl = new UILabel
             {
                 Text = name,
                 ForeColor = Color.WhiteSmoke,
@@ -169,7 +180,63 @@ namespace winDrawer
             itemPanel.Controls.Add(pb);
             itemPanel.Controls.Add(lbl);
 
-            drawerContentsListView.Controls.Add(itemPanel);
+            drawerContentsListView.Add(itemPanel);
+        }
+
+        private void AddDiagnosticItems()
+        {
+            // Add a few hard-coded colored items to verify UIFlowLayoutPanel rendering
+            var colors = new[] { Color.Red, Color.Green, Color.Blue, Color.Orange, Color.Purple };
+            for (int i = 0; i < colors.Length; i++)
+            {
+                var name = $"Test Item {i + 1}";
+                // create a simple colored bitmap
+                var bmp = new Bitmap(_iconSize.Width, _iconSize.Height);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(colors[i]);
+                }
+
+                var key = $"T::Test::{i}";
+                if (!drawerImageList.Images.ContainsKey(key))
+                {
+                    drawerImageList.Images.Add(key, bmp);
+                }
+
+                var itemPanel = new UIPanel
+                {
+                    Width = _iconSize.Width + 12,
+                    Height = _iconSize.Height + 28,
+                    BackColor = Color.FromArgb(56, 56, 56),
+                    Margin = new Padding(6)
+                };
+
+                var pb = new PictureBox
+                {
+                    Image = drawerImageList.Images[key],
+                    Size = _iconSize,
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Location = new Point(6, 4)
+                };
+
+                var lbl = new UILabel
+                {
+                    Text = name,
+                    ForeColor = Color.WhiteSmoke,
+                    BackColor = Color.Transparent,
+                    AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Width = itemPanel.Width,
+                    Height = 20,
+                    Location = new Point(0, _iconSize.Height + 6)
+                };
+
+                itemPanel.Tag = name;
+                itemPanel.Controls.Add(pb);
+                itemPanel.Controls.Add(lbl);
+
+                drawerContentsListView.Add(itemPanel);
+            }
         }
 
         private void PersistWindowSize()

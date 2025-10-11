@@ -14,6 +14,10 @@ namespace winDrawer
         private readonly DrawerDefinition _drawer;
         private readonly Size _iconSize;
         private Size _lastPersistedSize;
+        private bool _isResizing;
+        private Point _resizeOffset;
+        private Size _initialSize;
+        private Panel? resizeGrip;
 
         internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize)
         {
@@ -39,6 +43,17 @@ namespace winDrawer
             closeDrawerButton.Click += (_, _) => Close();
 
             drawerHeaderTableLayoutPanel.MouseDown += Header_MouseDown;
+
+            resizeGrip = new Panel
+            {
+                Size = new Size(30, 44),
+                BackColor = Color.Transparent,
+                Cursor = Cursors.SizeNWSE
+            };
+            resizeGrip.MouseDown += ResizeGrip_MouseDown;
+            resizeGrip.MouseMove += ResizeGrip_MouseMove;
+            resizeGrip.MouseUp += ResizeGrip_MouseUp;
+            drawerButtonTableLayoutPanel.Controls.Add(resizeGrip, 2, 0);
 
             Size = _drawer.PreferredSize ?? Size;
             _lastPersistedSize = Size;
@@ -180,6 +195,45 @@ namespace winDrawer
         private void fullPathLabel_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void ResizeGrip_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            _isResizing = true;
+            _resizeOffset = e.Location;
+            _initialSize = this.Size;
+            SuspendLayout();
+        }
+
+        private void ResizeGrip_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (!_isResizing)
+            {
+                return;
+            }
+
+            var deltaX = e.X - _resizeOffset.X;
+            var deltaY = e.Y - _resizeOffset.Y;
+            var newWidth = Math.Max(MinimumSize.Width, _initialSize.Width + deltaX);
+            var newHeight = Math.Max(MinimumSize.Height, _initialSize.Height + deltaY);
+            this.Size = new Size(newWidth, newHeight);
+        }
+
+        private void ResizeGrip_MouseUp(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            _isResizing = false;
+            ResumeLayout(performLayout: true);
+            PersistWindowSize();
         }
     }
 }

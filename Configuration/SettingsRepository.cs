@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Tomlyn;
 using Tomlyn.Model;
+using winDrawer.Theming;
 
 namespace winDrawer.Configuration;
 
@@ -216,12 +217,14 @@ public sealed class SettingsSnapshot
     public int IconSize { get; set; }
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
+    public ThemePalette BuildThemePalette()
+    {
+        return ThemePalette.FromHsla(ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha);
+    }
+
     public Color GetAccentColor()
     {
-        var saturation = ThemeSaturation / 100f;
-        var lightness = ThemeLightness / 100f;
-        var alpha = ThemeAlpha / 100f;
-        return ColorFromHsla(ThemeHue, saturation, lightness, alpha);
+        return BuildThemePalette().Accent;
     }
 
     public Size GetThumbnailSize()
@@ -366,48 +369,6 @@ public sealed class SettingsSnapshot
         };
     }
 
-    private static Color ColorFromHsla(int hue, float saturation, float lightness, float alpha)
-    {
-        lightness = Math.Clamp(lightness, 0f, 1f);
-        saturation = Math.Clamp(saturation, 0f, 1f);
-
-        float q = lightness < 0.5f
-            ? lightness * (1 + saturation)
-            : lightness + saturation - lightness * saturation;
-        float p = 2 * lightness - q;
-
-        float r = HueToRgb(p, q, hue / 360f + 1f / 3f);
-        float g = HueToRgb(p, q, hue / 360f);
-        float b = HueToRgb(p, q, hue / 360f - 1f / 3f);
-
-        var a = (int)Math.Clamp(alpha * 255f, 0f, 255f);
-        return Color.FromArgb(a, (int)(r * 255), (int)(g * 255), (int)(b * 255));
-    }
-
-    private static float HueToRgb(float p, float q, float t)
-    {
-        if (t < 0f)
-        {
-            t += 1f;
-        }
-        if (t > 1f)
-        {
-            t -= 1f;
-        }
-        if (t < 1f / 6f)
-        {
-            return p + (q - p) * 6f * t;
-        }
-        if (t < 1f / 2f)
-        {
-            return q;
-        }
-        if (t < 2f / 3f)
-        {
-            return p + (q - p) * (2f / 3f - t) * 6f;
-        }
-        return p;
-    }
 }
 
 public sealed class DrawerDefinition

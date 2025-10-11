@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using Sunny.UI;
 using winDrawer.Configuration;
+using winDrawer.Theming;
 
 namespace winDrawer;
 
@@ -33,6 +34,8 @@ public partial class SettingsForm : UIForm
         ResultSettings = _originalSnapshot.Clone();
         UpdatePreview();
     }
+
+    public event EventHandler<ThemePreviewEventArgs>? ThemePreviewChanged;
 
     public Color SelectedAccentColor { get; private set; }
 
@@ -141,6 +144,7 @@ public partial class SettingsForm : UIForm
     {
         ResultSettings = _originalSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
+        ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
         DialogResult = DialogResult.Cancel;
         Close();
     }
@@ -169,8 +173,11 @@ public partial class SettingsForm : UIForm
 
     private void UpdatePreview()
     {
-        SelectedAccentColor = _workingSnapshot.GetAccentColor();
-        previewPanel.FillColor = SelectedAccentColor;
+        var palette = _workingSnapshot.BuildThemePalette();
+        SelectedAccentColor = palette.Accent;
+        previewPanel.FillColor = palette.Accent;
+        previewPanel.RectColor = palette.Border;
+        ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(palette));
         // previewLabel.Text = $"hsla({_workingSnapshot.ThemeHue}, {_workingSnapshot.ThemeSaturation}%, {_workingSnapshot.ThemeLightness}%, {_workingSnapshot.ThemeAlpha / 100f:0.00})";
     }
 

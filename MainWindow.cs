@@ -6,6 +6,7 @@ using System.IO;
 using System.Windows.Forms;
 using Sunny.UI;
 using winDrawer.Configuration;
+using winDrawer.Theming;
 
 namespace winDrawer
 {
@@ -18,6 +19,7 @@ namespace winDrawer
         private Point _dragOffset;
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
+        private ThemePalette _currentTheme;
         private readonly List<DrawerDefinition> _currentDrawers = new();
         private DrawerWindow? _currentDrawerWindow;
         private DrawerDefinition? _currentOpenDrawer;
@@ -27,36 +29,14 @@ namespace winDrawer
         {
             _settingsRepository = new SettingsRepository(SettingsRepository.GetDefaultPath());
             _settingsSnapshot = _settingsRepository.GetSnapshot();
+            _currentTheme = _settingsSnapshot.BuildThemePalette();
 
             InitializeComponent();
             drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
 
             FormBorderStyle = FormBorderStyle.None;
             DoubleBuffered = true;
-            Opacity = 0.92;
-
-            settingsButton.FillColor = Color.FromArgb(66, 66, 66);
-            settingsButton.FillHoverColor = Color.FromArgb(84, 84, 84);
-            settingsButton.FillPressColor = Color.FromArgb(63, 63, 63);
-            settingsButton.FillSelectedColor = settingsButton.FillPressColor;
-            settingsButton.RectColor = Color.Transparent;
-            settingsButton.RectDisableColor = Color.Transparent;
-            settingsButton.RectHoverColor = Color.Transparent;
-            settingsButton.RectPressColor = Color.Transparent;
-            settingsButton.RectSelectedColor = Color.Transparent;
-
-            var defaultAccent = Color.FromArgb(9, 140, 210);
-            addDrawerButton.RectColor = Color.Transparent;
-            addDrawerButton.RectDisableColor = Color.Transparent;
-            addDrawerButton.RectHoverColor = Color.Transparent;
-            addDrawerButton.RectPressColor = Color.Transparent;
-            addDrawerButton.RectSelectedColor = Color.Transparent;
-            addDrawerButton.FillColor = defaultAccent;
-            addDrawerButton.FillHoverColor = ControlPaint.Light(defaultAccent);
-            addDrawerButton.FillPressColor = Color.FromArgb(0, 94, 140);
-            addDrawerButton.FillSelectedColor = addDrawerButton.FillPressColor;
-            // openDrawerFolderButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(112, 79, 54);
-            // openDrawerFolderButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(86, 59, 39);
+            Opacity = _currentTheme.WindowOpacity;
 
             LoadBrandingAssets();
             WireDragHandlers();
@@ -221,7 +201,7 @@ namespace winDrawer
             try
             {
                 var iconSize = _settingsSnapshot.GetThumbnailSize();
-                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, iconSize);
+                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, iconSize, _currentTheme);
                 drawerWindow.StartPosition = FormStartPosition.Manual;
                 drawerWindow.Location = new Point(Right, Top);
                 _currentDrawerWindow = drawerWindow;
@@ -313,10 +293,14 @@ namespace winDrawer
         private void settingsButton_Click(object sender, EventArgs e)
         {
             using var settings = new SettingsForm(_settingsSnapshot);
+            EventHandler<ThemePreviewEventArgs>? previewHandler = (_, args) => ApplyTheme(args.Palette);
+            settings.ThemePreviewChanged += previewHandler;
             var dialogResult = settings.ShowDialog(this);
+            settings.ThemePreviewChanged -= previewHandler;
 
             if (settings.ShutdownRequested)
             {
+                ApplyTheme(_settingsSnapshot.BuildThemePalette());
                 Close();
                 return;
             }
@@ -327,6 +311,10 @@ namespace winDrawer
                 _settingsRepository.Update(_settingsSnapshot);
                 _settingsRepository.Save();
                 ApplySettings(_settingsSnapshot);
+            }
+            else
+            {
+                ApplyTheme(_settingsSnapshot.BuildThemePalette());
             }
         }
 
@@ -393,10 +381,59 @@ namespace winDrawer
         {
             StartPosition = FormStartPosition.Manual;
             Location = snapshot.WindowPosition;
-            ApplyAccentColor(snapshot.GetAccentColor());
+            ApplyTheme(snapshot.BuildThemePalette());
             PopulateDrawerList(snapshot.Drawers);
             // 如果有当前打开的drawer，更新list中的选中状态
             UpdateSelectedDrawer();
+        }
+
+        private void ApplyTheme(ThemePalette theme)
+        {
+            _currentTheme = theme;
+
+            Opacity = theme.WindowOpacity;
+            BackColor = theme.WindowBackground;
+
+            mainTableLayoutPanel.BackColor = theme.WindowBackground;
+            headerTableLayoutPanel.BackColor = Color.Transparent;
+
+            logoLabel.ForeColor = theme.TextPrimary;
+            logoLabel.BackColor = Color.Transparent;
+
+            settingsButton.FillColor = theme.Accent;
+            settingsButton.FillHoverColor = theme.AccentHover;
+            settingsButton.FillPressColor = theme.AccentPressed;
+            settingsButton.FillSelectedColor = theme.AccentPressed;
+            settingsButton.ForeColor = theme.AccentText;
+            settingsButton.RectColor = theme.Border;
+            settingsButton.RectDisableColor = theme.Border;
+            settingsButton.RectHoverColor = theme.Border;
+            settingsButton.RectPressColor = theme.Border;
+            settingsButton.RectSelectedColor = theme.Border;
+
+            addDrawerButton.FillColor = theme.Accent;
+            addDrawerButton.FillHoverColor = theme.AccentHover;
+            addDrawerButton.FillPressColor = theme.AccentPressed;
+            addDrawerButton.FillSelectedColor = theme.AccentPressed;
+            addDrawerButton.ForeColor = theme.AccentText;
+            addDrawerButton.RectColor = theme.Border;
+            addDrawerButton.RectDisableColor = theme.Border;
+            addDrawerButton.RectHoverColor = theme.Border;
+            addDrawerButton.RectPressColor = theme.Border;
+            addDrawerButton.RectSelectedColor = theme.Border;
+
+            drawerListBox.FillColor = theme.ContentBackground;
+            drawerListBox.ForeColor = theme.TextPrimary;
+            drawerListBox.HoverColor = theme.CardBackground;
+            drawerListBox.RectColor = theme.Border;
+            drawerListBox.ItemSelectForeColor = theme.AccentText;
+            drawerListBox.ScrollBarBackColor = theme.ContentBackground;
+            drawerListBox.ScrollBarColor = theme.Border;
+
+            if (_currentDrawerWindow != null && !_currentDrawerWindow.IsDisposed)
+            {
+                _currentDrawerWindow.ApplyTheme(theme);
+            }
         }
 
         private void UpdateSelectedDrawer()

@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Sunny.UI;
 using System.Diagnostics;
 using winDrawer.Configuration;
+using winDrawer.Theming;
 
 namespace winDrawer
 {
@@ -15,20 +16,23 @@ namespace winDrawer
         private readonly SettingsRepository _settingsRepository;
         private readonly DrawerDefinition _drawer;
         private readonly Size _iconSize;
+        private ThemePalette _theme;
         private Size _lastPersistedSize;
         private bool _isResizing;
         private Point _resizeOffset;
         private Size _initialSize;
         private Panel? resizeGrip;
 
-        internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize)
+        internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize, ThemePalette theme)
         {
             _settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
             _drawer = drawer ?? throw new ArgumentNullException(nameof(drawer));
             _iconSize = NormalizeIconSize(iconSize);
+            _theme = theme ?? throw new ArgumentNullException(nameof(theme));
 
             InitializeComponent();
             InitializeWindow();
+            ApplyTheme(_theme);
         }
 
         private void InitializeWindow()
@@ -64,6 +68,28 @@ namespace winDrawer
             _lastPersistedSize = Size;
 
             PopulateFileList();
+        }
+
+        public void ApplyTheme(ThemePalette theme)
+        {
+            _theme = theme ?? throw new ArgumentNullException(nameof(theme));
+
+            Opacity = _theme.WindowOpacity;
+            BackColor = _theme.WindowBackground;
+
+            mainTableLayoutPanel.BackColor = _theme.WindowBackground;
+            drawerHeaderTableLayoutPanel.BackColor = Color.Transparent;
+            drawerButtonTableLayoutPanel.BackColor = Color.Transparent;
+
+            drawerContentsListView.BackColor = _theme.ContentBackground;
+            drawerContentsListView.ForeColor = _theme.TextPrimary;
+
+            fullPathLabel.ForeColor = _theme.TextSecondary;
+            fullPathLabel.BackColor = Color.Transparent;
+
+            ApplyThemeToButton(refreshDrawerButton);
+            ApplyThemeToButton(closeDrawerButton);
+            ApplyThemeToItems();
         }
 
         protected override void OnShown(EventArgs e)
@@ -124,6 +150,7 @@ namespace winDrawer
             {
                 drawerContentsListView.ResumeLayout(performLayout: true);
                 drawerContentsListView.PerformLayout();
+                ApplyThemeToItems();
                 drawerContentsListView.Invalidate();
             }
         }
@@ -150,7 +177,7 @@ namespace winDrawer
             {
                 Width = _iconSize.Width + 12,
                 Height = _iconSize.Height + 28,
-                BackColor = Color.FromArgb(56, 56, 56),
+                BackColor = _theme.CardBackground,
                 Margin = new Padding(6)
             };
 
@@ -165,7 +192,7 @@ namespace winDrawer
             var lbl = new UILabel
             {
                 Text = name,
-                ForeColor = Color.WhiteSmoke,
+                ForeColor = _theme.TextPrimary,
                 BackColor = Color.Transparent,
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -179,6 +206,50 @@ namespace winDrawer
             itemPanel.Controls.Add(lbl);
 
             drawerContentsListView.Add(itemPanel);
+        }
+
+        private void ApplyThemeToButton(UIButton button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            button.FillColor = _theme.Accent;
+            button.FillHoverColor = _theme.AccentHover;
+            button.FillPressColor = _theme.AccentPressed;
+            button.FillSelectedColor = _theme.AccentPressed;
+            button.ForeColor = _theme.AccentText;
+            button.RectColor = _theme.Border;
+            button.RectDisableColor = _theme.Border;
+            button.RectHoverColor = _theme.Border;
+            button.RectPressColor = _theme.Border;
+            button.RectSelectedColor = _theme.Border;
+        }
+
+        private void ApplyThemeToItems()
+        {
+            if (drawerContentsListView == null)
+            {
+                return;
+            }
+
+            foreach (Control control in drawerContentsListView.Controls)
+            {
+                if (control is not UIPanel panel)
+                {
+                    continue;
+                }
+
+                panel.BackColor = _theme.CardBackground;
+                foreach (Control child in panel.Controls)
+                {
+                    if (child is UILabel label)
+                    {
+                        label.ForeColor = _theme.TextPrimary;
+                    }
+                }
+            }
         }
 
         private void PersistWindowSize()

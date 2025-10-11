@@ -25,7 +25,7 @@ namespace winDrawer
         {
             components = new Container();
             mainTableLayoutPanel = new UITableLayoutPanel();
-            drawerContentsListView = new UIFlowLayoutPanel();
+            drawerContentsLayout = new UIFlowLayoutPanel();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
             fullPathLabel = new UILabel();
@@ -42,7 +42,7 @@ namespace winDrawer
             mainTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
             mainTableLayoutPanel.ColumnCount = 1;
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            mainTableLayoutPanel.Controls.Add(drawerContentsListView, 0, 0);
+            mainTableLayoutPanel.Controls.Add(drawerContentsLayout, 0, 0);
             mainTableLayoutPanel.Controls.Add(drawerHeaderTableLayoutPanel, 0, 1);
             mainTableLayoutPanel.Dock = DockStyle.Fill;
             mainTableLayoutPanel.Location = new Point(0, 0);
@@ -57,14 +57,14 @@ namespace winDrawer
             // 
             // drawerContentsListView
             // 
-            drawerContentsListView.BackColor = Color.FromArgb(56, 56, 56);
-            drawerContentsListView.Dock = DockStyle.Fill;
-            drawerContentsListView.ForeColor = Color.WhiteSmoke;
-            drawerContentsListView.Location = new Point(0, 0);
-            drawerContentsListView.Margin = new Padding(0);
-            drawerContentsListView.Name = "drawerContentsListView";
-            drawerContentsListView.Size = new Size(762, 533);
-            drawerContentsListView.TabIndex = 0;
+            drawerContentsLayout.BackColor = Color.FromArgb(56, 56, 56);
+            drawerContentsLayout.Dock = DockStyle.Fill;
+            drawerContentsLayout.ForeColor = Color.WhiteSmoke;
+            drawerContentsLayout.Location = new Point(0, 0);
+            drawerContentsLayout.Margin = new Padding(0);
+            drawerContentsLayout.Name = "drawerContentsListView";
+            drawerContentsLayout.Size = new Size(762, 533);
+            drawerContentsLayout.TabIndex = 0;
             // 
             // drawerImageList
             // 
@@ -176,7 +176,7 @@ namespace winDrawer
         private UITableLayoutPanel drawerButtonTableLayoutPanel;
         private UIButton refreshDrawerButton;
         private UIButton closeDrawerButton;
-        private UIFlowLayoutPanel drawerContentsListView;
+        private UIFlowLayoutPanel drawerContentsLayout;
         private ImageList drawerImageList;
     }
 }

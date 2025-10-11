@@ -43,10 +43,12 @@ namespace winDrawer
 
             drawerImageList.ImageSize = _iconSize;
             // Ensure FlowLayoutPanel layout behavior at runtime (in case Designer values are missing)
-            drawerContentsListView.AutoScroll = true;
-            drawerContentsListView.FlowDirection = FlowDirection.LeftToRight;
-            drawerContentsListView.WrapContents = true;
-            drawerContentsListView.Padding = new Padding(6);
+            drawerContentsLayout.AutoScroll = true;
+            // drawerContentsLayout.AutoScrollMargin = new Size(16, 16);
+            drawerContentsLayout.FlowDirection = FlowDirection.LeftToRight;
+            drawerContentsLayout.WrapContents = true;
+            drawerContentsLayout.Padding = new Padding(8, 8, 8, 8);
+            drawerContentsLayout.StyleCustomMode = true;
 
             refreshDrawerButton.Click += (_, _) => PopulateFileList();
             closeDrawerButton.Click += (_, _) => Close();
@@ -81,8 +83,10 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.BackColor = Color.Transparent;
             drawerButtonTableLayoutPanel.BackColor = Color.Transparent;
 
-            drawerContentsListView.BackColor = _theme.ContentBackground;
-            drawerContentsListView.ForeColor = _theme.TextPrimary;
+            drawerContentsLayout.BackColor = _theme.ContentBackground;
+            drawerContentsLayout.FillColor = _theme.ContentBackground;
+            drawerContentsLayout.RectColor = Color.Transparent;
+            drawerContentsLayout.ForeColor = _theme.TextPrimary;
 
             fullPathLabel.ForeColor = _theme.TextSecondary;
             fullPathLabel.BackColor = Color.Transparent;
@@ -116,10 +120,10 @@ namespace winDrawer
 
         private void PopulateFileList()
         {
-            drawerContentsListView.SuspendLayout();
+            drawerContentsLayout.SuspendLayout();
             try
             {
-                drawerContentsListView.Clear();
+                drawerContentsLayout.Clear();
                 drawerImageList.Images.Clear();
                 fullPathLabel.Text = _drawer.Path;
 
@@ -148,10 +152,10 @@ namespace winDrawer
             }
             finally
             {
-                drawerContentsListView.ResumeLayout(performLayout: true);
-                drawerContentsListView.PerformLayout();
+                drawerContentsLayout.ResumeLayout(performLayout: true);
+                drawerContentsLayout.PerformLayout();
                 ApplyThemeToItems();
-                drawerContentsListView.Invalidate();
+                drawerContentsLayout.Invalidate();
             }
         }
 
@@ -173,39 +177,57 @@ namespace winDrawer
 
             var img = drawerImageList.Images[key];
 
+            const int horizontalPadding = 2;
+            const int verticalPadding = 4;
+            const int iconTextSpacing = 8;
+            var panelWidth = _iconSize.Width + horizontalPadding * 2;
+
             var itemPanel = new UIPanel
             {
-                Width = _iconSize.Width + 12,
-                Height = _iconSize.Height + 28,
+                Width = panelWidth,
                 BackColor = _theme.CardBackground,
-                Margin = new Padding(6)
+                FillColor = _theme.CardBackground,
+                RectColor = Color.Transparent,
+                Margin = new Padding(8, 6, 8, 10),
+                Padding = new Padding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding),
+                Tag = path
             };
+            itemPanel.StyleCustomMode = true;
+            itemPanel.Cursor = Cursors.Hand;
 
             var pb = new PictureBox
             {
                 Image = img,
                 Size = _iconSize,
                 SizeMode = PictureBoxSizeMode.Zoom,
-                Location = new Point(6, 4)
+                Location = new Point((panelWidth - _iconSize.Width) / 2, verticalPadding),
+                BackColor = Color.Transparent,
+                TabStop = false
             };
 
+            var labelWidth = panelWidth - horizontalPadding * 2;
+            var labelHeight = Math.Clamp(_iconSize.Height / 2, 32, 48);
             var lbl = new UILabel
             {
                 Text = name,
                 ForeColor = _theme.TextPrimary,
                 BackColor = Color.Transparent,
+                Font = SystemFonts.MessageBoxFont,
                 AutoSize = false,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Width = itemPanel.Width,
-                Height = 20,
-                Location = new Point(0, _iconSize.Height + 6)
+                Size = new Size(labelWidth, labelHeight),
+                TextAlign = ContentAlignment.TopCenter,
+                UseMnemonic = false,
+                AutoEllipsis = true,
+                UseCompatibleTextRendering = true
             };
+            lbl.StyleCustomMode = true;
+            lbl.Location = new Point(horizontalPadding, pb.Bottom + iconTextSpacing);
 
-            itemPanel.Tag = path;
             itemPanel.Controls.Add(pb);
             itemPanel.Controls.Add(lbl);
+            itemPanel.Height = lbl.Bottom + verticalPadding;
 
-            drawerContentsListView.Add(itemPanel);
+            drawerContentsLayout.Add(itemPanel);
         }
 
         private void ApplyThemeToButton(UIButton button)
@@ -229,12 +251,12 @@ namespace winDrawer
 
         private void ApplyThemeToItems()
         {
-            if (drawerContentsListView == null)
+            if (drawerContentsLayout == null)
             {
                 return;
             }
 
-            foreach (Control control in drawerContentsListView.Controls)
+            foreach (Control control in drawerContentsLayout.Controls)
             {
                 if (control is not UIPanel panel)
                 {
@@ -242,6 +264,8 @@ namespace winDrawer
                 }
 
                 panel.BackColor = _theme.CardBackground;
+                panel.FillColor = _theme.CardBackground;
+                panel.RectColor = Color.Transparent;
                 foreach (Control child in panel.Controls)
                 {
                     if (child is UILabel label)

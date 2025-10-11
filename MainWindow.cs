@@ -19,8 +19,9 @@ namespace winDrawer
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
         private readonly List<DrawerDefinition> _currentDrawers = new();
-        private bool _suppressDrawerSelection;
         private DrawerWindow? _currentDrawerWindow;
+        private DrawerDefinition? _currentOpenDrawer;
+        private bool _suppressSelectionChange;
 
         public MainWindow()
         {
@@ -157,16 +158,15 @@ namespace winDrawer
                 drawerListBox.Enabled = true;
             }
 
+            _suppressSelectionChange = true;
             drawerListBox.SelectedIndex = -1;
+            _suppressSelectionChange = false;
             drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
         }
 
         private void DrawerListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            if (_suppressDrawerSelection)
-            {
-                return;
-            }
+            if (_suppressSelectionChange) return;
 
             var selectedIndex = drawerListBox.SelectedIndex;
             if (selectedIndex < 0 || selectedIndex >= _currentDrawers.Count)
@@ -175,20 +175,34 @@ namespace winDrawer
             }
 
             var selectedDrawer = _currentDrawers[selectedIndex];
-            OpenDrawer(selectedDrawer);
-
-            _suppressDrawerSelection = true;
-            BeginInvoke(new Action(() =>
+            if (_currentOpenDrawer != null && string.Equals(_currentOpenDrawer.Path, selectedDrawer.Path, StringComparison.OrdinalIgnoreCase))
             {
-                try
+                // 点击同一个drawer，切换：关闭
+                _currentDrawerWindow?.Close();
+                _currentDrawerWindow = null;
+                _currentOpenDrawer = null;
+                _suppressSelectionChange = true;
+                drawerListBox.SelectedIndex = -1; // 立即清空选中状态
+                _suppressSelectionChange = false;
+            }
+            else
+            {
+                // 点击不同drawer或没有打开的，关闭当前的（如果有），打开新的
+                _suppressSelectionChange = true;
+                drawerListBox.SelectedIndex = -1; // 立即清空旧的选中状态
+                _suppressSelectionChange = false;
+                if (_currentDrawerWindow != null)
                 {
-                    drawerListBox.SelectedIndex = -1;
+                    _currentDrawerWindow.Close();
                 }
-                finally
-                {
-                    _suppressDrawerSelection = false;
-                }
-            }));
+                OpenDrawer(selectedDrawer);
+                _currentOpenDrawer = selectedDrawer;
+                _suppressSelectionChange = true;
+                drawerListBox.SelectedIndex = selectedIndex; // 设置新的选中状态
+                _suppressSelectionChange = false;
+            }
+
+
         }
 
         private void OpenDrawer(DrawerDefinition drawer)
@@ -211,10 +225,27 @@ namespace winDrawer
                 drawerWindow.StartPosition = FormStartPosition.Manual;
                 drawerWindow.Location = new Point(Right, Top);
                 _currentDrawerWindow = drawerWindow;
-                drawerWindow.FormClosed += (_, _) => 
+                drawerWindow.FormClosed += (_, _) =>
                 {
                     ReloadSettingsFromStorage();
                     _currentDrawerWindow = null;
+                    _currentOpenDrawer = null;
+                    // 清空list中的选中状态
+                    if (drawerListBox.InvokeRequired)
+                    {
+                        drawerListBox.BeginInvoke(new Action(() =>
+                        {
+                            _suppressSelectionChange = true;
+                            drawerListBox.SelectedIndex = -1;
+                            _suppressSelectionChange = false;
+                        }));
+                    }
+                    else
+                    {
+                        _suppressSelectionChange = true;
+                        drawerListBox.SelectedIndex = -1;
+                        _suppressSelectionChange = false;
+                    }
                 };
                 drawerWindow.Show(this);
             }
@@ -364,6 +395,35 @@ namespace winDrawer
             Location = snapshot.WindowPosition;
             ApplyAccentColor(snapshot.GetAccentColor());
             PopulateDrawerList(snapshot.Drawers);
+            // 如果有当前打开的drawer，更新list中的选中状态
+            UpdateSelectedDrawer();
+        }
+
+        private void UpdateSelectedDrawer()
+        {
+            _suppressSelectionChange = true;
+            try
+            {
+                if (_currentOpenDrawer != null)
+                {
+                    for (int i = 0; i < _currentDrawers.Count; i++)
+                    {
+                        if (string.Equals(_currentDrawers[i].Path, _currentOpenDrawer.Path, StringComparison.OrdinalIgnoreCase))
+                        {
+                            drawerListBox.SelectedIndex = i;
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    drawerListBox.SelectedIndex = -1;
+                }
+            }
+            finally
+            {
+                _suppressSelectionChange = false;
+            }
         }
 
         private void MainWindow_LocationChanged(object? sender, EventArgs e)

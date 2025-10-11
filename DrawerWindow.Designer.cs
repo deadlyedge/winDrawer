@@ -25,7 +25,7 @@ namespace winDrawer
         {
             components = new Container();
             mainTableLayoutPanel = new UITableLayoutPanel();
-            drawerContentsListView = new ListView();
+            drawerContentsListView = new UIFlowLayoutPanel();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
             fullPathLabel = new UILabel();
@@ -58,18 +58,13 @@ namespace winDrawer
             // drawerContentsListView
             // 
             drawerContentsListView.BackColor = Color.FromArgb(56, 56, 56);
-            drawerContentsListView.BorderStyle = BorderStyle.None;
             drawerContentsListView.Dock = DockStyle.Fill;
             drawerContentsListView.ForeColor = Color.WhiteSmoke;
-            drawerContentsListView.LargeImageList = drawerImageList;
             drawerContentsListView.Location = new Point(0, 0);
             drawerContentsListView.Margin = new Padding(0);
-            drawerContentsListView.MultiSelect = false;
             drawerContentsListView.Name = "drawerContentsListView";
             drawerContentsListView.Size = new Size(762, 533);
-            drawerContentsListView.SmallImageList = drawerImageList;
             drawerContentsListView.TabIndex = 0;
-            drawerContentsListView.UseCompatibleStateImageBehavior = false;
             // 
             // drawerImageList
             // 
@@ -181,7 +176,7 @@ namespace winDrawer
         private UITableLayoutPanel drawerButtonTableLayoutPanel;
         private UIButton refreshDrawerButton;
         private UIButton closeDrawerButton;
-        private ListView drawerContentsListView;
+        private UIFlowLayoutPanel drawerContentsListView;
         private ImageList drawerImageList;
     }
 }

@@ -36,8 +36,6 @@ namespace winDrawer
             fullPathLabel.Text = _drawer.Path;
 
             drawerImageList.ImageSize = _iconSize;
-            drawerContentsListView.LargeImageList = drawerImageList;
-            drawerContentsListView.SmallImageList = drawerImageList;
 
             refreshDrawerButton.Click += (_, _) => PopulateFileList();
             closeDrawerButton.Click += (_, _) => Close();
@@ -85,10 +83,10 @@ namespace winDrawer
 
         private void PopulateFileList()
         {
-            drawerContentsListView.BeginUpdate();
+            drawerContentsListView.SuspendLayout();
             try
             {
-                drawerContentsListView.Items.Clear();
+                drawerContentsListView.Controls.Clear();
                 drawerImageList.Images.Clear();
                 fullPathLabel.Text = _drawer.Path;
 
@@ -117,7 +115,7 @@ namespace winDrawer
             }
             finally
             {
-                drawerContentsListView.EndUpdate();
+                drawerContentsListView.ResumeLayout();
             }
         }
 
@@ -137,13 +135,41 @@ namespace winDrawer
                 drawerImageList.Images.Add(key, bitmap);
             }
 
-            var item = new ListViewItem(name)
+            var img = drawerImageList.Images[key];
+
+            var itemPanel = new Panel
             {
-                ImageKey = key,
-                Tag = path
+                Width = _iconSize.Width + 12,
+                Height = _iconSize.Height + 28,
+                BackColor = Color.FromArgb(56, 56, 56),
+                Margin = new Padding(6)
             };
 
-            drawerContentsListView.Items.Add(item);
+            var pb = new PictureBox
+            {
+                Image = img,
+                Size = _iconSize,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Location = new Point(6, 4)
+            };
+
+            var lbl = new Label
+            {
+                Text = name,
+                ForeColor = Color.WhiteSmoke,
+                BackColor = Color.Transparent,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Width = itemPanel.Width,
+                Height = 20,
+                Location = new Point(0, _iconSize.Height + 6)
+            };
+
+            itemPanel.Tag = path;
+            itemPanel.Controls.Add(pb);
+            itemPanel.Controls.Add(lbl);
+
+            drawerContentsListView.Controls.Add(itemPanel);
         }
 
         private void PersistWindowSize()

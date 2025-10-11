@@ -185,8 +185,6 @@ public sealed class SettingsSnapshot
         int themeSaturation,
         int themeLightness,
         int themeAlpha,
-        int thumbnailWidth,
-        int thumbnailHeight,
         Point windowPosition,
         int iconSize,
         IEnumerable<DrawerDefinition>? drawers = null)
@@ -197,8 +195,8 @@ public sealed class SettingsSnapshot
         ThemeSaturation = themeSaturation;
         ThemeLightness = themeLightness;
         ThemeAlpha = themeAlpha;
-        ThumbnailWidth = thumbnailWidth;
-        ThumbnailHeight = thumbnailHeight;
+        // ThumbnailWidth = thumbnailWidth;
+        // ThumbnailHeight = thumbnailHeight;
         WindowPosition = windowPosition;
         IconSize = iconSize;
         _drawers = drawers != null
@@ -212,8 +210,8 @@ public sealed class SettingsSnapshot
     public int ThemeSaturation { get; set; }
     public int ThemeLightness { get; set; }
     public int ThemeAlpha { get; set; }
-    public int ThumbnailWidth { get; set; }
-    public int ThumbnailHeight { get; set; }
+    // public int ThumbnailWidth { get; set; }
+    // public int ThumbnailHeight { get; set; }
     public Point WindowPosition { get; set; }
     public int IconSize { get; set; }
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
@@ -228,14 +226,14 @@ public sealed class SettingsSnapshot
 
     public Size GetThumbnailSize()
     {
-        var width = Math.Clamp(ThumbnailWidth, 16, 512);
-        var height = Math.Clamp(ThumbnailHeight, 16, 512);
+        var width = Math.Clamp(IconSize, 16, 512);
+        var height = Math.Clamp(IconSize, 16, 512);
         return new Size(width, height);
     }
 
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, ThumbnailWidth, ThumbnailHeight, WindowPosition, IconSize, _drawers);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, WindowPosition, IconSize, _drawers);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -268,8 +266,6 @@ public sealed class SettingsSnapshot
             themeSaturation: windowColorHsla.Length > 1 ? Math.Clamp(windowColorHsla[1], 0, 100) : 100,
             themeLightness: windowColorHsla.Length > 2 ? Math.Clamp(windowColorHsla[2], 0, 100) : 41,
             themeAlpha: windowColorHsla.Length > 3 ? Math.Clamp(windowColorHsla[3], 0, 100) : 60,
-            thumbnailWidth: iconSize,
-            thumbnailHeight: iconSize,
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
             iconSize: iconSize,
             drawers: drawers);

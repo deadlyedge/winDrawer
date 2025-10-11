@@ -264,6 +264,9 @@ namespace winDrawer
             }
 
             _isDragging = false;
+            _settingsSnapshot.WindowPosition = Location;
+            _settingsRepository.Update(_settingsSnapshot);
+            _settingsRepository.Save();
         }
 
         private void settingsButton_Click(object sender, EventArgs e)
@@ -347,6 +350,8 @@ namespace winDrawer
 
         private void ApplySettings(SettingsSnapshot snapshot)
         {
+            StartPosition = FormStartPosition.Manual;
+            Location = snapshot.WindowPosition;
             ApplyAccentColor(snapshot.GetAccentColor());
             PopulateDrawerList(snapshot.Drawers);
         }

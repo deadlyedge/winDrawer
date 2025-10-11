@@ -35,16 +35,9 @@ internal sealed class SettingsRepository
         var startup = EnsureTable(_root, "startup");
         startup["start_with_windows"] = snapshot.StartWithWindows;
         startup["window_locked"] = snapshot.WindowLocked;
-
-        var theme = EnsureTable(_root, "theme");
-        theme["h"] = snapshot.ThemeHue;
-        theme["s"] = snapshot.ThemeSaturation;
-        theme["l"] = snapshot.ThemeLightness;
-        theme["a"] = snapshot.ThemeAlpha;
-
-        var thumbnails = EnsureTable(_root, "thumbnail_size");
-        thumbnails["width"] = snapshot.ThumbnailWidth;
-        thumbnails["height"] = snapshot.ThumbnailHeight;
+        startup["icon_size"] = snapshot.IconSize;
+        startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
+        startup["window_color_hsla"] = new TomlArray { snapshot.ThemeHue, snapshot.ThemeSaturation, snapshot.ThemeLightness, snapshot.ThemeAlpha };
     }
 
     public bool UpdateDrawerSize(string drawerPath, Size size)
@@ -130,26 +123,12 @@ internal sealed class SettingsRepository
             ["startup"] = new TomlTable
             {
                 ["start_with_windows"] = false,
-                ["window_locked"] = false
+                ["window_locked"] = false,
+                ["icon_size"] = 96,
+                ["window_position"] = new TomlArray { 0, 0 },
+                ["window_color_hsla"] = new TomlArray { 194, 100, 41, 60 }
             },
-            ["drawers"] = new TomlTableArray(),
-            ["window_position"] = new TomlTable
-            {
-                ["x"] = 0,
-                ["y"] = 0
-            },
-            ["thumbnail_size"] = new TomlTable
-            {
-                ["width"] = 96,
-                ["height"] = 96
-            },
-            ["theme"] = new TomlTable
-            {
-                ["h"] = 194,
-                ["s"] = 100,
-                ["l"] = 41,
-                ["a"] = 60
-            }
+            ["drawers"] = new TomlTableArray()
         };
     }
 
@@ -179,6 +158,8 @@ internal sealed class SettingsRepository
         };
     }
 
+
+
     private static bool PathsEqual(string? first, string? second)
     {
         var expandedFirst = Environment.ExpandEnvironmentVariables(first ?? string.Empty).Trim();
@@ -206,6 +187,8 @@ public sealed class SettingsSnapshot
         int themeAlpha,
         int thumbnailWidth,
         int thumbnailHeight,
+        Point windowPosition,
+        int iconSize,
         IEnumerable<DrawerDefinition>? drawers = null)
     {
         StartWithWindows = startWithWindows;
@@ -216,6 +199,8 @@ public sealed class SettingsSnapshot
         ThemeAlpha = themeAlpha;
         ThumbnailWidth = thumbnailWidth;
         ThumbnailHeight = thumbnailHeight;
+        WindowPosition = windowPosition;
+        IconSize = iconSize;
         _drawers = drawers != null
             ? new List<DrawerDefinition>(drawers)
             : new List<DrawerDefinition>();
@@ -229,6 +214,8 @@ public sealed class SettingsSnapshot
     public int ThemeAlpha { get; set; }
     public int ThumbnailWidth { get; set; }
     public int ThumbnailHeight { get; set; }
+    public Point WindowPosition { get; set; }
+    public int IconSize { get; set; }
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public Color GetAccentColor()
@@ -248,7 +235,17 @@ public sealed class SettingsSnapshot
 
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, ThumbnailWidth, ThumbnailHeight, _drawers);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, ThumbnailWidth, ThumbnailHeight, WindowPosition, IconSize, _drawers);
+    }
+
+    private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
+    {
+        if (!table.TryGetValue(key, out var value) || value is not TomlArray arr)
+        {
+            return fallback;
+        }
+
+        return arr.Cast<object>().Select(v => Convert.ToInt32(v)).ToArray();
     }
 
     internal static SettingsSnapshot FromModel(TomlTable root)
@@ -256,25 +253,25 @@ public sealed class SettingsSnapshot
         var startup = root.TryGetValue("startup", out var startupObj) && startupObj is TomlTable st
             ? st
             : new TomlTable();
-        var theme = root.TryGetValue("theme", out var themeObj) && themeObj is TomlTable th
-            ? th
-            : new TomlTable();
-        var thumbnails = root.TryGetValue("thumbnail_size", out var thumbObj) && thumbObj is TomlTable ts
-            ? ts
-            : new TomlTable();
         var drawers = root.TryGetValue("drawers", out var drawersObj) && drawersObj is TomlTableArray drawerArray
             ? ParseDrawers(drawerArray)
             : Array.Empty<DrawerDefinition>();
 
+        var iconSize = GetInt(startup, "icon_size", 32, 512, 96);
+        var windowPositionArray = GetIntArray(startup, "window_position", new int[] { 0, 0 });
+        var windowColorHsla = GetIntArray(startup, "window_color_hsla", new int[] { 194, 100, 41, 60 });
+
         return new SettingsSnapshot(
             startWithWindows: GetBoolean(startup, "start_with_windows"),
             windowLocked: GetBoolean(startup, "window_locked"),
-            themeHue: GetInt(theme, "h", 0, 360, 194),
-            themeSaturation: GetInt(theme, "s", 0, 100, 100),
-            themeLightness: GetInt(theme, "l", 0, 100, 41),
-            themeAlpha: GetInt(theme, "a", 0, 100, 60),
-            thumbnailWidth: GetInt(thumbnails, "width", 32, 512, 96),
-            thumbnailHeight: GetInt(thumbnails, "height", 32, 512, 96),
+            themeHue: windowColorHsla.Length > 0 ? Math.Clamp(windowColorHsla[0], 0, 360) : 194,
+            themeSaturation: windowColorHsla.Length > 1 ? Math.Clamp(windowColorHsla[1], 0, 100) : 100,
+            themeLightness: windowColorHsla.Length > 2 ? Math.Clamp(windowColorHsla[2], 0, 100) : 41,
+            themeAlpha: windowColorHsla.Length > 3 ? Math.Clamp(windowColorHsla[3], 0, 100) : 60,
+            thumbnailWidth: iconSize,
+            thumbnailHeight: iconSize,
+            windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
+            iconSize: iconSize,
             drawers: drawers);
     }
 

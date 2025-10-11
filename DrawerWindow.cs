@@ -177,5 +177,10 @@ namespace winDrawer
 
         private const int WmNclbuttondown = 0xA1;
         private const int HtCaption = 0x2;
+
+        private void fullPathLabel_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

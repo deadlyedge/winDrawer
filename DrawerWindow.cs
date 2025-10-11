@@ -43,6 +43,9 @@ namespace winDrawer
 
         private sealed record DrawerItemInfo(string Path, bool IsDirectory);
 
+        private const int ContentHorizontalPadding = 8;
+        private const int ContentVerticalPadding = 8;
+
         internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize, ThemePalette theme)
         {
             _settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
@@ -67,8 +70,11 @@ namespace winDrawer
             // drawerContentsLayout.AutoScrollMargin = new Size(16, 16);
             drawerContentsLayout.FlowDirection = FlowDirection.LeftToRight;
             drawerContentsLayout.WrapContents = true;
-            drawerContentsLayout.Padding = new Padding(8, 8, 8, 8);
+            drawerContentsLayout.Padding = CreateContentPadding(reserveScrollArea: false);
             drawerContentsLayout.StyleCustomMode = true;
+            drawerContentsLayout.SizeChanged += (_, _) => UpdateContentPaddingForScrollBar();
+            drawerContentsLayout.ControlAdded += (_, _) => UpdateContentPaddingForScrollBar();
+            drawerContentsLayout.ControlRemoved += (_, _) => UpdateContentPaddingForScrollBar();
 
             refreshDrawerButton.Click += (_, _) => PopulateFileList();
             closeDrawerButton.Click += (_, _) => Close();
@@ -107,6 +113,9 @@ namespace winDrawer
             drawerContentsLayout.FillColor = _theme.ContentBackground;
             drawerContentsLayout.RectColor = Color.Transparent;
             drawerContentsLayout.ForeColor = _theme.TextPrimary;
+            drawerContentsLayout.ScrollBarBackColor = _theme.ContentBackground;
+            drawerContentsLayout.ScrollBarColor = BlendColors(_theme.Accent, _theme.AccentHover, 0.3f);
+            // drawerContentsLayout.ScrollBarColor = BlendColors(_theme.ContentBackground, _theme.AccentHover, 0.3f);
 
             fullPathLabel.ForeColor = _theme.TextSecondary;
             fullPathLabel.BackColor = Color.Transparent;
@@ -114,6 +123,7 @@ namespace winDrawer
             ApplyThemeToButton(refreshDrawerButton);
             ApplyThemeToButton(closeDrawerButton);
             ApplyThemeToItems();
+            UpdateContentPaddingForScrollBar();
         }
 
         protected override void OnShown(EventArgs e)
@@ -174,6 +184,7 @@ namespace winDrawer
             {
                 drawerContentsLayout.ResumeLayout(performLayout: true);
                 drawerContentsLayout.PerformLayout();
+                UpdateContentPaddingForScrollBar();
                 ApplyThemeToItems();
                 drawerContentsLayout.Invalidate();
             }
@@ -209,7 +220,7 @@ namespace winDrawer
             itemPanel.BackColor = baseItemColor;
             itemPanel.FillColor = baseItemColor;
             itemPanel.RectColor = Color.Transparent;
-            itemPanel.Margin = new Padding(8, 6, 8, 12);
+            itemPanel.Margin = new Padding(8, 4, 8, 4);
             itemPanel.Padding = new Padding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
             itemPanel.Tag = itemInfo;
             itemPanel.Cursor = Cursors.Hand;
@@ -560,6 +571,37 @@ namespace winDrawer
         private Color GetItemBaseColor()
         {
             return _theme.ContentBackground;
+        }
+
+        private void UpdateContentPaddingForScrollBar()
+        {
+            if (drawerContentsLayout == null)
+            {
+                return;
+            }
+
+            var reserveScrollArea = drawerContentsLayout.VerticalScroll.Visible;
+            var newPadding = CreateContentPadding(reserveScrollArea);
+
+            if (drawerContentsLayout.Padding == newPadding)
+            {
+                return;
+            }
+
+            drawerContentsLayout.Padding = newPadding;
+        }
+
+        private Padding CreateContentPadding(bool reserveScrollArea)
+        {
+            var scrollWidth = reserveScrollArea
+                ? Math.Max(SystemInformation.VerticalScrollBarWidth, drawerContentsLayout?.ScrollBarWidth ?? 0)
+                : 0;
+
+            return new Padding(
+                ContentHorizontalPadding,
+                ContentVerticalPadding,
+                ContentHorizontalPadding + scrollWidth,
+                ContentVerticalPadding);
         }
 
         private static Color BlendColors(Color background, Color foreground, float amount)

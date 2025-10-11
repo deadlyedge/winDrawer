@@ -43,7 +43,7 @@ namespace winDrawer
 
         private sealed record DrawerItemInfo(string Path, bool IsDirectory);
 
-        private const int ContentHorizontalPadding = 8;
+        private const int ContentHorizontalPadding = 2;
         private const int ContentVerticalPadding = 8;
 
         internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize, ThemePalette theme)
@@ -75,6 +75,7 @@ namespace winDrawer
             drawerContentsLayout.SizeChanged += (_, _) => UpdateContentPaddingForScrollBar();
             drawerContentsLayout.ControlAdded += (_, _) => UpdateContentPaddingForScrollBar();
             drawerContentsLayout.ControlRemoved += (_, _) => UpdateContentPaddingForScrollBar();
+            drawerContentsLayout.Layout += (_, _) => UpdateContentPaddingForScrollBar();
 
             refreshDrawerButton.Click += (_, _) => PopulateFileList();
             closeDrawerButton.Click += (_, _) => Close();
@@ -580,21 +581,25 @@ namespace winDrawer
                 return;
             }
 
-            var reserveScrollArea = drawerContentsLayout.VerticalScroll.Visible;
+            var layout = drawerContentsLayout;
+            var displayRect = layout.DisplayRectangle;
+            var clientSize = layout.ClientSize;
+            var reserveScrollArea = displayRect.Height - clientSize.Height > 1;
             var newPadding = CreateContentPadding(reserveScrollArea);
 
-            if (drawerContentsLayout.Padding == newPadding)
+            if (layout.Padding == newPadding)
             {
                 return;
             }
 
-            drawerContentsLayout.Padding = newPadding;
+            layout.Padding = newPadding;
         }
 
         private Padding CreateContentPadding(bool reserveScrollArea)
         {
+            var layout = drawerContentsLayout;
             var scrollWidth = reserveScrollArea
-                ? Math.Max(SystemInformation.VerticalScrollBarWidth, drawerContentsLayout?.ScrollBarWidth ?? 0)
+                ? Math.Max(SystemInformation.VerticalScrollBarWidth, layout?.ScrollBarWidth ?? SystemInformation.VerticalScrollBarWidth)
                 : 0;
 
             return new Padding(

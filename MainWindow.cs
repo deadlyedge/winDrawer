@@ -182,6 +182,59 @@ namespace winDrawer
             }
         }
 
+        // Message filter used to detect clicks outside the settings window so we can close it.
+        // It will only act after the settings window has been activated (to avoid closing
+        // when the mouse merely moves over/near the window).
+        private class ClickOutsideFilter : IMessageFilter
+        {
+            private readonly Form _target;
+            public bool WasActivated { get; set; }
+
+            public ClickOutsideFilter(Form target)
+            {
+                _target = target;
+                WasActivated = false;
+            }
+
+            public bool PreFilterMessage(ref Message m)
+            {
+                const int WM_LBUTTONDOWN = 0x0201;
+                const int WM_RBUTTONDOWN = 0x0204;
+                const int WM_MBUTTONDOWN = 0x0207;
+
+                // Only close on an actual mouse button down and only after the settings window
+                // received focus/activation. This prevents spurious closes when the mouse moves.
+                if (!WasActivated) return false;
+
+                if (m.Msg == WM_LBUTTONDOWN || m.Msg == WM_RBUTTONDOWN || m.Msg == WM_MBUTTONDOWN)
+                {
+                    try
+                    {
+                        var pt = Control.MousePosition;
+                        if (_target == null || _target.IsDisposed) return false;
+                        // Use Bounds which is in screen coordinates.
+                        if (!_target.Bounds.Contains(pt))
+                        {
+                            // Close on UI thread
+                            _target.BeginInvoke(new Action(() =>
+                            {
+                                try
+                                {
+                                    if (!_target.IsDisposed) _target.Close();
+                                }
+                                catch { }
+                            }));
+                            // We don't need to consume the message; return false to allow normal processing.
+                            return false;
+                        }
+                    }
+                    catch { }
+                }
+
+                return false;
+            }
+        }
+
         private void ToggleVisibility()
         {
             if (InvokeRequired)
@@ -406,26 +459,34 @@ namespace winDrawer
 
         private void settingsButton_Click(object sender, EventArgs e)
         {
-            // Show Settings as a modeless window that closes when it loses focus (click outside).
+            // Show Settings as a modeless window that closes when the user *clicks outside* the window.
             var settings = new SettingsForm(_settingsSnapshot);
             EventHandler<ThemePreviewEventArgs>? previewHandler = (_, args) => ApplyTheme(args.Palette);
             settings.ThemePreviewChanged += previewHandler;
 
-            // Close the settings window when it deactivates (user clicked outside)
-            settings.Deactivate += (_, _) =>
-            {
-                try
-                {
-                    if (!settings.IsDisposed) settings.Close();
-                }
-                catch { }
-            };
+            // Use a message filter to detect actual mouse-downs outside the settings window.
+            var filter = new ClickOutsideFilter(settings);
+            EventHandler? activatedHandler = (_, _) => { filter.WasActivated = true; };
+            settings.Activated += activatedHandler;
+            Application.AddMessageFilter(filter);
 
             settings.FormClosed += (_, _) =>
             {
                 try
                 {
                     settings.ThemePreviewChanged -= previewHandler;
+                }
+                catch { }
+
+                // Remove the message filter we added and the activation handler.
+                try
+                {
+                    settings.Activated -= activatedHandler;
+                }
+                catch { }
+                try
+                {
+                    Application.RemoveMessageFilter(filter);
                 }
                 catch { }
 

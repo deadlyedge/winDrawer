@@ -23,16 +23,17 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="reference\**\*.cs" />
-  </ItemGroup>
-
+  
   <ItemGroup>
     <!-- Ensure assets (including drawer.icon.4.ico) are copied to the output so the app can load them at runtime -->
     <Content Include="assets\drawer.icon.4.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="reference\**\*.cs" />
+  </ItemGroup>
+
 
 </Project>

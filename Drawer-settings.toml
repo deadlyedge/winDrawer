@@ -3,11 +3,11 @@ start_with_windows = false
 window_locked = false
 icon_size = 96
 window_color_hsla = [194, 100, 41, 60]
-window_position = [2831, 1066]
+window_position = [2831, 1066]  # if out of screen, it should be some solution.
 
 [[drawers]]
 name = "Netch"
-path = "D:\\users\\Desktop\\Netch"
+path = "D:\\users\\Desktop\\Netch" # this folder format is for python, check if it's different in c#.
 [drawers.size]
 width = 403
 height = 324

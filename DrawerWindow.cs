@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Sunny.UI;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -324,7 +325,6 @@ namespace winDrawer
 
             if (_settingsRepository.UpdateDrawerSize(_drawer.Path, Size))
             {
-                _settingsRepository.Save();
                 _lastPersistedSize = Size;
             }
         }

@@ -4,21 +4,34 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Tomlyn;
 using Tomlyn.Model;
 using winDrawer.Theming;
 
 namespace winDrawer.Configuration;
 
-internal sealed class SettingsRepository
+internal sealed class SettingsRepository : IDisposable
 {
     private readonly string _settingsPath;
     private TomlTable _root;
+
+    // Background writer state
+    private readonly SemaphoreSlim _writeSignal = new(0);
+    private readonly CancellationTokenSource _writerCts = new();
+    private readonly object _writeLock = new();
+    private Task? _writerTask;
+    private bool _dirty;
+    private TaskCompletionSource<bool>? _flushTcs;
 
     public SettingsRepository(string settingsPath)
     {
         _settingsPath = settingsPath;
         _root = LoadOrCreateTable(settingsPath);
+
+        // Start background writer loop
+        _writerTask = Task.Run(() => BackgroundWriterLoop(_writerCts.Token));
     }
 
     public static string GetDefaultPath()
@@ -28,17 +41,31 @@ internal sealed class SettingsRepository
 
     public SettingsSnapshot GetSnapshot()
     {
-        return SettingsSnapshot.FromModel(_root);
+        lock (_writeLock)
+        {
+            // Return snapshot from current in-memory model
+            return SettingsSnapshot.FromModel(_root);
+        }
     }
 
     public void Update(SettingsSnapshot snapshot)
     {
-        var startup = EnsureTable(_root, "startup");
-        startup["start_with_windows"] = snapshot.StartWithWindows;
-        startup["window_locked"] = snapshot.WindowLocked;
-        startup["icon_size"] = snapshot.IconSize;
-        startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
-        startup["window_color_hsla"] = new TomlArray { snapshot.ThemeHue, snapshot.ThemeSaturation, snapshot.ThemeLightness, snapshot.ThemeAlpha };
+        if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+
+        lock (_writeLock)
+        {
+            var startup = EnsureTable(_root, "startup");
+            startup["start_with_windows"] = snapshot.StartWithWindows;
+            startup["window_locked"] = snapshot.WindowLocked;
+            startup["icon_size"] = snapshot.IconSize;
+            startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
+            startup["window_color_hsla"] = new TomlArray { snapshot.ThemeHue, snapshot.ThemeSaturation, snapshot.ThemeLightness, snapshot.ThemeAlpha };
+
+            // Mark dirty and signal background writer
+            _dirty = true;
+        }
+
+        _writeSignal.Release();
     }
 
     public bool UpdateDrawerSize(string drawerPath, Size size)
@@ -48,32 +75,89 @@ internal sealed class SettingsRepository
             return false;
         }
 
-        if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
+        lock (_writeLock)
         {
-            return false;
-        }
-
-        foreach (var entry in drawerArray.OfType<TomlTable>())
-        {
-            var candidatePath = ReadString(entry, "path");
-            if (!PathsEqual(candidatePath, drawerPath))
+            if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
             {
-                continue;
+                return false;
             }
 
-            var sizeTable = entry.TryGetValue("size", out var sizeObj) && sizeObj is TomlTable st
-                ? st
-                : new TomlTable();
+            foreach (var entry in drawerArray.OfType<TomlTable>())
+            {
+                var candidatePath = ReadString(entry, "path");
+                if (!PathsEqual(candidatePath, drawerPath))
+                {
+                    continue;
+                }
 
-            sizeTable["width"] = size.Width;
-            sizeTable["height"] = size.Height;
-            entry["size"] = sizeTable;
-            return true;
+                var sizeTable = entry.TryGetValue("size", out var sizeObj) && sizeObj is TomlTable st
+                    ? st
+                    : new TomlTable();
+
+                sizeTable["width"] = size.Width;
+                sizeTable["height"] = size.Height;
+                entry["size"] = sizeTable;
+
+                _dirty = true;
+                _writeSignal.Release();
+
+                return true;
+            }
         }
 
         return false;
     }
 
+    /// <summary>
+    /// Enqueue a save request: does not block. Background writer will persist the in-memory model.
+    /// </summary>
+    public void EnqueueSave()
+    {
+        lock (_writeLock)
+        {
+            _dirty = true;
+        }
+        _writeSignal.Release();
+    }
+
+    /// <summary>
+    /// Force a flush: waits up to <paramref name="timeout"/> for pending writes to complete.
+    /// </summary>
+    public async Task<bool> FlushAsync(TimeSpan timeout)
+    {
+        TaskCompletionSource<bool> tcs;
+        lock (_writeLock)
+        {
+            if (!_dirty)
+            {
+                return true; // nothing to flush
+            }
+
+            // create a TCS for this flush request; background writer will complete it after next write
+            _flushTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            // ensure writer is signaled
+            _writeSignal.Release();
+            tcs = _flushTcs;
+        }
+
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+        var success = completed == tcs.Task && tcs.Task.IsCompletedSuccessfully;
+        // clear flush tcs if still set
+        lock (_writeLock)
+        {
+            if (ReferenceEquals(_flushTcs, tcs))
+            {
+                _flushTcs = null;
+            }
+        }
+
+        return success;
+    }
+
+    /// <summary>
+    /// Synchronous save kept for compatibility; will persist immediately on calling thread.
+    /// Prefer EnqueueSave or FlushAsync in production code.
+    /// </summary>
     public void Save()
     {
         var directory = Path.GetDirectoryName(_settingsPath);
@@ -82,8 +166,127 @@ internal sealed class SettingsRepository
             Directory.CreateDirectory(directory);
         }
 
-        var content = Toml.FromModel(_root);
+        string content;
+        lock (_writeLock)
+        {
+            content = Toml.FromModel(_root);
+        }
+
         File.WriteAllText(_settingsPath, content);
+    }
+
+    private async Task BackgroundWriterLoop(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await _writeSignal.WaitAsync(token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
+                bool shouldWrite = false;
+                TaskCompletionSource<bool>? tcs = null;
+
+                lock (_writeLock)
+                {
+                    if (_dirty)
+                    {
+                        _dirty = false;
+                        shouldWrite = true;
+                        tcs = _flushTcs;
+                        // clear _flushTcs here to avoid double-complete; we'll complete below after write
+                        _flushTcs = null;
+                    }
+                }
+
+                if (shouldWrite)
+                {
+                    try
+                    {
+                        // capture content under lock to avoid inconsistencies
+                        string content;
+                        lock (_writeLock)
+                        {
+                            content = Toml.FromModel(_root);
+                        }
+
+                        // write asynchronously
+                        var directory = Path.GetDirectoryName(_settingsPath);
+                        if (!string.IsNullOrEmpty(directory))
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
+
+                        await File.WriteAllTextAsync(_settingsPath, content, token);
+                        tcs?.TrySetResult(true);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        tcs?.TrySetCanceled();
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        // swallow IO errors but signal flush as failed
+                        try { tcs?.TrySetException(ex); } catch { }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            // Attempt one last write if dirty
+            bool needFinal = false;
+            lock (_writeLock)
+            {
+                if (_dirty)
+                {
+                    _dirty = false;
+                    needFinal = true;
+                }
+            }
+
+            if (needFinal)
+            {
+                try
+                {
+                    string content;
+                    lock (_writeLock)
+                    {
+                        content = Toml.FromModel(_root);
+                    }
+
+                    var directory = Path.GetDirectoryName(_settingsPath);
+                    if (!string.IsNullOrEmpty(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    File.WriteAllText(_settingsPath, content);
+                }
+                catch { }
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            _writerCts.Cancel();
+            _writeSignal.Release();
+            _writerTask?.Wait(500);
+        }
+        catch { }
+
+        _writerCts.Dispose();
+        _writeSignal.Dispose();
     }
 
     private static TomlTable LoadOrCreateTable(string path)
@@ -369,20 +572,4 @@ public sealed class SettingsSnapshot
         };
     }
 
-}
-
-public sealed class DrawerDefinition
-{
-    public DrawerDefinition(string name, string path, Size? preferredSize)
-    {
-        Name = name;
-        Path = path;
-        PreferredSize = preferredSize;
-    }
-
-    public string Name { get; }
-    public string Path { get; }
-    public Size? PreferredSize { get; }
-
-    public override string ToString() => Name;
 }

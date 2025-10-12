@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Text;
 using System.IO;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Sunny.UI;
 using winDrawer.Configuration;
@@ -454,7 +456,7 @@ namespace winDrawer
             _isDragging = false;
             _settingsSnapshot.WindowPosition = Location;
             _settingsRepository.Update(_settingsSnapshot);
-            _settingsRepository.Save();
+            // Enqueue save: background writer in SettingsRepository will persist asynchronously.
         }
 
         private void settingsButton_Click(object sender, EventArgs e)
@@ -493,8 +495,54 @@ namespace winDrawer
                 // If the settings requested a shutdown we respect it.
                 if (settings.ShutdownRequested)
                 {
-                    ApplyTheme(_settingsSnapshot.BuildThemePalette());
-                    Close();
+                    // Perform only minimal cleanup and exit immediately to avoid blocking UI while
+                    // many windows perform synchronous I/O during their close events.
+                    try
+                    {
+                        if (_trayIcon != null)
+                        {
+                            _trayIcon.Visible = false;
+                            _trayIcon.Dispose();
+                            _trayIcon = null;
+                        }
+                    }
+                    catch { }
+
+                    try
+                    {
+                        _trayMenu?.Dispose();
+                        _trayMenu = null;
+                    }
+                    catch { }
+
+                    // Ensure UI message queue is processed briefly so the cleanup above is applied.
+                    try
+                    {
+                        Application.DoEvents();
+                    }
+                    catch { }
+
+                    // Try to flush pending settings to disk, wait up to 500ms, then exit.
+                    try
+                    {
+                        var flushTask = _settingsRepository.FlushAsync(TimeSpan.FromMilliseconds(500));
+                        if (flushTask == null || !flushTask.Wait(500))
+                        {
+                            // Flush timed out — force terminate.
+                            try { Process.GetCurrentProcess().Kill(); } catch { try { Environment.Exit(0); } catch { } }
+                        }
+                        else
+                        {
+                            // Flush completed — exit gracefully.
+                            try { Environment.Exit(0); } catch { try { Process.GetCurrentProcess().Kill(); } catch { } }
+                        }
+                    }
+                    catch
+                    {
+                        // On any unexpected error, force terminate to avoid hanging.
+                        try { Process.GetCurrentProcess().Kill(); } catch { try { Environment.Exit(0); } catch { } }
+                    }
+
                     return;
                 }
 
@@ -503,7 +551,7 @@ namespace winDrawer
                 {
                     _settingsSnapshot = settings.ResultSettings;
                     _settingsRepository.Update(_settingsSnapshot);
-                    _settingsRepository.Save();
+                    // Save enqueued by repository's background writer.
                     ApplySettings(_settingsSnapshot);
                 }
                 else

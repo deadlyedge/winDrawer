@@ -22,14 +22,18 @@
     <Content Include="Drawer-settings.toml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <!-- Ensure assets (including drawer.icon.4.ico) are copied to the output so the app can load them at runtime -->
     <Content Include="assets\drawer.icon.4.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="assets\fonts\Lobster-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
+
+  <!-- <ItemGroup>
+    Ensure assets (including drawer.icon.4.ico) are copied to the output so the app can load
+    them at runtime
+  </ItemGroup> -->
 
   <ItemGroup>
     <Compile Remove="reference\**\*.cs" />

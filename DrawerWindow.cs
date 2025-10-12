@@ -40,12 +40,7 @@ namespace winDrawer
             ".webp"
         };
 
-        private const float ItemHoverBlendAmount = 0.28f;
-
         private sealed record DrawerItemInfo(string Path, bool IsDirectory);
-
-        private const int ContentHorizontalPadding = 2;
-        private const int ContentVerticalPadding = 8;
 
         internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize, ThemePalette theme)
         {
@@ -53,6 +48,8 @@ namespace winDrawer
             _drawer = drawer ?? throw new ArgumentNullException(nameof(drawer));
             _iconSize = NormalizeIconSize(iconSize);
             _theme = theme ?? throw new ArgumentNullException(nameof(theme));
+
+            DrawerLogger.LogInformation($"Initializing DrawerWindow for '{_drawer.Name}' at '{_drawer.Path}'.");
 
             InitializeComponent();
             InitializeWindow();
@@ -64,6 +61,7 @@ namespace winDrawer
             DoubleBuffered = true;
             Text = _drawer.Name;
             fullPathLabel.Text = _drawer.Path;
+            DrawerLogger.LogDebug($"Setting up DrawerWindow UI for '{_drawer.Name}'.");
 
             drawerImageList.ImageSize = _iconSize;
             // Ensure FlowLayoutPanel layout behavior at runtime (in case Designer values are missing)
@@ -85,7 +83,7 @@ namespace winDrawer
 
             resizeGrip = new Panel
             {
-                Size = new Size(30, 44),
+                Size = new Size(AppConstants.DrawerUi.ResizeGripWidth, AppConstants.DrawerUi.ResizeGripHeight),
                 BackColor = Color.Transparent,
                 Cursor = Cursors.SizeNWSE
             };
@@ -98,11 +96,13 @@ namespace winDrawer
             _lastPersistedSize = Size;
 
             PopulateFileList();
+            DrawerLogger.LogInformation($"DrawerWindow ready for '{_drawer.Name}'. Item count: {drawerContentsLayout.Controls.Count}.");
         }
 
         public void ApplyTheme(ThemePalette theme)
         {
             _theme = theme ?? throw new ArgumentNullException(nameof(theme));
+            DrawerLogger.LogDebug($"Applying theme to drawer '{_drawer.Name}'.");
 
             Opacity = _theme.WindowOpacity;
             BackColor = _theme.WindowBackground;
@@ -141,18 +141,23 @@ namespace winDrawer
         protected override void OnResizeEnd(EventArgs e)
         {
             base.OnResizeEnd(e);
+            DrawerLogger.LogDebug($"Resize ended for '{_drawer.Name}' at size {Size}.");
             PersistWindowSize();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            DrawerLogger.LogInformation($"DrawerWindow closing for '{_drawer.Name}'.");
             PersistWindowSize();
             base.OnFormClosed(e);
         }
 
         private void PopulateFileList()
         {
+            DrawerLogger.LogInformation($"Refreshing drawer contents for '{_drawer.Name}'.");
             drawerContentsLayout.SuspendLayout();
+            int directoryCount = 0;
+            int fileCount = 0;
             try
             {
                 drawerContentsLayout.Clear();
@@ -162,6 +167,7 @@ namespace winDrawer
                 if (!Directory.Exists(_drawer.Path))
                 {
                     fullPathLabel.Text = $"{_drawer.Path} (missing)";
+                    DrawerLogger.LogWarning($"Drawer path missing for '{_drawer.Name}': {_drawer.Path}");
                     return;
                 }
 
@@ -169,16 +175,21 @@ namespace winDrawer
                              .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
                 {
                     AddItem(directory, true);
+                    directoryCount++;
                 }
 
                 foreach (var file in Directory.EnumerateFiles(_drawer.Path)
                              .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
                 {
                     AddItem(file, false);
+                    fileCount++;
                 }
+
+                DrawerLogger.LogInformation($"Drawer '{_drawer.Name}' loaded {directoryCount} directories and {fileCount} files.");
             }
             catch (Exception ex)
             {
+                DrawerLogger.LogError($"Failed to populate drawer '{_drawer.Name}'.", ex);
                 MessageBox.Show(this, $"Failed to load drawer contents: {ex.Message}", "Drawer Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -315,24 +326,31 @@ namespace winDrawer
         {
             if (WindowState != FormWindowState.Normal)
             {
+                DrawerLogger.LogDebug($"Skipping persist for '{_drawer.Name}' because window state is {WindowState}.");
                 return;
             }
 
             if (Size == _lastPersistedSize)
             {
+                DrawerLogger.LogDebug($"Drawer '{_drawer.Name}' size unchanged ({Size}).");
                 return;
             }
 
             if (_settingsRepository.UpdateDrawerSize(_drawer.Path, Size))
             {
                 _lastPersistedSize = Size;
+                DrawerLogger.LogInformation($"Persisted drawer '{_drawer.Name}' size {Size}.");
+            }
+            else
+            {
+                DrawerLogger.LogWarning($"Failed to persist drawer '{_drawer.Name}' size {Size}.");
             }
         }
 
         private static Size NormalizeIconSize(Size size)
         {
-            var width = Math.Clamp(size.Width, 32, 512);
-            var height = Math.Clamp(size.Height, 32, 512);
+            var width = Math.Clamp(size.Width, AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax);
+            var height = Math.Clamp(size.Height, AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax);
             return new Size(width, height);
         }
 
@@ -466,6 +484,8 @@ namespace winDrawer
         {
             try
             {
+                var itemType = info.IsDirectory ? "folder" : "file";
+                DrawerLogger.LogInformation($"Opening {itemType} '{info.Path}'.");
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = info.Path,
@@ -475,6 +495,7 @@ namespace winDrawer
             }
             catch (Exception ex)
             {
+                DrawerLogger.LogError($"Failed to open '{info.Path}'.", ex);
                 MessageBox.Show(this, $"Failed to open {info.Path}: {ex.Message}", "Open Failed", MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -542,8 +563,9 @@ namespace winDrawer
 
                 return bitmap;
             }
-            catch
+            catch (Exception ex)
             {
+                DrawerLogger.LogDebug($"Thumbnail generation failed for '{path}'. {ex}");
                 return null;
             }
         }
@@ -551,7 +573,7 @@ namespace winDrawer
         private void HighlightItemPanel(UIPanel panel, bool highlight)
         {
             var baseColor = GetItemBaseColor();
-            var hoverColor = BlendColors(baseColor, _theme.AccentHover, ItemHoverBlendAmount);
+            var hoverColor = BlendColors(baseColor, _theme.AccentHover, AppConstants.DrawerUi.ItemHoverBlendAmount);
             var targetColor = highlight ? hoverColor : baseColor;
 
             if (panel.BackColor == targetColor && panel.FillColor == targetColor)
@@ -603,10 +625,10 @@ namespace winDrawer
                 : 0;
 
             return new Padding(
-                ContentHorizontalPadding,
-                ContentVerticalPadding,
-                ContentHorizontalPadding + scrollWidth,
-                ContentVerticalPadding);
+                AppConstants.DrawerUi.ContentHorizontalPadding,
+                AppConstants.DrawerUi.ContentVerticalPadding,
+                AppConstants.DrawerUi.ContentHorizontalPadding + scrollWidth,
+                AppConstants.DrawerUi.ContentVerticalPadding);
         }
 
         private static Color BlendColors(Color background, Color foreground, float amount)
@@ -619,3 +641,4 @@ namespace winDrawer
         }
     }
 }
+

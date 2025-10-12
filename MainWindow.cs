@@ -26,14 +26,17 @@ namespace winDrawer
         private DrawerWindow? _currentDrawerWindow;
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;
-        private NotifyIcon? _trayIcon;
-        private ContextMenuStrip? _trayMenu;
+        private TrayController? _trayController;
 
         public MainWindow()
         {
+            DrawerLogger.LogInformation("Initializing MainWindow.");
+
             _settingsRepository = new SettingsRepository(SettingsRepository.GetDefaultPath());
             _settingsSnapshot = _settingsRepository.GetSnapshot();
             _currentTheme = _settingsSnapshot.BuildThemePalette();
+
+            DrawerLogger.LogDebug($"Loaded {_settingsSnapshot.Drawers.Count} drawers from settings.");
 
             InitializeComponent();
             drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
@@ -47,6 +50,8 @@ namespace winDrawer
             WireDragHandlers();
             ApplySettings(_settingsSnapshot);
 
+            DrawerLogger.LogInformation("MainWindow initialization completed.");
+
             LocationChanged += MainWindow_LocationChanged;
 
             FormClosed += (_, _) =>
@@ -55,25 +60,15 @@ namespace winDrawer
                 // _headerGlyph?.Dispose();
                 _fontCollection.Dispose();
 
-                // Safe tray cleanup: do not dispose the Form.Icon here because other UI code
-                // (dialogs) may still access it. NotifyIcon.Dispose will release its own icon handle.
                 try
                 {
-                    if (_trayIcon != null)
-                    {
-                        _trayIcon.Visible = false;
-                        _trayIcon.Dispose();
-                        _trayIcon = null;
-                    }
+                    _trayController?.Dispose();
+                    _trayController = null;
                 }
-                catch { }
-
-                try
+                catch (Exception ex)
                 {
-                    _trayMenu?.Dispose();
-                    _trayMenu = null;
+                    DrawerLogger.LogError("Failed to dispose tray controller during shutdown.", ex);
                 }
-                catch { }
             };
 
             // 在窗体加载完成后填充菜单，避免默认打开
@@ -83,8 +78,14 @@ namespace winDrawer
         {
             var baseDir = AppContext.BaseDirectory;
 
-            TryLoadFont(Path.Combine(baseDir, "assets", "fonts", "Lobster-Regular.ttf"));
-            TryApplyIcon(Path.Combine(baseDir, "assets", "drawer.icon.4.ico"));
+            var assetsDirectory = Path.Combine(baseDir, AppConstants.Directories.Assets);
+            var fontPath = Path.Combine(assetsDirectory, AppConstants.Directories.Fonts, AppConstants.Files.LogoFontFileName);
+            var iconPath = Path.Combine(assetsDirectory, AppConstants.Files.AppIconFileName);
+
+            DrawerLogger.LogDebug($"Loading branding assets from '{assetsDirectory}'.");
+
+            TryLoadFont(fontPath);
+            TryApplyIcon(iconPath);
             // TryApplyHeaderIcon(Path.Combine(baseDir, "assets", "icons", "question_unknown.png"));
         }
 
@@ -92,17 +93,21 @@ namespace winDrawer
         {
             if (!File.Exists(fontPath))
             {
+                DrawerLogger.LogWarning($"Logo font not found at '{fontPath}'.");
                 return;
             }
 
             _fontCollection.AddFontFile(fontPath);
             if (_fontCollection.Families.Length == 0)
             {
+                DrawerLogger.LogWarning($"No font families discovered in '{fontPath}'.");
                 return;
             }
 
-            _logoFont = new Font(_fontCollection.Families[0], 24F, FontStyle.Regular, GraphicsUnit.Point);
+            _logoFont = new Font(_fontCollection.Families[0], AppConstants.Defaults.LogoFontSize, FontStyle.Regular, GraphicsUnit.Point);
             logoLabel.Font = _logoFont;
+
+            DrawerLogger.LogInformation($"Loaded logo font '{_fontCollection.Families[0].Name}'.");
         }
 
         private void TryApplyIcon(string iconPath)
@@ -114,74 +119,38 @@ namespace winDrawer
                     // Load window icon from file. Do NOT call Dispose on the existing Icon
                     // because other parts of the app (e.g. cloned tray icons) may still
                     // reference the same instance and disposing it can cause ObjectDisposedException.
-                    Icon = new Icon(iconPath, new Size(32, 32));
+                    Icon = new Icon(iconPath, AppConstants.Ui.WindowIconSize);
+                    DrawerLogger.LogInformation($"Applied window icon from '{iconPath}'.");
                 }
                 catch
                 {
                     // ignore and keep existing icon if loading fails
+                    DrawerLogger.LogWarning($"Failed to apply window icon from '{iconPath}'.");
                 }
+            }
+            else
+            {
+                DrawerLogger.LogWarning($"Window icon not found at '{iconPath}'.");
             }
         }
 
         private void InitializeTray()
         {
             var baseDir = AppContext.BaseDirectory;
-            var iconPath = Path.Combine(baseDir, "assets", "drawer.icon.4.ico");
+            var iconPath = Path.Combine(baseDir, AppConstants.Directories.Assets, AppConstants.Files.AppIconFileName);
 
-            try
-            {
-                _trayMenu = new ContextMenuStrip();
-                var showHideItem = new ToolStripMenuItem("Show/Hide");
-                showHideItem.Click += (_, _) => ToggleVisibility();
+            DrawerLogger.LogDebug($"Initializing tray icon using '{iconPath}'.");
 
-                var settingsItem = new ToolStripMenuItem("Settings");
-                settingsItem.Click += (_, _) => settingsButton_Click(this, EventArgs.Empty);
-
-                var exitItem = new ToolStripMenuItem("Exit");
-                exitItem.Click += (_, _) =>
+            _trayController = new TrayController(
+                ToggleVisibility,
+                () => settingsButton_Click(this, EventArgs.Empty),
+                () =>
                 {
-                    try
-                    {
-                        if (_trayIcon != null) _trayIcon.Visible = false;
-                    }
-                    catch { }
+                    DrawerLogger.LogInformation("Application exit initiated from tray.");
                     Application.Exit();
-                };
+                });
 
-                _trayMenu.Items.AddRange(new ToolStripItem[] { showHideItem, settingsItem, new ToolStripSeparator(), exitItem });
-
-                _trayIcon = new NotifyIcon
-                {
-                    ContextMenuStrip = _trayMenu,
-                    Text = "winDrawer",
-                    Visible = true
-                };
-
-                if (File.Exists(iconPath))
-                {
-                    try
-                    {
-                        // Prefer a 16x16 frame for tray icons so Windows displays the provided icon
-                        _trayIcon.Icon = new Icon(iconPath, new Size(16, 16));
-                    }
-                    catch
-                    {
-                        // fallback to form icon if reading the file fails
-                        if (Icon != null) _trayIcon.Icon = Icon;
-                    }
-                }
-                else if (Icon != null)
-                {
-                    // Assign a clone so the tray and form do not share the same Icon instance.
-                    _trayIcon.Icon = (Icon)Icon.Clone();
-                }
-
-                _trayIcon.DoubleClick += (_, _) => ToggleVisibility();
-            }
-            catch
-            {
-                // Non-fatal: tray is optional
-            }
+            _trayController.Initialize(iconPath, Icon, AppConstants.Branding.ApplicationDisplayName);
         }
 
         // Message filter used to detect clicks outside the settings window so we can close it.
@@ -247,10 +216,12 @@ namespace winDrawer
 
             if (Visible && WindowState != FormWindowState.Minimized)
             {
+                DrawerLogger.LogInformation("Hiding main window from tray request.");
                 Hide();
             }
             else
             {
+                DrawerLogger.LogInformation("Showing main window from tray request.");
                 Show();
                 WindowState = FormWindowState.Normal;
                 Activate();
@@ -311,6 +282,8 @@ namespace winDrawer
             drawerListBox.SelectedIndex = -1;
             _suppressSelectionChange = false;
             drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
+
+            DrawerLogger.LogInformation($"Drawer list populated with {_currentDrawers.Count} entries.");
         }
 
         private void DrawerListBox_SelectedIndexChanged(object? sender, EventArgs e)
@@ -318,6 +291,7 @@ namespace winDrawer
             if (_suppressSelectionChange) return;
 
             var selectedIndex = drawerListBox.SelectedIndex;
+            DrawerLogger.LogDebug($"Drawer list selection changed to index {selectedIndex}.");
             if (selectedIndex < 0 || selectedIndex >= _currentDrawers.Count)
             {
                 return;
@@ -326,6 +300,7 @@ namespace winDrawer
             var selectedDrawer = _currentDrawers[selectedIndex];
             if (_currentOpenDrawer != null && string.Equals(_currentOpenDrawer.Path, selectedDrawer.Path, StringComparison.OrdinalIgnoreCase))
             {
+                DrawerLogger.LogInformation($"Closing drawer '{selectedDrawer.Name}' via toggle.");
                 // 点击同一个drawer，切换：关闭
                 _currentDrawerWindow?.Close();
                 _currentDrawerWindow = null;
@@ -336,6 +311,7 @@ namespace winDrawer
             }
             else
             {
+                DrawerLogger.LogInformation($"Opening drawer '{selectedDrawer.Name}'.");
                 // 点击不同drawer或没有打开的，关闭当前的（如果有），打开新的
                 _suppressSelectionChange = true;
                 drawerListBox.SelectedIndex = -1; // 立即清空旧的选中状态
@@ -350,25 +326,26 @@ namespace winDrawer
                 drawerListBox.SelectedIndex = selectedIndex; // 设置新的选中状态
                 _suppressSelectionChange = false;
             }
-
-
         }
 
         private void OpenDrawer(DrawerDefinition drawer)
         {
             if (string.IsNullOrWhiteSpace(drawer.Path))
             {
+                DrawerLogger.LogWarning($"Requested to open drawer '{drawer.Name}' without a path.");
                 return;
             }
 
             if (!Directory.Exists(drawer.Path))
             {
+                DrawerLogger.LogWarning($"Drawer path not found for '{drawer.Name}': {drawer.Path}");
                 MessageBox.Show($"Folder not found:{Environment.NewLine}{drawer.Path}", "Drawer Missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
+                DrawerLogger.LogInformation($"Creating drawer window for '{drawer.Name}' ({drawer.Path}).");
                 var iconSize = _settingsSnapshot.GetThumbnailSize();
                 var drawerWindow = new DrawerWindow(_settingsRepository, drawer, iconSize, _currentTheme);
                 drawerWindow.StartPosition = FormStartPosition.Manual;
@@ -397,9 +374,11 @@ namespace winDrawer
                     }
                 };
                 drawerWindow.Show(this);
+                DrawerLogger.LogInformation($"Drawer window displayed for '{drawer.Name}'.");
             }
             catch (Exception ex)
             {
+                DrawerLogger.LogError($"Failed to open drawer '{drawer.Name}'.", ex);
                 MessageBox.Show($"Failed to open drawer '{drawer.Name}': {ex.Message}", "Drawer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -456,11 +435,14 @@ namespace winDrawer
             _isDragging = false;
             _settingsSnapshot.WindowPosition = Location;
             _settingsRepository.Update(_settingsSnapshot);
+            DrawerLogger.LogDebug($"Window drag ended at location {Location}.");
             // Enqueue save: background writer in SettingsRepository will persist asynchronously.
         }
 
         private void settingsButton_Click(object sender, EventArgs e)
         {
+            DrawerLogger.LogInformation("Opening settings window.");
+
             // Show Settings as a modeless window that closes when the user *clicks outside* the window.
             var settings = new SettingsForm(_settingsSnapshot);
             EventHandler<ThemePreviewEventArgs>? previewHandler = (_, args) => ApplyTheme(args.Palette);
@@ -474,6 +456,7 @@ namespace winDrawer
 
             settings.FormClosed += (_, _) =>
             {
+                DrawerLogger.LogInformation($"Settings window closed with result {settings.DialogResult}, shutdown={settings.ShutdownRequested}.");
                 try
                 {
                     settings.ThemePreviewChanged -= previewHandler;
@@ -495,25 +478,18 @@ namespace winDrawer
                 // If the settings requested a shutdown we respect it.
                 if (settings.ShutdownRequested)
                 {
+                    DrawerLogger.LogWarning("Settings requested application shutdown.");
                     // Perform only minimal cleanup and exit immediately to avoid blocking UI while
                     // many windows perform synchronous I/O during their close events.
                     try
                     {
-                        if (_trayIcon != null)
-                        {
-                            _trayIcon.Visible = false;
-                            _trayIcon.Dispose();
-                            _trayIcon = null;
-                        }
+                        _trayController?.Dispose();
+                        _trayController = null;
                     }
-                    catch { }
-
-                    try
+                    catch (Exception ex)
                     {
-                        _trayMenu?.Dispose();
-                        _trayMenu = null;
+                        DrawerLogger.LogError("Failed to dispose tray controller during shutdown request.", ex);
                     }
-                    catch { }
 
                     // Ensure UI message queue is processed briefly so the cleanup above is applied.
                     try
@@ -549,6 +525,7 @@ namespace winDrawer
                 // Apply changes if user accepted, otherwise revert preview.
                 if (settings.DialogResult == DialogResult.OK)
                 {
+                    DrawerLogger.LogInformation("Applying settings changes from dialog.");
                     _settingsSnapshot = settings.ResultSettings;
                     _settingsRepository.Update(_settingsSnapshot);
                     // Save enqueued by repository's background writer.
@@ -556,6 +533,7 @@ namespace winDrawer
                 }
                 else
                 {
+                    DrawerLogger.LogInformation("Settings dialog cancelled; reverting preview.");
                     ApplyTheme(_settingsSnapshot.BuildThemePalette());
                 }
 
@@ -568,6 +546,7 @@ namespace winDrawer
 
             // Show modeless with this window as owner so it appears above and is centered relative to owner.
             settings.Show(this);
+            DrawerLogger.LogDebug("Settings window displayed.");
         }
 
         private void addDrawerButton_Click(object sender, EventArgs e)
@@ -580,12 +559,14 @@ namespace winDrawer
 
             if (dialog.ShowDialog(this) != DialogResult.OK)
             {
+                DrawerLogger.LogDebug("Add drawer dialog cancelled.");
                 return;
             }
 
             var selectedPath = dialog.SelectedPath;
             if (string.IsNullOrWhiteSpace(selectedPath) || !Directory.Exists(selectedPath))
             {
+                DrawerLogger.LogWarning($"Invalid drawer folder selected: '{selectedPath}'.");
                 MessageBox.Show(this, $"Invalid folder selected:{Environment.NewLine}{selectedPath}", "Invalid Folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -593,19 +574,23 @@ namespace winDrawer
             var name = Path.GetFileName(selectedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
             try
             {
+                DrawerLogger.LogInformation($"Attempting to add drawer '{name}' at '{selectedPath}'.");
                 var added = _settingsRepository.AddDrawer(selectedPath, name);
                 if (!added)
                 {
+                    DrawerLogger.LogInformation($"Drawer '{selectedPath}' already exists.");
                     MessageBox.Show(this, "The selected folder is already configured as a drawer.", "Add Drawer", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
                 // Reload settings from storage to refresh the UI
                 ReloadSettingsFromStorage();
+                DrawerLogger.LogInformation($"Drawer added successfully: '{selectedPath}'.");
                 MessageBox.Show(this, $"Drawer added: {selectedPath}", "Add Drawer", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
+                DrawerLogger.LogError($"Failed to add drawer '{selectedPath}'.", ex);
                 MessageBox.Show(this, $"Failed to add drawer: {ex.Message}", "Add Drawer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -619,7 +604,12 @@ namespace winDrawer
 
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
+                DrawerLogger.LogInformation($"Drawer source folder selected: '{dialog.SelectedPath}'.");
                 MessageBox.Show($"Selected folder: {dialog.SelectedPath}", "Drawer Source", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                DrawerLogger.LogDebug("Drawer source folder selection cancelled.");
             }
         }
 
@@ -627,6 +617,7 @@ namespace winDrawer
         {
             try
             {
+                DrawerLogger.LogInformation("Reloading settings from repository.");
                 var snapshot = _settingsRepository.GetSnapshot();
                 if (InvokeRequired)
                 {
@@ -639,6 +630,7 @@ namespace winDrawer
             }
             catch (Exception ex)
             {
+                DrawerLogger.LogError("Failed to reload settings from repository.", ex);
                 MessageBox.Show(this, $"Failed to refresh drawers: {ex.Message}", "Settings Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -646,6 +638,7 @@ namespace winDrawer
         private void ApplySnapshot(SettingsSnapshot snapshot)
         {
             _settingsSnapshot = snapshot;
+            DrawerLogger.LogDebug("Applying settings snapshot to UI.");
             ApplySettings(_settingsSnapshot);
         }
 
@@ -676,6 +669,7 @@ namespace winDrawer
         private void ApplyTheme(ThemePalette theme)
         {
             _currentTheme = theme;
+            DrawerLogger.LogDebug($"Applying theme palette. Accent={theme.Accent}, WindowOpacity={theme.WindowOpacity:0.00}.");
 
             Opacity = theme.WindowOpacity;
             BackColor = theme.WindowBackground;
@@ -759,3 +753,5 @@ namespace winDrawer
 
     }
 }
+
+

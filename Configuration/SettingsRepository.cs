@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tomlyn;
 using Tomlyn.Model;
+using winDrawer;
 using winDrawer.Theming;
 
 namespace winDrawer.Configuration;
@@ -29,6 +30,7 @@ internal sealed class SettingsRepository : IDisposable
     {
         _settingsPath = settingsPath;
         _root = LoadOrCreateTable(settingsPath);
+        DrawerLogger.LogInformation($"SettingsRepository initialized with path '{settingsPath}'.");
 
         // Start background writer loop
         _writerTask = Task.Run(() => BackgroundWriterLoop(_writerCts.Token));
@@ -36,7 +38,7 @@ internal sealed class SettingsRepository : IDisposable
 
     public static string GetDefaultPath()
     {
-        return Path.Combine(AppContext.BaseDirectory, "Drawer-settings.toml");
+        return Path.Combine(AppContext.BaseDirectory, AppConstants.Files.SettingsFileName);
     }
 
     public SettingsSnapshot GetSnapshot()
@@ -44,7 +46,9 @@ internal sealed class SettingsRepository : IDisposable
         lock (_writeLock)
         {
             // Return snapshot from current in-memory model
-            return SettingsSnapshot.FromModel(_root);
+            var snapshot = SettingsSnapshot.FromModel(_root);
+            DrawerLogger.LogDebug("Settings snapshot materialized from repository.");
+            return snapshot;
         }
     }
 
@@ -65,6 +69,7 @@ internal sealed class SettingsRepository : IDisposable
             _dirty = true;
         }
 
+        DrawerLogger.LogInformation("Settings snapshot updated; background write scheduled.");
         _writeSignal.Release();
     }
 
@@ -72,6 +77,7 @@ internal sealed class SettingsRepository : IDisposable
     {
         if (string.IsNullOrWhiteSpace(drawerPath))
         {
+            DrawerLogger.LogWarning("Attempted to persist drawer size with an empty path.");
             return false;
         }
 
@@ -79,6 +85,7 @@ internal sealed class SettingsRepository : IDisposable
         {
             if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
             {
+                DrawerLogger.LogWarning($"Drawer collection missing when updating size for '{drawerPath}'.");
                 return false;
             }
 
@@ -100,11 +107,13 @@ internal sealed class SettingsRepository : IDisposable
 
                 _dirty = true;
                 _writeSignal.Release();
+                DrawerLogger.LogInformation($"Queued drawer size update for '{drawerPath}' => {size}.");
 
                 return true;
             }
         }
 
+        DrawerLogger.LogWarning($"Unable to find drawer entry when updating size for '{drawerPath}'.");
         return false;
     }
 
@@ -117,6 +126,7 @@ internal sealed class SettingsRepository : IDisposable
     {
         if (string.IsNullOrWhiteSpace(path))
         {
+            DrawerLogger.LogWarning("Attempted to add drawer with an empty path.");
             return false;
         }
 
@@ -135,6 +145,7 @@ internal sealed class SettingsRepository : IDisposable
                 var candidatePath = ReadString(entry, "path");
                 if (PathsEqual(candidatePath, expanded))
                 {
+                    DrawerLogger.LogDebug($"Drawer path already tracked: '{expanded}'.");
                     return false;
                 }
             }
@@ -148,10 +159,12 @@ internal sealed class SettingsRepository : IDisposable
             entryTable["path"] = expanded;
 
             drawerArray.Add(entryTable);
+            DrawerLogger.LogInformation($"Added drawer '{entryName}' => '{expanded}'.");
 
             _dirty = true;
         }
 
+        DrawerLogger.LogDebug("Signaled background writer after adding drawer.");
         _writeSignal.Release();
         return true;
     }
@@ -165,6 +178,7 @@ internal sealed class SettingsRepository : IDisposable
         {
             _dirty = true;
         }
+        DrawerLogger.LogDebug("Manual save enqueued.");
         _writeSignal.Release();
     }
 
@@ -173,11 +187,13 @@ internal sealed class SettingsRepository : IDisposable
     /// </summary>
     public async Task<bool> FlushAsync(TimeSpan timeout)
     {
+        DrawerLogger.LogInformation($"Flush requested with timeout {timeout}.");
         TaskCompletionSource<bool> tcs;
         lock (_writeLock)
         {
             if (!_dirty)
             {
+                DrawerLogger.LogDebug("Flush skipped because repository is not dirty.");
                 return true; // nothing to flush
             }
 
@@ -199,6 +215,7 @@ internal sealed class SettingsRepository : IDisposable
             }
         }
 
+        DrawerLogger.LogInformation($"Flush completed. Success={success}.");
         return success;
     }
 
@@ -220,13 +237,16 @@ internal sealed class SettingsRepository : IDisposable
             content = Toml.FromModel(_root);
         }
 
+        DrawerLogger.LogInformation("Performing synchronous settings save.");
         File.WriteAllText(_settingsPath, content);
+        DrawerLogger.LogInformation("Synchronous settings save completed.");
     }
 
     private async Task BackgroundWriterLoop(CancellationToken token)
     {
         try
         {
+            DrawerLogger.LogInformation("Background settings writer loop started.");
             while (!token.IsCancellationRequested)
             {
                 try
@@ -235,6 +255,7 @@ internal sealed class SettingsRepository : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
+                    DrawerLogger.LogInformation("Background writer cancellation requested.");
                     break;
                 }
 
@@ -257,6 +278,7 @@ internal sealed class SettingsRepository : IDisposable
                 {
                     try
                     {
+                        DrawerLogger.LogDebug("Background writer persisting settings to disk.");
                         // capture content under lock to avoid inconsistencies
                         string content;
                         lock (_writeLock)
@@ -272,16 +294,19 @@ internal sealed class SettingsRepository : IDisposable
                         }
 
                         await File.WriteAllTextAsync(_settingsPath, content, token);
+                        DrawerLogger.LogInformation("Background settings write completed.");
                         tcs?.TrySetResult(true);
                     }
                     catch (OperationCanceledException)
                     {
+                        DrawerLogger.LogInformation("Background writer write canceled.");
                         tcs?.TrySetCanceled();
                         break;
                     }
                     catch (Exception ex)
                     {
                         // swallow IO errors but signal flush as failed
+                        DrawerLogger.LogError("Background writer failed to persist settings.", ex);
                         try { tcs?.TrySetException(ex); } catch { }
                     }
                 }
@@ -289,6 +314,7 @@ internal sealed class SettingsRepository : IDisposable
         }
         finally
         {
+            DrawerLogger.LogInformation("Background settings writer loop stopping.");
             // Attempt one last write if dirty
             bool needFinal = false;
             lock (_writeLock)
@@ -304,6 +330,7 @@ internal sealed class SettingsRepository : IDisposable
             {
                 try
                 {
+                    DrawerLogger.LogInformation("Background writer performing final flush.");
                     string content;
                     lock (_writeLock)
                     {
@@ -317,14 +344,19 @@ internal sealed class SettingsRepository : IDisposable
                     }
 
                     File.WriteAllText(_settingsPath, content);
+                    DrawerLogger.LogInformation("Final settings flush completed.");
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    DrawerLogger.LogError("Final settings flush failed.", ex);
+                }
             }
         }
     }
 
     public void Dispose()
     {
+        DrawerLogger.LogInformation("Disposing SettingsRepository.");
         try
         {
             _writerCts.Cancel();
@@ -335,12 +367,14 @@ internal sealed class SettingsRepository : IDisposable
 
         _writerCts.Dispose();
         _writeSignal.Dispose();
+        DrawerLogger.LogInformation("SettingsRepository disposed.");
     }
 
     private static TomlTable LoadOrCreateTable(string path)
     {
         if (!File.Exists(path))
         {
+            DrawerLogger.LogInformation($"Settings file not found. Creating defaults at '{path}'.");
             var table = CreateDefaultTable();
             WriteTable(path, table);
             return table;
@@ -349,10 +383,12 @@ internal sealed class SettingsRepository : IDisposable
         try
         {
             var document = Toml.Parse(File.ReadAllText(path));
+            DrawerLogger.LogInformation($"Settings file loaded from '{path}'.");
             return document.ToModel();
         }
         catch (TomlException ex)
         {
+            DrawerLogger.LogError($"Failed to parse settings file '{path}'.", ex);
             throw new InvalidDataException($"Failed to parse settings file '{path}'.", ex);
         }
     }
@@ -365,6 +401,7 @@ internal sealed class SettingsRepository : IDisposable
             Directory.CreateDirectory(directory);
         }
 
+        DrawerLogger.LogInformation($"Writing settings table to '{path}'.");
         File.WriteAllText(path, Toml.FromModel(table));
     }
 
@@ -376,9 +413,15 @@ internal sealed class SettingsRepository : IDisposable
             {
                 ["start_with_windows"] = false,
                 ["window_locked"] = false,
-                ["icon_size"] = 96,
-                ["window_position"] = new TomlArray { 0, 0 },
-                ["window_color_hsla"] = new TomlArray { 194, 100, 41, 60 }
+                ["icon_size"] = AppConstants.Defaults.IconSizeDefault,
+                ["window_position"] = new TomlArray { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y },
+                ["window_color_hsla"] = new TomlArray
+                {
+                    AppConstants.Defaults.ThemeHue,
+                    AppConstants.Defaults.ThemeSaturation,
+                    AppConstants.Defaults.ThemeLightness,
+                    AppConstants.Defaults.ThemeAlpha
+                }
             },
             ["drawers"] = new TomlTableArray()
         };
@@ -480,8 +523,8 @@ public sealed class SettingsSnapshot
 
     public Size GetThumbnailSize()
     {
-        var width = Math.Clamp(IconSize, 16, 512);
-        var height = Math.Clamp(IconSize, 16, 512);
+        var width = Math.Clamp(IconSize, AppConstants.Defaults.ThumbnailSizeMin, AppConstants.Defaults.ThumbnailSizeMax);
+        var height = Math.Clamp(IconSize, AppConstants.Defaults.ThumbnailSizeMin, AppConstants.Defaults.ThumbnailSizeMax);
         return new Size(width, height);
     }
 
@@ -509,17 +552,23 @@ public sealed class SettingsSnapshot
             ? ParseDrawers(drawerArray)
             : Array.Empty<DrawerDefinition>();
 
-        var iconSize = GetInt(startup, "icon_size", 32, 512, 96);
-        var windowPositionArray = GetIntArray(startup, "window_position", new int[] { 0, 0 });
-        var windowColorHsla = GetIntArray(startup, "window_color_hsla", new int[] { 194, 100, 41, 60 });
+        var iconSize = GetInt(startup, "icon_size", AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax, AppConstants.Defaults.IconSizeDefault);
+        var windowPositionArray = GetIntArray(startup, "window_position", new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
+        var windowColorHsla = GetIntArray(startup, "window_color_hsla", new int[]
+        {
+            AppConstants.Defaults.ThemeHue,
+            AppConstants.Defaults.ThemeSaturation,
+            AppConstants.Defaults.ThemeLightness,
+            AppConstants.Defaults.ThemeAlpha
+        });
 
         return new SettingsSnapshot(
             startWithWindows: GetBoolean(startup, "start_with_windows"),
             windowLocked: GetBoolean(startup, "window_locked"),
-            themeHue: windowColorHsla.Length > 0 ? Math.Clamp(windowColorHsla[0], 0, 360) : 194,
-            themeSaturation: windowColorHsla.Length > 1 ? Math.Clamp(windowColorHsla[1], 0, 100) : 100,
-            themeLightness: windowColorHsla.Length > 2 ? Math.Clamp(windowColorHsla[2], 0, 100) : 41,
-            themeAlpha: windowColorHsla.Length > 3 ? Math.Clamp(windowColorHsla[3], 0, 100) : 60,
+            themeHue: windowColorHsla.Length > 0 ? Math.Clamp(windowColorHsla[0], AppConstants.Theme.HueMin, AppConstants.Theme.HueMax) : AppConstants.Defaults.ThemeHue,
+            themeSaturation: windowColorHsla.Length > 1 ? Math.Clamp(windowColorHsla[1], AppConstants.Theme.SaturationMin, AppConstants.Theme.SaturationMax) : AppConstants.Defaults.ThemeSaturation,
+            themeLightness: windowColorHsla.Length > 2 ? Math.Clamp(windowColorHsla[2], AppConstants.Theme.LightnessMin, AppConstants.Theme.LightnessMax) : AppConstants.Defaults.ThemeLightness,
+            themeAlpha: windowColorHsla.Length > 3 ? Math.Clamp(windowColorHsla[3], AppConstants.Theme.AlphaMin, AppConstants.Theme.AlphaMax) : AppConstants.Defaults.ThemeAlpha,
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
             iconSize: iconSize,
             drawers: drawers);

@@ -47,17 +47,17 @@ public partial class SettingsForm : UIForm
 
     private void ConfigureControls()
     {
-        hueTrackBar.Minimum = 0;
-        hueTrackBar.Maximum = 360;
+        hueTrackBar.Minimum = AppConstants.Theme.HueMin;
+        hueTrackBar.Maximum = AppConstants.Theme.HueMax;
 
-        saturationTrackBar.Minimum = 0;
-        saturationTrackBar.Maximum = 100;
+        saturationTrackBar.Minimum = AppConstants.Theme.SaturationMin;
+        saturationTrackBar.Maximum = AppConstants.Theme.SaturationMax;
 
-        lightnessTrackBar.Minimum = 0;
-        lightnessTrackBar.Maximum = 100;
+        lightnessTrackBar.Minimum = AppConstants.Theme.LightnessMin;
+        lightnessTrackBar.Maximum = AppConstants.Theme.LightnessMax;
 
-        opacityTrackBar.Minimum = 0;
-        opacityTrackBar.Maximum = 100;
+        opacityTrackBar.Minimum = AppConstants.Theme.AlphaMin;
+        opacityTrackBar.Maximum = AppConstants.Theme.AlphaMax;
 
         behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
     }
@@ -133,6 +133,7 @@ public partial class SettingsForm : UIForm
 
     private void saveButton_Click(object? sender, EventArgs e)
     {
+        DrawerLogger.LogInformation("SettingsForm: save requested.");
         SyncWorkingSnapshotFromUi();
         ResultSettings = _workingSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
@@ -142,6 +143,7 @@ public partial class SettingsForm : UIForm
 
     private void cancelButton_Click(object? sender, EventArgs e)
     {
+        DrawerLogger.LogInformation("SettingsForm: cancel requested.");
         ResultSettings = _originalSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
@@ -151,6 +153,7 @@ public partial class SettingsForm : UIForm
 
     private void shutDownButton_Click(object? sender, EventArgs e)
     {
+        DrawerLogger.LogWarning("SettingsForm: shutdown requested.");
         ShutdownRequested = true;
         DialogResult = DialogResult.Abort;
         Close();
@@ -158,12 +161,12 @@ public partial class SettingsForm : UIForm
 
     private void defautlSettingsButton_Click(object? sender, EventArgs e)
     {
-        Console.WriteLine("[SettingsForm] default settings button clicked.");
+        DrawerLogger.LogDebug("SettingsForm: default settings button clicked.");
     }
 
     private void uiLabel5_Click(object? sender, EventArgs e)
     {
-        Console.WriteLine("[SettingsForm] lightness value label clicked.");
+        DrawerLogger.LogDebug("SettingsForm: lightness value label clicked.");
     }
 
     // private void uiLabel1_Click(object? sender, EventArgs e)

@@ -572,8 +572,42 @@ namespace winDrawer
 
         private void addDrawerButton_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Add Drawer flow goes here.", "Coming Soon", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            // System.Diagnostics.Process.Start("explorer.exe", @"C:\");
+            using var dialog = new FolderBrowserDialog
+            {
+                Description = "Select the folder you want to link as a drawer.",
+                ShowNewFolderButton = true
+            };
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            var selectedPath = dialog.SelectedPath;
+            if (string.IsNullOrWhiteSpace(selectedPath) || !Directory.Exists(selectedPath))
+            {
+                MessageBox.Show(this, $"Invalid folder selected:{Environment.NewLine}{selectedPath}", "Invalid Folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var name = Path.GetFileName(selectedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            try
+            {
+                var added = _settingsRepository.AddDrawer(selectedPath, name);
+                if (!added)
+                {
+                    MessageBox.Show(this, "The selected folder is already configured as a drawer.", "Add Drawer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // Reload settings from storage to refresh the UI
+                ReloadSettingsFromStorage();
+                MessageBox.Show(this, $"Drawer added: {selectedPath}", "Add Drawer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Failed to add drawer: {ex.Message}", "Add Drawer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void openDrawerFolderButton_Click(object sender, EventArgs e)

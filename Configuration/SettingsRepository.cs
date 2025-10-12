@@ -109,6 +109,54 @@ internal sealed class SettingsRepository : IDisposable
     }
 
     /// <summary>
+    /// Add a new drawer entry if it does not already exist.
+    /// Returns true when a new entry was added; false if the path was already present or input invalid.
+    /// This method updates the in-memory model and signals the background writer to persist changes.
+    /// </summary>
+    public bool AddDrawer(string path, string? name = null)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var expanded = Environment.ExpandEnvironmentVariables(path).Trim();
+        lock (_writeLock)
+        {
+            if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
+            {
+                drawerArray = new TomlTableArray();
+                _root["drawers"] = drawerArray;
+            }
+
+            // Check for existing entry
+            foreach (var entry in drawerArray.OfType<TomlTable>())
+            {
+                var candidatePath = ReadString(entry, "path");
+                if (PathsEqual(candidatePath, expanded))
+                {
+                    return false;
+                }
+            }
+
+            var entryTable = new TomlTable();
+            var entryName = string.IsNullOrWhiteSpace(name)
+                ? Path.GetFileName(expanded.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+                : name;
+
+            entryTable["name"] = entryName ?? string.Empty;
+            entryTable["path"] = expanded;
+
+            drawerArray.Add(entryTable);
+
+            _dirty = true;
+        }
+
+        _writeSignal.Release();
+        return true;
+    }
+
+    /// <summary>
     /// Enqueue a save request: does not block. Background writer will persist the in-memory model.
     /// </summary>
     public void EnqueueSave()

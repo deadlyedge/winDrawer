@@ -24,6 +24,8 @@ namespace winDrawer
         private DrawerWindow? _currentDrawerWindow;
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;
+        private NotifyIcon? _trayIcon;
+        private ContextMenuStrip? _trayMenu;
 
         public MainWindow()
         {
@@ -39,6 +41,7 @@ namespace winDrawer
             Opacity = _currentTheme.WindowOpacity;
 
             LoadBrandingAssets();
+            InitializeTray();
             WireDragHandlers();
             ApplySettings(_settingsSnapshot);
 
@@ -49,6 +52,26 @@ namespace winDrawer
                 _logoFont?.Dispose();
                 // _headerGlyph?.Dispose();
                 _fontCollection.Dispose();
+
+                // Safe tray cleanup: do not dispose the Form.Icon here because other UI code
+                // (dialogs) may still access it. NotifyIcon.Dispose will release its own icon handle.
+                try
+                {
+                    if (_trayIcon != null)
+                    {
+                        _trayIcon.Visible = false;
+                        _trayIcon.Dispose();
+                        _trayIcon = null;
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    _trayMenu?.Dispose();
+                    _trayMenu = null;
+                }
+                catch { }
             };
 
             // 在窗体加载完成后填充菜单，避免默认打开
@@ -84,7 +107,98 @@ namespace winDrawer
         {
             if (File.Exists(iconPath))
             {
-                Icon = new Icon(iconPath);
+                try
+                {
+                    // Load window icon from file. Do NOT call Dispose on the existing Icon
+                    // because other parts of the app (e.g. cloned tray icons) may still
+                    // reference the same instance and disposing it can cause ObjectDisposedException.
+                    Icon = new Icon(iconPath, new Size(32, 32));
+                }
+                catch
+                {
+                    // ignore and keep existing icon if loading fails
+                }
+            }
+        }
+
+        private void InitializeTray()
+        {
+            var baseDir = AppContext.BaseDirectory;
+            var iconPath = Path.Combine(baseDir, "assets", "drawer.icon.4.ico");
+
+            try
+            {
+                _trayMenu = new ContextMenuStrip();
+                var showHideItem = new ToolStripMenuItem("Show/Hide");
+                showHideItem.Click += (_, _) => ToggleVisibility();
+
+                var settingsItem = new ToolStripMenuItem("Settings");
+                settingsItem.Click += (_, _) => settingsButton_Click(this, EventArgs.Empty);
+
+                var exitItem = new ToolStripMenuItem("Exit");
+                exitItem.Click += (_, _) =>
+                {
+                    try
+                    {
+                        if (_trayIcon != null) _trayIcon.Visible = false;
+                    }
+                    catch { }
+                    Application.Exit();
+                };
+
+                _trayMenu.Items.AddRange(new ToolStripItem[] { showHideItem, settingsItem, new ToolStripSeparator(), exitItem });
+
+                _trayIcon = new NotifyIcon
+                {
+                    ContextMenuStrip = _trayMenu,
+                    Text = "winDrawer",
+                    Visible = true
+                };
+
+                if (File.Exists(iconPath))
+                {
+                    try
+                    {
+                        // Prefer a 16x16 frame for tray icons so Windows displays the provided icon
+                        _trayIcon.Icon = new Icon(iconPath, new Size(16, 16));
+                    }
+                    catch
+                    {
+                        // fallback to form icon if reading the file fails
+                        if (Icon != null) _trayIcon.Icon = Icon;
+                    }
+                }
+                else if (Icon != null)
+                {
+                    // Assign a clone so the tray and form do not share the same Icon instance.
+                    _trayIcon.Icon = (Icon)Icon.Clone();
+                }
+
+                _trayIcon.DoubleClick += (_, _) => ToggleVisibility();
+            }
+            catch
+            {
+                // Non-fatal: tray is optional
+            }
+        }
+
+        private void ToggleVisibility()
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(ToggleVisibility));
+                return;
+            }
+
+            if (Visible && WindowState != FormWindowState.Minimized)
+            {
+                Hide();
+            }
+            else
+            {
+                Show();
+                WindowState = FormWindowState.Normal;
+                Activate();
             }
         }
 

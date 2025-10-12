@@ -406,30 +406,59 @@ namespace winDrawer
 
         private void settingsButton_Click(object sender, EventArgs e)
         {
-            using var settings = new SettingsForm(_settingsSnapshot);
+            // Show Settings as a modeless window that closes when it loses focus (click outside).
+            var settings = new SettingsForm(_settingsSnapshot);
             EventHandler<ThemePreviewEventArgs>? previewHandler = (_, args) => ApplyTheme(args.Palette);
             settings.ThemePreviewChanged += previewHandler;
-            var dialogResult = settings.ShowDialog(this);
-            settings.ThemePreviewChanged -= previewHandler;
 
-            if (settings.ShutdownRequested)
+            // Close the settings window when it deactivates (user clicked outside)
+            settings.Deactivate += (_, _) =>
             {
-                ApplyTheme(_settingsSnapshot.BuildThemePalette());
-                Close();
-                return;
-            }
+                try
+                {
+                    if (!settings.IsDisposed) settings.Close();
+                }
+                catch { }
+            };
 
-            if (dialogResult == DialogResult.OK)
+            settings.FormClosed += (_, _) =>
             {
-                _settingsSnapshot = settings.ResultSettings;
-                _settingsRepository.Update(_settingsSnapshot);
-                _settingsRepository.Save();
-                ApplySettings(_settingsSnapshot);
-            }
-            else
-            {
-                ApplyTheme(_settingsSnapshot.BuildThemePalette());
-            }
+                try
+                {
+                    settings.ThemePreviewChanged -= previewHandler;
+                }
+                catch { }
+
+                // If the settings requested a shutdown we respect it.
+                if (settings.ShutdownRequested)
+                {
+                    ApplyTheme(_settingsSnapshot.BuildThemePalette());
+                    Close();
+                    return;
+                }
+
+                // Apply changes if user accepted, otherwise revert preview.
+                if (settings.DialogResult == DialogResult.OK)
+                {
+                    _settingsSnapshot = settings.ResultSettings;
+                    _settingsRepository.Update(_settingsSnapshot);
+                    _settingsRepository.Save();
+                    ApplySettings(_settingsSnapshot);
+                }
+                else
+                {
+                    ApplyTheme(_settingsSnapshot.BuildThemePalette());
+                }
+
+                try
+                {
+                    settings.Dispose();
+                }
+                catch { }
+            };
+
+            // Show modeless with this window as owner so it appears above and is centered relative to owner.
+            settings.Show(this);
         }
 
         private void addDrawerButton_Click(object sender, EventArgs e)

@@ -43,7 +43,7 @@ internal static class AppConstants
         public const int ThemeSaturation = 100;
         public const int ThemeLightness = 41;
         public const int ThemeAlpha = 60;
-        public const float LogoFontSize = 24f;
+        public const float LogoFontSize = 14f;
     }
 
     internal static class Theme

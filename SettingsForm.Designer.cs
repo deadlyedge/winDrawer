@@ -32,6 +32,8 @@ partial class SettingsForm
         settingsTableLayoutPanel = new UITableLayoutPanel();
         behaviorCheckBoxGroup = new UICheckBoxGroup();
         visualGroupBox = new UIGroupBox();
+        generalGroupBox = new UIGroupBox();
+        generalFlowPanel = new FlowLayoutPanel();
         visualTableLayoutPanel = new UITableLayoutPanel();
         lightnessValueLabel = new UILabel();
         opacityValueLabel = new UILabel();
@@ -50,6 +52,7 @@ partial class SettingsForm
         footerGroupBox = new UIGroupBox();
         shutDownButton = new UIButton();
         defautlSettingsButton = new UIButton();
+        openSettingsTomlButton = new UIButton();
         cancelButton = new UIButton();
         saveButton = new UIButton();
         mainTableLayoutPanel.SuspendLayout();
@@ -72,9 +75,9 @@ partial class SettingsForm
         mainTableLayoutPanel.Location = new Point(0, 0);
         mainTableLayoutPanel.Name = "mainTableLayoutPanel";
         mainTableLayoutPanel.RowCount = 3;
-        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
+        mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
         mainTableLayoutPanel.Size = new Size(783, 583);
         mainTableLayoutPanel.TabIndex = 1;
         mainTableLayoutPanel.TagString = null;
@@ -113,13 +116,14 @@ partial class SettingsForm
         settingsTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         settingsTableLayoutPanel.Controls.Add(behaviorCheckBoxGroup, 0, 0);
         settingsTableLayoutPanel.Controls.Add(visualGroupBox, 0, 1);
+        settingsTableLayoutPanel.Controls.Add(generalGroupBox, 0, 2);
         settingsTableLayoutPanel.Dock = DockStyle.Fill;
         settingsTableLayoutPanel.Location = new Point(3, 53);
         settingsTableLayoutPanel.Name = "settingsTableLayoutPanel";
-        settingsTableLayoutPanel.RowCount = 2;
+        settingsTableLayoutPanel.RowCount = 3;
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
-        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         settingsTableLayoutPanel.Size = new Size(777, 442);
         settingsTableLayoutPanel.TabIndex = 2;
         settingsTableLayoutPanel.TagString = null;
@@ -163,6 +167,38 @@ partial class SettingsForm
         visualGroupBox.TabIndex = 1;
         visualGroupBox.Text = "visual";
         visualGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
+        //
+        // generalGroupBox
+        //
+        generalGroupBox.Controls.Add(generalFlowPanel);
+        generalGroupBox.Dock = DockStyle.Fill;
+        generalGroupBox.FillColor = Color.FromArgb(64, 64, 64);
+        generalGroupBox.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        generalGroupBox.ForeColor = Color.FromArgb(224, 224, 224);
+        generalGroupBox.Location = new Point(10, 350);
+        generalGroupBox.Margin = new Padding(10);
+        generalGroupBox.MinimumSize = new Size(1, 1);
+        generalGroupBox.Name = "generalGroupBox";
+        generalGroupBox.Padding = new Padding(24, 40, 24, 12);
+        generalGroupBox.Size = new Size(757, 112);
+        generalGroupBox.TabIndex = 2;
+        generalGroupBox.Text = "general";
+        generalGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
+        //
+        // generalFlowPanel
+        //
+        generalFlowPanel.BackColor = Color.FromArgb(64, 64, 64);
+        generalFlowPanel.Controls.Add(shutDownButton);
+        generalFlowPanel.Controls.Add(defautlSettingsButton);
+        generalFlowPanel.Controls.Add(openSettingsTomlButton);
+        generalFlowPanel.Dock = DockStyle.Fill;
+        generalFlowPanel.FlowDirection = FlowDirection.LeftToRight;
+        generalFlowPanel.Location = new Point(24, 40);
+        generalFlowPanel.Name = "generalFlowPanel";
+        generalFlowPanel.Padding = new Padding(0, 4, 0, 0);
+        generalFlowPanel.Size = new Size(709, 60);
+        generalFlowPanel.TabIndex = 0;
+        generalFlowPanel.WrapContents = false;
         // 
         // visualTableLayoutPanel
         // 
@@ -369,18 +405,16 @@ partial class SettingsForm
         // 
         // footerGroupBox
         // 
-        footerGroupBox.Controls.Add(shutDownButton);
-        footerGroupBox.Controls.Add(defautlSettingsButton);
         footerGroupBox.Controls.Add(cancelButton);
         footerGroupBox.Controls.Add(saveButton);
         footerGroupBox.Dock = DockStyle.Fill;
         footerGroupBox.FillColor = Color.FromArgb(64, 64, 64);
         footerGroupBox.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
         footerGroupBox.Location = new Point(4, 503);
-        footerGroupBox.Margin = new Padding(4, 5, 4, 5);
+        footerGroupBox.Margin = new Padding(0);
         footerGroupBox.MinimumSize = new Size(1, 1);
         footerGroupBox.Name = "footerGroupBox";
-        footerGroupBox.Padding = new Padding(0, 32, 0, 0);
+        footerGroupBox.Padding = new Padding(0);
         footerGroupBox.RectSides = ToolStripStatusLabelBorderSides.None;
         footerGroupBox.Size = new Size(775, 40);
         footerGroupBox.TabIndex = 3;
@@ -395,7 +429,8 @@ partial class SettingsForm
         shutDownButton.FillPressColor = Color.DarkRed;
         shutDownButton.FillSelectedColor = Color.Brown;
         shutDownButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        shutDownButton.Location = new Point(9, 0);
+        shutDownButton.Location = new Point(3, 4);
+        shutDownButton.Margin = new Padding(3, 4, 12, 4);
         shutDownButton.MinimumSize = new Size(1, 1);
         shutDownButton.Name = "shutDownButton";
         shutDownButton.Radius = 20;
@@ -412,7 +447,8 @@ partial class SettingsForm
         defautlSettingsButton.FillPressColor = Color.DarkRed;
         defautlSettingsButton.FillSelectedColor = Color.Brown;
         defautlSettingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        defautlSettingsButton.Location = new Point(375, 0);
+        defautlSettingsButton.Location = new Point(233, 4);
+        defautlSettingsButton.Margin = new Padding(3, 4, 12, 4);
         defautlSettingsButton.MinimumSize = new Size(1, 1);
         defautlSettingsButton.Name = "defautlSettingsButton";
         defautlSettingsButton.Radius = 20;
@@ -420,6 +456,24 @@ partial class SettingsForm
         defautlSettingsButton.TabIndex = 3;
         defautlSettingsButton.Text = "default";
         defautlSettingsButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        //
+        // openSettingsTomlButton
+        //
+        openSettingsTomlButton.FillColor = Color.SteelBlue;
+        openSettingsTomlButton.FillDisableColor = Color.DarkGray;
+        openSettingsTomlButton.FillHoverColor = Color.LightCoral;
+        openSettingsTomlButton.FillPressColor = Color.DarkRed;
+        openSettingsTomlButton.FillSelectedColor = Color.Brown;
+        openSettingsTomlButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        openSettingsTomlButton.Location = new Point(368, 4);
+        openSettingsTomlButton.Margin = new Padding(3, 4, 3, 4);
+        openSettingsTomlButton.MinimumSize = new Size(1, 1);
+        openSettingsTomlButton.Name = "openSettingsTomlButton";
+        openSettingsTomlButton.Radius = 20;
+        openSettingsTomlButton.Size = new Size(240, 40);
+        openSettingsTomlButton.TabIndex = 5;
+        openSettingsTomlButton.Text = "open settings TOML";
+        openSettingsTomlButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
         // 
         // cancelButton
         // 
@@ -429,7 +483,7 @@ partial class SettingsForm
         cancelButton.FillPressColor = Color.DarkRed;
         cancelButton.FillSelectedColor = Color.Brown;
         cancelButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        cancelButton.Location = new Point(509, 0);
+        cancelButton.Location = new Point(509, 8);
         cancelButton.MinimumSize = new Size(1, 1);
         cancelButton.Name = "cancelButton";
         cancelButton.Radius = 20;
@@ -441,7 +495,7 @@ partial class SettingsForm
         // saveButton
         // 
         saveButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        saveButton.Location = new Point(643, 0);
+        saveButton.Location = new Point(643, 8);
         saveButton.MinimumSize = new Size(1, 1);
         saveButton.Name = "saveButton";
         saveButton.Radius = 20;
@@ -454,13 +508,13 @@ partial class SettingsForm
         // 
         AutoScaleMode = AutoScaleMode.None;
         BackColor = Color.DimGray;
-        ClientSize = new Size(783, 583);
+        ClientSize = new Size(783, 760);
         Controls.Add(mainTableLayoutPanel);
         Name = "SettingsForm";
         RectColor = Color.Transparent;
         ShowTitle = false;
         Text = "";
-        ZoomScaleRect = new Rectangle(0, 0, 783, 583);
+        ZoomScaleRect = new Rectangle(0, 0, 783, 760);
         mainTableLayoutPanel.ResumeLayout(false);
         headerTableLayoutPanel.ResumeLayout(false);
         settingsTableLayoutPanel.ResumeLayout(false);
@@ -478,6 +532,8 @@ partial class SettingsForm
     private Sunny.UI.UITableLayoutPanel settingsTableLayoutPanel;
     private Sunny.UI.UICheckBoxGroup behaviorCheckBoxGroup;
     private Sunny.UI.UIGroupBox visualGroupBox;
+    private Sunny.UI.UIGroupBox generalGroupBox;
+    private System.Windows.Forms.FlowLayoutPanel generalFlowPanel;
     private Sunny.UI.UITableLayoutPanel visualTableLayoutPanel;
     private Sunny.UI.UILabel lightnessValueLabel;
     private Sunny.UI.UILabel opacityValueLabel;
@@ -498,4 +554,5 @@ partial class SettingsForm
     private Sunny.UI.UIButton saveButton;
     private Sunny.UI.UIButton defautlSettingsButton;
     private Sunny.UI.UIButton shutDownButton;
+    private Sunny.UI.UIButton openSettingsTomlButton;
 }

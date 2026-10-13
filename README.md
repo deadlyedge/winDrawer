@@ -6,7 +6,7 @@ winDrawer is a Windows desktop companion that keeps frequently used folders only
 
 - **One-click drawers** – Browse directories with visual tiles sized from your chosen icon size.
 - **Live theming** – Adjust hue, saturation, lightness and opacity and preview changes before saving.
-- **Persistent layout** – Window and drawer sizes as well as drawer metadata are saved to `Drawer-settings.toml`.
+- **Persistent layout** – Window and drawer settings are saved in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
 - **System tray control** – Toggle visibility, jump into settings, or exit the app from the tray icon handled by `TrayController`.
 - **Structured diagnostics** – Execution flow and errors are written to `Drawer.log` for easier troubleshooting.
 
@@ -15,9 +15,9 @@ winDrawer is a Windows desktop companion that keeps frequently used folders only
 ### Prerequisites
 
 - Windows 10/11
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 
-> The project targets `net9.0-windows` and uses Windows Forms.
+> The project targets `net10.0-windows` and uses Windows Forms.
 
 ### Build
 
@@ -25,7 +25,7 @@ winDrawer is a Windows desktop companion that keeps frequently used folders only
 pwsh -NoLogo -Command "dotnet build"
 ```
 
-The binaries are placed under `bin\Debug\net9.0-windows\win-x64\`.
+The binaries are placed under `bin\Debug\net10.0-windows\win-x64\`.
 
 ### Run
 
@@ -37,7 +37,7 @@ The main window launches without a border and can be dragged by its header logo.
 
 ## Configuration
 
-- **Settings file** – `Drawer-settings.toml` (copied to the output directory) stores startup behaviour, theme values, window position, icon size, and the list of drawers.
+- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, theme values, window position, and drawer data. On first launch, an existing `Drawer-settings.toml` beside the application is copied into this location only when no new-location file exists; the old file is retained. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
 - **Assets** – Icons and fonts live under `assets\`. The application expects:
   - `assets\drawer.icon.4.ico` for the window and tray icon.
   - `assets\fonts\Lobster-Regular.ttf` for the logo.
@@ -55,7 +55,7 @@ The main window launches without a border and can be dragged by its header logo.
 - `MainWindow.cs` – Primary UI, drawer list, tray integration via `TrayController`.
 - `DrawerWindow.cs` – Presentation of drawer contents, thumbnail generation, and theme application.
 - `SettingsForm.cs` – Modeless settings panel with live theme preview.
-- `Configuration/SettingsRepository.cs` – Handles reading/writing `Drawer-settings.toml`.
+- `Configuration/SettingsRepository.cs` – Handles reading/writing `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` and one-time legacy import.
 - `Theming/ThemePalette.cs` – Calculates derived colours from HSLA input.
 - `AppConstants.cs` – Central store for shared constants (file names, UI dimensions, defaults).
 - `DrawerLogger.cs` – File-backed logger with debugger mirroring.

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using Sunny.UI;
 using winDrawer.Configuration;
@@ -73,6 +75,7 @@ public partial class SettingsForm : UIForm
         cancelButton.Click += cancelButton_Click;
         shutDownButton.Click += shutDownButton_Click;
         defautlSettingsButton.Click += defautlSettingsButton_Click;
+        openSettingsTomlButton.Click += openSettingsTomlButton_Click;
     }
 
     private void WireDragHandlers()
@@ -134,6 +137,11 @@ public partial class SettingsForm : UIForm
     private void saveButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogInformation("SettingsForm: save requested.");
+        if (!TrySynchronizeStartupRegistration())
+        {
+            return;
+        }
+
         SyncWorkingSnapshotFromUi();
         ResultSettings = _workingSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
@@ -162,6 +170,85 @@ public partial class SettingsForm : UIForm
     private void defautlSettingsButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogDebug("SettingsForm: default settings button clicked.");
+    }
+
+    private void openSettingsTomlButton_Click(object? sender, EventArgs e)
+    {
+        var settingsPath = SettingsRepository.GetDefaultPath();
+        try
+        {
+            if (!File.Exists(settingsPath))
+            {
+                throw new FileNotFoundException("The settings file does not exist.", settingsPath);
+            }
+
+            var notepadPath = Path.Combine(Environment.SystemDirectory, "notepad.exe");
+            var startInfo = new ProcessStartInfo(notepadPath)
+            {
+                UseShellExecute = false
+            };
+            startInfo.ArgumentList.Add(settingsPath);
+            Process.Start(startInfo);
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError($"Unable to open settings TOML file '{settingsPath}'.", ex);
+            MessageBox.Show(
+                this,
+                $"Unable to open the settings file:{Environment.NewLine}{settingsPath}{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                "Open Settings TOML",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
+
+    private bool TrySynchronizeStartupRegistration()
+    {
+        var requestedState = IsBehaviorChecked(StartWithWindowsIndex);
+        try
+        {
+            StartupRegistration.SetEnabled(requestedState);
+            _workingSnapshot.StartWithWindows = requestedState;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError("Unable to update the current user's Windows startup registration.", ex);
+
+            bool actualState;
+            try
+            {
+                actualState = StartupRegistration.IsEnabled();
+            }
+            catch (Exception statusException)
+            {
+                DrawerLogger.LogError("Unable to determine the current Windows startup registration state.", statusException);
+                MessageBox.Show(
+                    this,
+                    $"Unable to update or verify Windows login startup. No settings were saved.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                    "Windows Startup",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return false;
+            }
+
+            _workingSnapshot.StartWithWindows = actualState;
+            var selected = behaviorCheckBoxGroup.SelectedIndexes ?? new List<int>();
+            selected.Remove(StartWithWindowsIndex);
+            if (actualState)
+            {
+                selected.Add(StartWithWindowsIndex);
+            }
+
+            behaviorCheckBoxGroup.SelectedIndexes = selected;
+            MessageBox.Show(
+                this,
+                $"Unable to {(requestedState ? "enable" : "disable")} Windows login startup. The checkbox and saved setting have been restored to the actual registration state ({(actualState ? "enabled" : "disabled")}).{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                "Windows Startup",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return true;
+        }
     }
 
     private void uiLabel5_Click(object? sender, EventArgs e)

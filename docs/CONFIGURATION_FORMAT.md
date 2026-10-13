@@ -62,14 +62,15 @@ path = "%USERPROFILE%\\Downloads"
 - 对多个快速更新做合并/防抖；应用退出时等待写入完成。
 - 推荐先写入同目录临时文件、完成 flush 后原子替换目标文件；保留旧文件直到新文件确认写入成功。
 - 仅由 settings repository 负责 TOML 序列化、备份和原子写入。
-- 配置与日志目录须为用户可写位置。最终目录选择见 [`TECHNICAL_DECISIONS.md`](TECHNICAL_DECISIONS.md)。目录迁移时按第 6 节导入，不得将配置随可执行文件更新而重置。
+- 设置文件默认位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；配置目录由应用按需创建。日志位置不由本设置路径决定。
+- 设置页的 **Open Settings TOML** 按钮使用 Windows Notepad 打开当前活动的 TOML 文件。
 
 ## 6. 迁移与演进
 
 - 初版应兼容本文件第 2 节给出的字段格式。
 - 当前抽屉 schema 使用标准 TOML 字符串，并要求尺寸使用同级 `size = [width, height]` 数组；不兼容旧的 `[drawers.size]` 子表。升级前需将旧尺寸子表转换为本节新格式。
 - 当前格式没有 schema version。首次引入 `schema_version` 或改用其他格式前，先定义默认版本、旧版本升级、未知未来版本处理和回滚策略。
-- 配置路径如从便携位置切换到用户数据目录，首次启动按明确优先级查找旧文件：新位置存在时不覆盖；新位置不存在而旧位置存在时先备份并导入；导入失败时保留两份并显示错误。
+- 首次启动时，若 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` 不存在而程序目录存在旧版 `Drawer-settings.toml`，将旧文件复制到新位置并保留原件。新位置已有文件时绝不覆盖；复制失败时保留旧文件、显示错误并停止初始化，避免以默认配置覆盖/取代用户设置。
 - 不兼容 schema 变更应：备份旧文件、读取旧 schema、转换到新模型、验证新文件、原子写入，然后才确认迁移成功。
 - 设置字段被删除或语义改变时，保留旧字段的兼容读取/迁移一段明确周期，或在升级说明中明确说明。
 
@@ -84,3 +85,4 @@ path = "%USERPROFILE%\\Downloads"
 - [ ] 未知字段/注释策略有可重复测试。
 - [ ] TOML 损坏、只读目录、磁盘写入失败时保留原文件并报告错误。
 - [ ] 配置路径迁移和备份导入不会覆盖新配置或静默丢失用户数据。
+- [ ] 设置文件新默认路径为 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；Notepad 打开按钮指向同一活动文件。

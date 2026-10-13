@@ -521,13 +521,6 @@ public sealed class SettingsSnapshot
         return BuildThemePalette().Accent;
     }
 
-    public Size GetThumbnailSize()
-    {
-        var width = Math.Clamp(IconSize, AppConstants.Defaults.ThumbnailSizeMin, AppConstants.Defaults.ThumbnailSizeMax);
-        var height = Math.Clamp(IconSize, AppConstants.Defaults.ThumbnailSizeMin, AppConstants.Defaults.ThumbnailSizeMax);
-        return new Size(width, height);
-    }
-
     public SettingsSnapshot Clone()
     {
         return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, WindowPosition, IconSize, _drawers);

@@ -346,8 +346,7 @@ namespace winDrawer
             try
             {
                 DrawerLogger.LogInformation($"Creating drawer window for '{drawer.Name}' ({drawer.Path}).");
-                var iconSize = _settingsSnapshot.GetThumbnailSize();
-                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, iconSize, _currentTheme);
+                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, _currentTheme);
                 drawerWindow.StartPosition = FormStartPosition.Manual;
                 drawerWindow.Location = new Point(Right, Top);
                 _currentDrawerWindow = drawerWindow;

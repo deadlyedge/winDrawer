@@ -36,8 +36,6 @@ internal static class AppConstants
         public static readonly Point WindowPosition = new(100, 100);
         public const int IconSizeMin = 32;
         public const int IconSizeMax = 512;
-        public const int ThumbnailSizeMin = 16;
-        public const int ThumbnailSizeMax = 512;
         public const int IconSizeDefault = 96;
         public const int ThemeHue = 194;
         public const int ThemeSaturation = 100;

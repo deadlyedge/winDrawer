@@ -4,11 +4,9 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Sunny.UI;
 using System.Diagnostics;
-using System.Threading.Tasks;
+using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -18,13 +16,8 @@ namespace winDrawer
     {
         private readonly SettingsRepository _settingsRepository;
         private readonly DrawerDefinition _drawer;
-        private readonly Size _iconSize;
         private ThemePalette _theme;
         private Size _lastPersistedSize;
-        private bool _isResizing;
-        private Point _resizeOffset;
-        private Size _initialSize;
-        private Panel? resizeGrip;
 
         private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -42,11 +35,10 @@ namespace winDrawer
 
         private sealed record DrawerItemInfo(string Path, bool IsDirectory);
 
-        internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, Size iconSize, ThemePalette theme)
+        internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, ThemePalette theme)
         {
             _settingsRepository = settingsRepository ?? throw new ArgumentNullException(nameof(settingsRepository));
             _drawer = drawer ?? throw new ArgumentNullException(nameof(drawer));
-            _iconSize = NormalizeIconSize(iconSize);
             _theme = theme ?? throw new ArgumentNullException(nameof(theme));
 
             DrawerLogger.LogInformation($"Initializing DrawerWindow for '{_drawer.Name}' at '{_drawer.Path}'.");
@@ -63,40 +55,21 @@ namespace winDrawer
             fullPathLabel.Text = _drawer.Path;
             DrawerLogger.LogDebug($"Setting up DrawerWindow UI for '{_drawer.Name}'.");
 
-            drawerImageList.ImageSize = _iconSize;
-            // Ensure FlowLayoutPanel layout behavior at runtime (in case Designer values are missing)
-            drawerContentsLayout.AutoScroll = true;
-            // drawerContentsLayout.AutoScrollMargin = new Size(16, 16);
-            drawerContentsLayout.FlowDirection = FlowDirection.LeftToRight;
-            drawerContentsLayout.WrapContents = true;
-            drawerContentsLayout.Padding = CreateContentPadding(reserveScrollArea: false);
-            drawerContentsLayout.StyleCustomMode = true;
-            drawerContentsLayout.SizeChanged += (_, _) => UpdateContentPaddingForScrollBar();
-            drawerContentsLayout.ControlAdded += (_, _) => UpdateContentPaddingForScrollBar();
-            drawerContentsLayout.ControlRemoved += (_, _) => UpdateContentPaddingForScrollBar();
-            drawerContentsLayout.Layout += (_, _) => UpdateContentPaddingForScrollBar();
+            drawerImageList.ImageSize = GetImageSize(DeviceDpi);
+            drawerContentsListView.LargeImageList = drawerImageList;
+            drawerContentsListView.Groups.Add(new ListViewGroup("Folders", "Folders"));
+            drawerContentsListView.Groups.Add(new ListViewGroup("Files", "Files"));
+            drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
+            DpiChanged += DrawerWindow_DpiChanged;
 
             refreshDrawerButton.Click += (_, _) => PopulateFileList();
             closeDrawerButton.Click += (_, _) => Close();
-
-            drawerHeaderTableLayoutPanel.MouseDown += Header_MouseDown;
-
-            resizeGrip = new Panel
-            {
-                Size = new Size(AppConstants.DrawerUi.ResizeGripWidth, AppConstants.DrawerUi.ResizeGripHeight),
-                BackColor = Color.Transparent,
-                Cursor = Cursors.SizeNWSE
-            };
-            resizeGrip.MouseDown += ResizeGrip_MouseDown;
-            resizeGrip.MouseMove += ResizeGrip_MouseMove;
-            resizeGrip.MouseUp += ResizeGrip_MouseUp;
-            drawerButtonTableLayoutPanel.Controls.Add(resizeGrip, 2, 0);
 
             Size = _drawer.PreferredSize ?? Size;
             _lastPersistedSize = Size;
 
             PopulateFileList();
-            DrawerLogger.LogInformation($"DrawerWindow ready for '{_drawer.Name}'. Item count: {drawerContentsLayout.Controls.Count}.");
+            DrawerLogger.LogInformation($"DrawerWindow ready for '{_drawer.Name}'. Item count: {drawerContentsListView.Items.Count}.");
         }
 
         public void ApplyTheme(ThemePalette theme)
@@ -111,21 +84,38 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.BackColor = Color.Transparent;
             drawerButtonTableLayoutPanel.BackColor = Color.Transparent;
 
-            drawerContentsLayout.BackColor = _theme.ContentBackground;
-            drawerContentsLayout.FillColor = _theme.ContentBackground;
-            drawerContentsLayout.RectColor = Color.Transparent;
-            drawerContentsLayout.ForeColor = _theme.TextPrimary;
-            drawerContentsLayout.ScrollBarBackColor = _theme.ContentBackground;
-            drawerContentsLayout.ScrollBarColor = BlendColors(_theme.Accent, _theme.AccentHover, 0.3f);
-            // drawerContentsLayout.ScrollBarColor = BlendColors(_theme.ContentBackground, _theme.AccentHover, 0.3f);
+            drawerContentsListView.BackColor = _theme.ContentBackground;
+            drawerContentsListView.ForeColor = _theme.TextPrimary;
 
             fullPathLabel.ForeColor = _theme.TextSecondary;
             fullPathLabel.BackColor = Color.Transparent;
 
             ApplyThemeToButton(refreshDrawerButton);
             ApplyThemeToButton(closeDrawerButton);
-            ApplyThemeToItems();
-            UpdateContentPaddingForScrollBar();
+        }
+
+        private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
+        {
+            drawerContentsListView.BeginUpdate();
+            try
+            {
+                drawerContentsListView.Items.Clear();
+                drawerImageList.Images.Clear();
+                drawerImageList.ImageSize = GetImageSize(e.DeviceDpiNew);
+            }
+            finally
+            {
+                drawerContentsListView.EndUpdate();
+            }
+
+            PopulateFileList();
+        }
+
+        private static Size GetImageSize(int dpi)
+        {
+            const int logicalImageSize = 48;
+            var scaledSize = Math.Max(1, (int)Math.Round(logicalImageSize * dpi / 96d));
+            return new Size(scaledSize, scaledSize);
         }
 
         protected override void OnShown(EventArgs e)
@@ -155,12 +145,12 @@ namespace winDrawer
         private void PopulateFileList()
         {
             DrawerLogger.LogInformation($"Refreshing drawer contents for '{_drawer.Name}'.");
-            drawerContentsLayout.SuspendLayout();
+            drawerContentsListView.BeginUpdate();
             int directoryCount = 0;
             int fileCount = 0;
             try
             {
-                drawerContentsLayout.Clear();
+                drawerContentsListView.Items.Clear();
                 drawerImageList.Images.Clear();
                 fullPathLabel.Text = _drawer.Path;
 
@@ -171,17 +161,20 @@ namespace winDrawer
                     return;
                 }
 
+                var foldersGroup = drawerContentsListView.Groups[0];
+                var filesGroup = drawerContentsListView.Groups[1];
+
                 foreach (var directory in Directory.EnumerateDirectories(_drawer.Path)
                              .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    AddItem(directory, true);
+                    AddItem(directory, isDirectory: true, foldersGroup);
                     directoryCount++;
                 }
 
                 foreach (var file in Directory.EnumerateFiles(_drawer.Path)
                              .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    AddItem(file, false);
+                    AddItem(file, isDirectory: false, filesGroup);
                     fileCount++;
                 }
 
@@ -195,86 +188,32 @@ namespace winDrawer
             }
             finally
             {
-                drawerContentsLayout.ResumeLayout(performLayout: true);
-                drawerContentsLayout.PerformLayout();
-                UpdateContentPaddingForScrollBar();
-                ApplyThemeToItems();
-                drawerContentsLayout.Invalidate();
+                drawerContentsListView.EndUpdate();
             }
         }
 
-        private void AddItem(string path, bool isDirectory)
+        private void AddItem(string path, bool isDirectory, ListViewGroup group)
         {
-            var layout = drawerContentsLayout ?? throw new InvalidOperationException("Drawer contents layout is not initialized.");
             var name = Path.GetFileName(path);
             if (string.IsNullOrEmpty(name))
             {
                 name = path;
             }
 
-            var key = $"{(isDirectory ? "D" : "F")}::{path}";
-            if (!drawerImageList.Images.ContainsKey(key))
+            var imageKey = drawerImageList.Images.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            using (var image = GetItemImage(path, isDirectory))
             {
-                drawerImageList.Images.Add(key, GetItemImage(path, isDirectory));
+                drawerImageList.Images.Add(imageKey, image);
             }
 
-            var img = drawerImageList.Images[key];
-
-            const int horizontalPadding = 4;
-            const int verticalPadding = 6;
-            const int iconTextSpacing = 10;
-            var panelWidth = _iconSize.Width + horizontalPadding * 2;
-            var itemInfo = new DrawerItemInfo(path, isDirectory);
-            var baseItemColor = GetItemBaseColor();
-
-            var itemPanel = new UIPanel();
-            itemPanel.StyleCustomMode = true;
-            itemPanel.Width = panelWidth;
-            itemPanel.BackColor = baseItemColor;
-            itemPanel.FillColor = baseItemColor;
-            itemPanel.RectColor = Color.Transparent;
-            itemPanel.Margin = new Padding(8, 4, 8, 4);
-            itemPanel.Padding = new Padding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
-            itemPanel.Tag = itemInfo;
-            itemPanel.Cursor = Cursors.Hand;
-
-            var pb = new PictureBox
+            var item = new ListViewItem(name, imageKey)
             {
-                Image = img,
-                Size = _iconSize,
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Location = new Point((panelWidth - _iconSize.Width) / 2, verticalPadding),
-                BackColor = Color.Transparent,
-                TabStop = false
+                Group = group,
+                ToolTipText = path,
+                Tag = new DrawerItemInfo(path, isDirectory)
             };
 
-            var labelWidth = panelWidth - horizontalPadding * 2;
-            var messageBoxFont = SystemFonts.MessageBoxFont ?? throw new InvalidOperationException("System message box font is unavailable.");
-            var labelFontSize = Math.Max(6f, messageBoxFont.SizeInPoints - 0.5f);
-            var labelFont = new Font(messageBoxFont.FontFamily, labelFontSize, FontStyle.Regular, GraphicsUnit.Point);
-            var lineHeight = TextRenderer.MeasureText("Ag", labelFont).Height;
-            var labelHeight = lineHeight * 4;
-            var lbl = new UILabel();
-            lbl.StyleCustomMode = true;
-            lbl.Text = name;
-            lbl.ForeColor = _theme.TextPrimary;
-            lbl.BackColor = Color.Transparent;
-            lbl.Font = labelFont;
-            lbl.AutoSize = false;
-            lbl.Size = new Size(labelWidth, labelHeight);
-            lbl.TextAlign = ContentAlignment.TopCenter;
-            lbl.UseMnemonic = false;
-            lbl.AutoEllipsis = true;
-            lbl.UseCompatibleTextRendering = true;
-            lbl.Location = new Point(horizontalPadding, pb.Bottom + iconTextSpacing);
-
-            itemPanel.Controls.Add(pb);
-            itemPanel.Controls.Add(lbl);
-            itemPanel.Height = lbl.Bottom + verticalPadding;
-
-            AttachItemInteractions(itemPanel, pb, lbl);
-
-            layout.Add(itemPanel);
+            drawerContentsListView.Items.Add(item);
         }
 
         private void ApplyThemeToButton(UIButton button)
@@ -294,32 +233,6 @@ namespace winDrawer
             button.RectHoverColor = _theme.Border;
             button.RectPressColor = _theme.Border;
             button.RectSelectedColor = _theme.Border;
-        }
-
-        private void ApplyThemeToItems()
-        {
-            if (drawerContentsLayout == null)
-            {
-                return;
-            }
-
-            foreach (Control control in drawerContentsLayout.Controls)
-            {
-                if (control is not UIPanel panel)
-                {
-                    continue;
-                }
-
-                HighlightItemPanel(panel, highlight: false);
-                panel.RectColor = Color.Transparent;
-                foreach (Control child in panel.Controls)
-                {
-                    if (child is UILabel label)
-                    {
-                        label.ForeColor = _theme.TextPrimary;
-                    }
-                }
-            }
         }
 
         private void PersistWindowSize()
@@ -347,137 +260,15 @@ namespace winDrawer
             }
         }
 
-        private static Size NormalizeIconSize(Size size)
+        private void DrawerContentsListView_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
-            var width = Math.Clamp(size.Width, AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax);
-            var height = Math.Clamp(size.Height, AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax);
-            return new Size(width, height);
-        }
-
-        private void Header_MouseDown(object? sender, MouseEventArgs e)
-        {
-            if (e.Button != MouseButtons.Left)
+            var clickedItem = drawerContentsListView.HitTest(e.Location).Item;
+            if (clickedItem?.Tag is not DrawerItemInfo item)
             {
                 return;
             }
 
-            ReleaseCapture();
-            SendMessage(Handle, WmNclbuttondown, HtCaption, 0);
-        }
-
-        [DllImport("user32.dll")]
-        private static extern bool ReleaseCapture();
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
-
-        private const int WmNclbuttondown = 0xA1;
-        private const int HtCaption = 0x2;
-
-        private void fullPathLabel_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void ResizeGrip_MouseDown(object? sender, MouseEventArgs e)
-        {
-            if (e.Button != MouseButtons.Left)
-            {
-                return;
-            }
-
-            _isResizing = true;
-            _resizeOffset = e.Location;
-            _initialSize = this.Size;
-            SuspendLayout();
-        }
-
-        private void ResizeGrip_MouseMove(object? sender, MouseEventArgs e)
-        {
-            if (!_isResizing)
-            {
-                return;
-            }
-
-            var deltaX = e.X - _resizeOffset.X;
-            var deltaY = e.Y - _resizeOffset.Y;
-            var newWidth = Math.Max(MinimumSize.Width, _initialSize.Width + deltaX);
-            var newHeight = Math.Max(MinimumSize.Height, _initialSize.Height + deltaY);
-            this.Size = new Size(newWidth, newHeight);
-        }
-
-        private void ResizeGrip_MouseUp(object? sender, MouseEventArgs e)
-        {
-            if (e.Button != MouseButtons.Left)
-            {
-                return;
-            }
-
-            _isResizing = false;
-            ResumeLayout(performLayout: true);
-            PersistWindowSize();
-        }
-
-        private void AttachItemInteractions(UIPanel panel, params Control[] children)
-        {
-            panel.MouseEnter += ItemPanel_MouseEnter;
-            panel.MouseLeave += ItemPanel_MouseLeave;
-            panel.Click += ItemPanel_Click;
-
-            foreach (var child in children)
-            {
-                child.MouseEnter += ItemChild_MouseEnter;
-                child.MouseLeave += ItemChild_MouseLeave;
-                child.Click += ItemChild_Click;
-            }
-        }
-
-        private void ItemPanel_MouseEnter(object? sender, EventArgs e)
-        {
-            if (sender is UIPanel panel)
-            {
-                HighlightItemPanel(panel, highlight: true);
-            }
-        }
-
-        private void ItemPanel_MouseLeave(object? sender, EventArgs e)
-        {
-            if (sender is UIPanel panel && !IsCursorWithinPanel(panel))
-            {
-                HighlightItemPanel(panel, highlight: false);
-            }
-        }
-
-        private void ItemChild_MouseEnter(object? sender, EventArgs e)
-        {
-            if (sender is Control control && control.Parent is UIPanel panel)
-            {
-                HighlightItemPanel(panel, highlight: true);
-            }
-        }
-
-        private void ItemChild_MouseLeave(object? sender, EventArgs e)
-        {
-            if (sender is Control control && control.Parent is UIPanel panel && !IsCursorWithinPanel(panel))
-            {
-                HighlightItemPanel(panel, highlight: false);
-            }
-        }
-
-        private void ItemPanel_Click(object? sender, EventArgs e)
-        {
-            if (sender is UIPanel panel && panel.Tag is DrawerItemInfo info)
-            {
-                OpenItem(info);
-            }
-        }
-
-        private void ItemChild_Click(object? sender, EventArgs e)
-        {
-            if (sender is Control control && control.Parent is UIPanel panel && panel.Tag is DrawerItemInfo info)
-            {
-                OpenItem(info);
-            }
+            OpenItem(item);
         }
 
         private void OpenItem(DrawerItemInfo info)
@@ -505,21 +296,33 @@ namespace winDrawer
         {
             if (isDirectory)
             {
-                using var icon = ShellIcon.GetIcon(path, true);
-                return (icon ?? SystemIcons.WinLogo).ToBitmap();
+                return GetShellIconImage(path, isDirectory: true);
             }
 
             if (IsImageFile(path))
             {
-                var thumbnail = TryCreateThumbnail(path, _iconSize);
+                var thumbnail = TryCreateThumbnail(path, drawerImageList.ImageSize);
                 if (thumbnail != null)
                 {
                     return thumbnail;
                 }
             }
 
-            using var fileIcon = ShellIcon.GetIcon(path, false);
-            return (fileIcon ?? SystemIcons.WinLogo).ToBitmap();
+            return GetShellIconImage(path, isDirectory: false);
+        }
+
+        private static Image GetShellIconImage(string path, bool isDirectory)
+        {
+            try
+            {
+                using var icon = ShellIcon.GetIcon(path, isDirectory);
+                return (icon ?? SystemIcons.WinLogo).ToBitmap();
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogDebug($"Shell icon lookup failed for '{path}'. {ex}");
+                return SystemIcons.WinLogo.ToBitmap();
+            }
         }
 
         private static bool IsImageFile(string path)
@@ -530,6 +333,7 @@ namespace winDrawer
 
         private static Image? TryCreateThumbnail(string path, Size targetSize)
         {
+            Bitmap? bitmap = null;
             try
             {
                 using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -547,8 +351,7 @@ namespace winDrawer
                 var scaledWidth = Math.Max(1, (int)Math.Round(original.Width * ratio));
                 var scaledHeight = Math.Max(1, (int)Math.Round(original.Height * ratio));
 
-                var bitmap = new Bitmap(targetSize.Width, targetSize.Height);
-                bitmap.SetResolution(original.HorizontalResolution, original.VerticalResolution);
+                bitmap = new Bitmap(targetSize.Width, targetSize.Height);
 
                 using var graphics = Graphics.FromImage(bitmap);
                 graphics.Clear(Color.Transparent);
@@ -561,83 +364,16 @@ namespace winDrawer
                 var destRect = new Rectangle(x, y, scaledWidth, scaledHeight);
                 graphics.DrawImage(original, destRect);
 
-                return bitmap;
+                var thumbnail = bitmap;
+                bitmap = null;
+                return thumbnail;
             }
             catch (Exception ex)
             {
+                bitmap?.Dispose();
                 DrawerLogger.LogDebug($"Thumbnail generation failed for '{path}'. {ex}");
                 return null;
             }
-        }
-
-        private void HighlightItemPanel(UIPanel panel, bool highlight)
-        {
-            var baseColor = GetItemBaseColor();
-            var hoverColor = BlendColors(baseColor, _theme.AccentHover, AppConstants.DrawerUi.ItemHoverBlendAmount);
-            var targetColor = highlight ? hoverColor : baseColor;
-
-            if (panel.BackColor == targetColor && panel.FillColor == targetColor)
-            {
-                return;
-            }
-
-            panel.BackColor = targetColor;
-            panel.FillColor = targetColor;
-        }
-
-        private static bool IsCursorWithinPanel(UIPanel panel)
-        {
-            var cursorPoint = panel.PointToClient(Cursor.Position);
-            return panel.ClientRectangle.Contains(cursorPoint);
-        }
-
-        private Color GetItemBaseColor()
-        {
-            return _theme.ContentBackground;
-        }
-
-        private void UpdateContentPaddingForScrollBar()
-        {
-            if (drawerContentsLayout == null)
-            {
-                return;
-            }
-
-            var layout = drawerContentsLayout;
-            var displayRect = layout.DisplayRectangle;
-            var clientSize = layout.ClientSize;
-            var reserveScrollArea = displayRect.Height - clientSize.Height > 1;
-            var newPadding = CreateContentPadding(reserveScrollArea);
-
-            if (layout.Padding == newPadding)
-            {
-                return;
-            }
-
-            layout.Padding = newPadding;
-        }
-
-        private Padding CreateContentPadding(bool reserveScrollArea)
-        {
-            var layout = drawerContentsLayout;
-            var scrollWidth = reserveScrollArea
-                ? Math.Max(SystemInformation.VerticalScrollBarWidth, layout?.ScrollBarWidth ?? SystemInformation.VerticalScrollBarWidth)
-                : 0;
-
-            return new Padding(
-                AppConstants.DrawerUi.ContentHorizontalPadding,
-                AppConstants.DrawerUi.ContentVerticalPadding,
-                AppConstants.DrawerUi.ContentHorizontalPadding + scrollWidth,
-                AppConstants.DrawerUi.ContentVerticalPadding);
-        }
-
-        private static Color BlendColors(Color background, Color foreground, float amount)
-        {
-            amount = Math.Clamp(amount, 0f, 1f);
-            var r = (int)(background.R * (1 - amount) + foreground.R * amount);
-            var g = (int)(background.G * (1 - amount) + foreground.G * amount);
-            var b = (int)(background.B * (1 - amount) + foreground.B * amount);
-            return Color.FromArgb(r, g, b);
         }
     }
 }

@@ -13,6 +13,9 @@ namespace winDrawer
         {
             if (disposing && components != null)
             {
+                drawerContentsListView.Items.Clear();
+                drawerContentsListView.LargeImageList = null;
+                drawerImageList.Images.Clear();
                 components.Dispose();
             }
 
@@ -25,7 +28,7 @@ namespace winDrawer
         {
             components = new Container();
             mainTableLayoutPanel = new UITableLayoutPanel();
-            drawerContentsLayout = new UIFlowLayoutPanel();
+            drawerContentsListView = new ListView();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
             fullPathLabel = new UILabel();
@@ -42,7 +45,7 @@ namespace winDrawer
             mainTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
             mainTableLayoutPanel.ColumnCount = 1;
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            mainTableLayoutPanel.Controls.Add(drawerContentsLayout, 0, 0);
+            mainTableLayoutPanel.Controls.Add(drawerContentsListView, 0, 0);
             mainTableLayoutPanel.Controls.Add(drawerHeaderTableLayoutPanel, 0, 1);
             mainTableLayoutPanel.Dock = DockStyle.Fill;
             mainTableLayoutPanel.Location = new Point(0, 0);
@@ -57,19 +60,25 @@ namespace winDrawer
             // 
             // drawerContentsListView
             // 
-            drawerContentsLayout.BackColor = Color.FromArgb(56, 56, 56);
-            drawerContentsLayout.Dock = DockStyle.Fill;
-            drawerContentsLayout.ForeColor = Color.WhiteSmoke;
-            drawerContentsLayout.Location = new Point(0, 0);
-            drawerContentsLayout.Margin = new Padding(0);
-            drawerContentsLayout.Name = "drawerContentsListView";
-            drawerContentsLayout.Size = new Size(762, 533);
-            drawerContentsLayout.TabIndex = 0;
+            drawerContentsListView.BackColor = Color.FromArgb(56, 56, 56);
+            drawerContentsListView.BorderStyle = BorderStyle.None;
+            drawerContentsListView.Dock = DockStyle.Fill;
+            drawerContentsListView.ForeColor = Color.WhiteSmoke;
+            drawerContentsListView.HideSelection = false;
+            drawerContentsListView.Location = new Point(0, 0);
+            drawerContentsListView.Margin = new Padding(0);
+            drawerContentsListView.MultiSelect = false;
+            drawerContentsListView.Name = "drawerContentsListView";
+            drawerContentsListView.ShowItemToolTips = true;
+            drawerContentsListView.Size = new Size(762, 533);
+            drawerContentsListView.TabIndex = 0;
+            drawerContentsListView.UseCompatibleStateImageBehavior = false;
+            drawerContentsListView.View = View.LargeIcon;
             // 
             // drawerImageList
             // 
             drawerImageList.ColorDepth = ColorDepth.Depth32Bit;
-            drawerImageList.ImageSize = new Size(96, 96);
+            drawerImageList.ImageSize = new Size(48, 48);
             drawerImageList.TransparentColor = Color.Transparent;
             // 
             // drawerHeaderTableLayoutPanel
@@ -100,14 +109,12 @@ namespace winDrawer
             fullPathLabel.TabIndex = 0;
             fullPathLabel.Text = "folderFullPath";
             fullPathLabel.TextAlign = ContentAlignment.MiddleLeft;
-            fullPathLabel.Click += fullPathLabel_Click;
             // 
             // drawerButtonTableLayoutPanel
             // 
-            drawerButtonTableLayoutPanel.ColumnCount = 3;
+            drawerButtonTableLayoutPanel.ColumnCount = 2;
             drawerButtonTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             drawerButtonTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            drawerButtonTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 30F));
             drawerButtonTableLayoutPanel.Controls.Add(refreshDrawerButton, 0, 0);
             drawerButtonTableLayoutPanel.Controls.Add(closeDrawerButton, 1, 0);
             drawerButtonTableLayoutPanel.Dock = DockStyle.Fill;
@@ -153,10 +160,10 @@ namespace winDrawer
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.DimGray;
             ClientSize = new Size(762, 583);
-            ControlBox = false;
+            ControlBox = true;
             Controls.Add(mainTableLayoutPanel);
-            FormBorderStyle = FormBorderStyle.None;
-            MinimumSize = new Size(530, 0);
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MinimumSize = new Size(530, 320);
             Name = "DrawerWindow";
             ShowIcon = false;
             ShowInTaskbar = false;
@@ -176,7 +183,7 @@ namespace winDrawer
         private UITableLayoutPanel drawerButtonTableLayoutPanel;
         private UIButton refreshDrawerButton;
         private UIButton closeDrawerButton;
-        private UIFlowLayoutPanel drawerContentsLayout;
+        private ListView drawerContentsListView;
         private ImageList drawerImageList;
     }
 }

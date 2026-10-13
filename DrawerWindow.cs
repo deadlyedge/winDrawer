@@ -16,6 +16,7 @@ namespace winDrawer
     {
         private readonly SettingsRepository _settingsRepository;
         private readonly DrawerDefinition _drawer;
+        private readonly List<Image> _imageListImages = new();
         private ThemePalette _theme;
         private Size _lastPersistedSize;
 
@@ -57,8 +58,6 @@ namespace winDrawer
 
             drawerImageList.ImageSize = GetImageSize(DeviceDpi);
             drawerContentsListView.LargeImageList = drawerImageList;
-            drawerContentsListView.Groups.Add(new ListViewGroup("Folders", "Folders"));
-            drawerContentsListView.Groups.Add(new ListViewGroup("Files", "Files"));
             drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
             DpiChanged += DrawerWindow_DpiChanged;
 
@@ -101,6 +100,7 @@ namespace winDrawer
             {
                 drawerContentsListView.Items.Clear();
                 drawerImageList.Images.Clear();
+                DisposeImageListImages();
                 drawerImageList.ImageSize = GetImageSize(e.DeviceDpiNew);
             }
             finally
@@ -152,6 +152,7 @@ namespace winDrawer
             {
                 drawerContentsListView.Items.Clear();
                 drawerImageList.Images.Clear();
+                DisposeImageListImages();
                 fullPathLabel.Text = _drawer.Path;
 
                 if (!Directory.Exists(_drawer.Path))
@@ -161,20 +162,17 @@ namespace winDrawer
                     return;
                 }
 
-                var foldersGroup = drawerContentsListView.Groups[0];
-                var filesGroup = drawerContentsListView.Groups[1];
-
                 foreach (var directory in Directory.EnumerateDirectories(_drawer.Path)
                              .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    AddItem(directory, isDirectory: true, foldersGroup);
+                    AddItem(directory, isDirectory: true);
                     directoryCount++;
                 }
 
                 foreach (var file in Directory.EnumerateFiles(_drawer.Path)
                              .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    AddItem(file, isDirectory: false, filesGroup);
+                    AddItem(file, isDirectory: false);
                     fileCount++;
                 }
 
@@ -192,7 +190,7 @@ namespace winDrawer
             }
         }
 
-        private void AddItem(string path, bool isDirectory, ListViewGroup group)
+        private void AddItem(string path, bool isDirectory)
         {
             var name = Path.GetFileName(path);
             if (string.IsNullOrEmpty(name))
@@ -201,19 +199,36 @@ namespace winDrawer
             }
 
             var imageKey = drawerImageList.Images.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            using (var image = GetItemImage(path, isDirectory))
+            using var image = GetItemImage(path, isDirectory);
+            var imageListCopy = (Image)image.Clone();
+            try
             {
-                drawerImageList.Images.Add(imageKey, image);
+                drawerImageList.Images.Add(imageKey, imageListCopy);
+                _imageListImages.Add(imageListCopy);
+            }
+            catch
+            {
+                imageListCopy.Dispose();
+                throw;
             }
 
             var item = new ListViewItem(name, imageKey)
             {
-                Group = group,
                 ToolTipText = path,
                 Tag = new DrawerItemInfo(path, isDirectory)
             };
 
             drawerContentsListView.Items.Add(item);
+        }
+
+        private void DisposeImageListImages()
+        {
+            foreach (var image in _imageListImages)
+            {
+                image.Dispose();
+            }
+
+            _imageListImages.Clear();
         }
 
         private void ApplyThemeToButton(UIButton button)

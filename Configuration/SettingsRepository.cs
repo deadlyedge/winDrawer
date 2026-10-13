@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Tomlyn;
 using Tomlyn.Model;
 using Tomlyn.Syntax;
@@ -31,7 +30,6 @@ internal sealed class SettingsRepository : IDisposable
     public SettingsRepository(string settingsPath)
     {
         _settingsPath = settingsPath;
-        ImportLegacySettingsIfNeeded(settingsPath);
         _root = LoadOrCreateTable(settingsPath);
         DrawerLogger.LogInformation($"SettingsRepository initialized with path '{settingsPath}'.");
 
@@ -41,75 +39,7 @@ internal sealed class SettingsRepository : IDisposable
 
     public static string GetDefaultPath()
     {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".config",
-            "winDrawer",
-            AppConstants.Files.SettingsFileName);
-    }
-
-    private static void ImportLegacySettingsIfNeeded(string settingsPath)
-    {
-        if (File.Exists(settingsPath))
-        {
-            return;
-        }
-
-        var legacyPath = Path.Combine(AppContext.BaseDirectory, AppConstants.Files.SettingsFileName);
-        if (!File.Exists(legacyPath)
-            || string.Equals(Path.GetFullPath(settingsPath), Path.GetFullPath(legacyPath), StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        string? temporaryPath = null;
-        try
-        {
-            var directory = Path.GetDirectoryName(settingsPath);
-            if (!string.IsNullOrEmpty(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            temporaryPath = settingsPath + $".{Guid.NewGuid():N}.importing";
-            File.Copy(legacyPath, temporaryPath, overwrite: false);
-            File.Move(temporaryPath, settingsPath, overwrite: false);
-            temporaryPath = null;
-            DrawerLogger.LogInformation($"Imported legacy settings from '{legacyPath}' to '{settingsPath}'. The original file was retained.");
-        }
-        catch (IOException) when (File.Exists(settingsPath))
-        {
-            TryDeleteTemporaryFile(temporaryPath);
-            DrawerLogger.LogInformation($"Settings file '{settingsPath}' appeared during migration; existing destination was retained.");
-        }
-        catch (Exception ex)
-        {
-            TryDeleteTemporaryFile(temporaryPath);
-            DrawerLogger.LogError($"Unable to import legacy settings from '{legacyPath}' to '{settingsPath}'.", ex);
-            MessageBox.Show(
-                $"Unable to import the existing settings file. The original file has been left unchanged.{Environment.NewLine}Old location: {legacyPath}{Environment.NewLine}New location: {settingsPath}{Environment.NewLine}{Environment.NewLine}{ex.Message}",
-                "Settings Migration",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-            throw new InvalidOperationException("Unable to import the existing settings file. No settings were overwritten.", ex);
-        }
-    }
-
-    private static void TryDeleteTemporaryFile(string? path)
-    {
-        if (string.IsNullOrEmpty(path))
-        {
-            return;
-        }
-
-        try
-        {
-            File.Delete(path);
-        }
-        catch (Exception ex)
-        {
-            DrawerLogger.LogError($"Unable to remove temporary settings import file '{path}'.", ex);
-        }
+        return Path.Combine(AppConstants.GetUserConfigurationDirectory(), AppConstants.Files.SettingsFileName);
     }
 
     public SettingsSnapshot GetSnapshot()

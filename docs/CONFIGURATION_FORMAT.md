@@ -2,7 +2,7 @@
 
 ## 1. 用途
 
-本文件定义 winDrawer 本地设置的 TOML 数据契约。配置文件是用户数据，不应被 UI 或平台实现细节随意改变。字段升级、文件位置变化和不兼容修改都必须有迁移方案。
+本文件定义 winDrawer 本地设置的 TOML 数据契约。配置文件是用户数据，不应被 UI 或平台实现细节随意改变。字段升级和不兼容修改都必须有迁移方案；当前版本暂不自动迁移旧位置的配置。
 
 ## 2. 基础格式
 
@@ -62,7 +62,7 @@ path = "%USERPROFILE%\\Downloads"
 - 对多个快速更新做合并/防抖；应用退出时等待写入完成。
 - 推荐先写入同目录临时文件、完成 flush 后原子替换目标文件；保留旧文件直到新文件确认写入成功。
 - 仅由 settings repository 负责 TOML 序列化、备份和原子写入。
-- 设置文件默认位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；配置目录由应用按需创建。日志位置不由本设置路径决定。
+- 设置文件默认位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；日志文件为同目录下的 `Drawer.log`。配置目录由应用在首次创建设置或写入日志时按需创建；日志路径或写入失败不会阻止应用运行。
 - 设置页的 **Open Settings TOML** 按钮使用 Windows Notepad 打开当前活动的 TOML 文件。
 
 ## 6. 迁移与演进
@@ -70,8 +70,9 @@ path = "%USERPROFILE%\\Downloads"
 - 初版应兼容本文件第 2 节给出的字段格式。
 - 当前抽屉 schema 使用标准 TOML 字符串，并要求尺寸使用同级 `size = [width, height]` 数组；不兼容旧的 `[drawers.size]` 子表。升级前需将旧尺寸子表转换为本节新格式。
 - 当前格式没有 schema version。首次引入 `schema_version` 或改用其他格式前，先定义默认版本、旧版本升级、未知未来版本处理和回滚策略。
-- 首次启动时，若 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` 不存在而程序目录存在旧版 `Drawer-settings.toml`，将旧文件复制到新位置并保留原件。新位置已有文件时绝不覆盖；复制失败时保留旧文件、显示错误并停止初始化，避免以默认配置覆盖/取代用户设置。
-- 不兼容 schema 变更应：备份旧文件、读取旧 schema、转换到新模型、验证新文件、原子写入，然后才确认迁移成功。
+- 暂不实现旧配置迁移。若 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` 不存在，应用在该位置创建默认配置；程序目录中的旧 `Drawer-settings.toml` 不会被读取、复制、覆盖或删除，应由用户自行备份/处理。
+- 暂不迁移旧日志。新日志写入配置目录中的 `Drawer.log`；程序目录中已有的旧日志保持原位，不自动读取、复制、移动或删除。创建目录或日志写入失败不得阻止应用启动。
+- 将来若实施不兼容 schema 变更，应先单独设计迁移：备份旧文件、读取旧 schema、转换到新模型、验证新文件、原子写入，然后才确认迁移成功。当前版本不执行旧路径配置迁移。
 - 设置字段被删除或语义改变时，保留旧字段的兼容读取/迁移一段明确周期，或在升级说明中明确说明。
 
 ## 7. 配置测试清单
@@ -84,5 +85,5 @@ path = "%USERPROFILE%\\Downloads"
 - [ ] 环境变量展开后重复路径判断符合 Windows 大小写规则。
 - [ ] 未知字段/注释策略有可重复测试。
 - [ ] TOML 损坏、只读目录、磁盘写入失败时保留原文件并报告错误。
-- [ ] 配置路径迁移和备份导入不会覆盖新配置或静默丢失用户数据。
+- [ ] 不执行旧位置配置自动迁移；新默认配置按目标路径创建，不触碰旧位置文件。
 - [ ] 设置文件新默认路径为 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；Notepad 打开按钮指向同一活动文件。

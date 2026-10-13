@@ -1,14 +1,16 @@
 # winDrawer
 
-winDrawer is a Windows desktop companion that keeps frequently used folders only a swing away. Drag the main window to park it along a screen edge and open “drawers” that list the contents of your favourite directories with themed, high-DPI friendly UI elements powered by **SunnyUI**. Settings (window position, theme, drawers and more) are persisted in a TOML file so you can tailor the experience across sessions.
+winDrawer is a small Windows Forms utility for keeping frequently used folders close at hand. Select a configured folder to open its drawer, which lists that folder's direct child files and directories. Double-clicking an item delegates the default open action to Windows Shell. Common image files can be previewed as list thumbnails; theme and window settings are stored as TOML.
 
 ## Highlights
 
-- **One-click drawers** – Browse directories with visual tiles sized from your chosen icon size.
-- **Live theming** – Adjust hue, saturation, lightness and opacity and preview changes before saving.
-- **Persistent layout** – Window and drawer settings are saved in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
+- **Folder shortcuts** – Open configured folders and browse direct child items in a Windows `ListView`.
+- **Image thumbnails** – JPG/JPEG and PNG thumbnails appear as list icons; other items use Windows Shell icons.
+- **Live theming** – Adjust hue, saturation, lightness and opacity using the existing HSLA controls and preview changes before saving.
+- **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
+- **Windows login startup** – Optionally register the app to start for the current user.
 - **System tray control** – Toggle visibility, jump into settings, or exit the app from the tray icon handled by `TrayController`.
-- **Structured diagnostics** – Execution flow and errors are written to `Drawer.log` for easier troubleshooting.
+- **Structured diagnostics** – Execution flow and errors are written to `%USERPROFILE%\.config\winDrawer\Drawer.log` for easier troubleshooting.
 
 ## Getting Started
 
@@ -22,32 +24,34 @@ winDrawer is a Windows desktop companion that keeps frequently used folders only
 ### Build
 
 ```powershell
-pwsh -NoLogo -Command "dotnet build"
+dotnet restore
+dotnet build
 ```
 
-The binaries are placed under `bin\Debug\net10.0-windows\win-x64\`.
+The default build output is under `bin\Debug\net10.0-windows\win-x64\`. `bin/` and `obj/` contain generated build files and are ignored by Git.
 
 ### Run
 
 ```powershell
-pwsh -NoLogo -Command "dotnet run"
+dotnet run
 ```
 
-The main window launches without a border and can be dragged by its header logo. Each configured drawer opens as an adjacent floating window.
+The main window launches without a border and can be dragged by its header. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available.
 
 ## Configuration
 
-- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, theme values, window position, and drawer data. On first launch, an existing `Drawer-settings.toml` beside the application is copied into this location only when no new-location file exists; the old file is retained. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
+- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, HSLA theme values, window position, and drawer data. Old settings files are not automatically migrated, read, copied, or removed. Back up and manually merge old settings if needed. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
 - **Assets** – Icons and fonts live under `assets\`. The application expects:
   - `assets\drawer.icon.4.ico` for the window and tray icon.
   - `assets\fonts\Lobster-Regular.ttf` for the logo.
-- **Logging** – Diagnostic output is appended to `Drawer.log` (same directory as the executable). Global exception handlers and contextual logging throughout `MainWindow`, `DrawerWindow`, `SettingsRepository`, and `SettingsForm` surface runtime issues.
+- **Logging** – New diagnostic output is appended to `%USERPROFILE%\.config\winDrawer\Drawer.log`. Existing logs beside an older executable are not migrated or removed. Logging failures do not prevent the app from running.
 
-### Customising drawers
+### Managing folders and settings
 
-1. Launch the app and press **Add Drawer** to select a folder.
-2. Use the settings panel to adjust icon size, startup behaviour, and theme.
-3. Drawer window sizes are remembered per path when you resize them.
+1. Use **Add Drawer** to add a frequently used folder; use the existing remove action to remove a shortcut.
+2. In settings, adjust the existing Hue, Saturation, Lightness, and Alpha controls; changes preview live and can be saved or cancelled.
+3. Enable **Start with windows** to register startup for the current Windows user.
+4. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
 
 ## Project Layout
 
@@ -55,7 +59,7 @@ The main window launches without a border and can be dragged by its header logo.
 - `MainWindow.cs` – Primary UI, drawer list, tray integration via `TrayController`.
 - `DrawerWindow.cs` – Presentation of drawer contents, thumbnail generation, and theme application.
 - `SettingsForm.cs` – Modeless settings panel with live theme preview.
-- `Configuration/SettingsRepository.cs` – Handles reading/writing `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` and one-time legacy import.
+- `Configuration/SettingsRepository.cs` – Handles reading/writing `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
 - `Theming/ThemePalette.cs` – Calculates derived colours from HSLA input.
 - `AppConstants.cs` – Central store for shared constants (file names, UI dimensions, defaults).
 - `DrawerLogger.cs` – File-backed logger with debugger mirroring.
@@ -68,20 +72,14 @@ The main window launches without a border and can be dragged by its header logo.
 
 Both packages are restored automatically via NuGet during build.
 
+SunnyUI remains in use by WinForms forms and Designer controls; Tomlyn remains in use for settings parsing and serialization.
+
 ## Contributing
 
 1. Fork and clone the repository.
 2. Create a feature branch from `main`.
 3. Run `dotnet build` and test your changes.
 4. Submit a pull request with a clear description.
-
-## TODO
-
-- add new tab in settings to edit drawers (add, edit name, sort and remove)
-
-- click fullPath to open windows explorer
-
-- add drawercontent preloading and cache at ".cachefiles" folder.
 
 ## License
 

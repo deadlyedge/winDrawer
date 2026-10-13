@@ -16,8 +16,15 @@ internal static class DrawerLogger
 
     private static string ResolveLogFilePath()
     {
-        var baseDirectory = AppContext.BaseDirectory;
-        return Path.Combine(baseDirectory, AppConstants.Files.LogFileName);
+        try
+        {
+            return Path.Combine(AppConstants.GetUserConfigurationDirectory(), AppConstants.Files.LogFileName);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[DrawerLogger] Failed to resolve the user log path: {ex}");
+            return string.Empty;
+        }
     }
 
     public static void LogDebug(string message, [CallerMemberName] string? memberName = null)
@@ -47,6 +54,12 @@ internal static class DrawerLogger
 
             lock (SyncRoot)
             {
+                var directory = Path.GetDirectoryName(LogFilePath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
                 File.AppendAllText(LogFilePath, line + Environment.NewLine);
             }
 

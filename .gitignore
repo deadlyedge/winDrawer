@@ -9,13 +9,13 @@ reference
 *.user
 *.sln.docstates
 
-# Build results
+# Root project build outputs
 
 [Dd]ebug/
 [Rr]elease/
 x64/
-[Bb]in/
-[Oo]bj/
+/bin/
+/obj/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

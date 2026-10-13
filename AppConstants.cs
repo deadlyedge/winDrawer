@@ -1,4 +1,6 @@
+using System;
 using System.Drawing;
+using System.IO;
 
 namespace winDrawer;
 
@@ -7,6 +9,14 @@ namespace winDrawer;
 /// </summary>
 internal static class AppConstants
 {
+    public static string GetUserConfigurationDirectory()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".config",
+            "winDrawer");
+    }
+
     internal static class Files
     {
         public const string SettingsFileName = "Drawer-settings.toml";

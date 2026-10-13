@@ -18,10 +18,10 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 
 - 这是 Windows-only 的桌面项目；优先沿用单个 WinForms 应用项目和 BCL/WinForms 原生控件，不要仅为“现代架构”引入多项目分层、复杂 MVVM、依赖注入框架或微服务式结构。
 - 使用实施时 Microsoft 官方最新的 GA LTS .NET Windows 版本；当前计划目标是 `net10.0-windows`。实施前核实官方支持周期和 SDK，安装最新 servicing patch；不使用 preview 或 STS。
-- 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。保留主题设置页面和实时预览：颜色通过标准 Windows `ColorDialog` 选择，保留单独的 Alpha/透明度 `TrackBar`，不再提供 H/S/L 滑块。不要重新实现每个文件一套自绘卡片布局。
+- 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。保留当前主题设置页面和实时预览，继续使用 H/S/L 与 Alpha/透明度控件进行 HSLA 调色，不替换为其他颜色选择交互。不要重新实现每个文件一套自绘卡片布局。
 - 文件和文件夹的 Shell 操作必须委托给 Windows：使用合适的 Shell 执行方式（例如 `ProcessStartInfo.UseShellExecute = true`），不要自行解析关联程序或拼接命令行。
 - 当前代码已有 `ShellIcon.cs`、`DrawerWindow.cs` 的文件枚举/启动逻辑、图片缩略图逻辑和 `Configuration/SettingsRepository.cs` 的 TOML 处理。优先精简、复用并添加测试；避免未经用户确认就换 UI 框架、配置格式或重写整个应用。
-- 保留主题设置页面和颜色定制、Alpha/窗口透明度及实时预览；颜色通过标准 Windows `ColorDialog` 选择，保留单独的 Alpha/透明度 `TrackBar`，持久化仍使用 TOML。将 ColorDialog 的 RGB 颜色转换到现有 `window_color_hsla` 字段以兼容旧配置；不要再提供 H/S/L 滑块或自绘颜色选择器。主题色仍可应用到主窗口和抽屉。
+- 保留主题设置页面和当前 HSLA 调色方式：使用现有 Hue、Saturation、Lightness 与 Alpha/窗口透明度控件调整颜色，实时预览并保存到 TOML 的 `window_color_hsla` 字段；不要改为其他颜色选择交互或移除 H/S/L 控件。主题色仍可应用到主窗口和抽屉。
 - 保留常见图片的 Explorer 风格列表图标预览，至少支持 JPG/JPEG 和 PNG。图片缩略图显示在 `ListView` 图标视图中，不另开预览窗格；非图片项目使用 Windows Shell 图标。缩略图失败时回退为 Shell 图标，不得影响双击打开。
 - 使用 Windows Shell 图标及合适的系统图标尺寸；需要处理 DPI，但不要把图标大小暴露为设置项。
 - 保持改动直接、易读。类和方法只在职责确实独立时拆分；为小功能添加新抽象前，说明它解决的具体问题。

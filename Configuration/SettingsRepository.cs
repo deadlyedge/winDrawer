@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tomlyn;
 using Tomlyn.Model;
+using Tomlyn.Syntax;
 using winDrawer;
 using winDrawer.Theming;
 
@@ -83,13 +84,13 @@ internal sealed class SettingsRepository : IDisposable
 
         lock (_writeLock)
         {
-            if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
+            if (!TryGetDrawers(_root, out var drawers))
             {
                 DrawerLogger.LogWarning($"Drawer collection missing when updating size for '{drawerPath}'.");
                 return false;
             }
 
-            foreach (var entry in drawerArray.OfType<TomlTable>())
+            foreach (var entry in drawers)
             {
                 var candidatePath = ReadString(entry, "path");
                 if (!PathsEqual(candidatePath, drawerPath))
@@ -97,13 +98,7 @@ internal sealed class SettingsRepository : IDisposable
                     continue;
                 }
 
-                var sizeTable = entry.TryGetValue("size", out var sizeObj) && sizeObj is TomlTable st
-                    ? st
-                    : new TomlTable();
-
-                sizeTable["width"] = size.Width;
-                sizeTable["height"] = size.Height;
-                entry["size"] = sizeTable;
+                entry["size"] = new TomlArray { size.Width, size.Height };
 
                 _dirty = true;
                 _writeSignal.Release();
@@ -133,14 +128,10 @@ internal sealed class SettingsRepository : IDisposable
         var expanded = Environment.ExpandEnvironmentVariables(path).Trim();
         lock (_writeLock)
         {
-            if (!_root.TryGetValue("drawers", out var drawersObj) || drawersObj is not TomlTableArray drawerArray)
-            {
-                drawerArray = new TomlTableArray();
-                _root["drawers"] = drawerArray;
-            }
+            var drawers = EnsureDrawersArray(_root);
 
             // Check for existing entry
-            foreach (var entry in drawerArray.OfType<TomlTable>())
+            foreach (var entry in drawers)
             {
                 var candidatePath = ReadString(entry, "path");
                 if (PathsEqual(candidatePath, expanded))
@@ -158,7 +149,7 @@ internal sealed class SettingsRepository : IDisposable
             entryTable["name"] = entryName ?? string.Empty;
             entryTable["path"] = expanded;
 
-            drawerArray.Add(entryTable);
+            AddDrawerEntry(_root, entryTable);
             DrawerLogger.LogInformation($"Added drawer '{entryName}' => '{expanded}'.");
 
             _dirty = true;
@@ -234,7 +225,7 @@ internal sealed class SettingsRepository : IDisposable
         string content;
         lock (_writeLock)
         {
-            content = Toml.FromModel(_root);
+            content = SerializeSettings(_root);
         }
 
         DrawerLogger.LogInformation("Performing synchronous settings save.");
@@ -283,7 +274,7 @@ internal sealed class SettingsRepository : IDisposable
                         string content;
                         lock (_writeLock)
                         {
-                            content = Toml.FromModel(_root);
+                            content = SerializeSettings(_root);
                         }
 
                         // write asynchronously
@@ -334,7 +325,7 @@ internal sealed class SettingsRepository : IDisposable
                     string content;
                     lock (_writeLock)
                     {
-                        content = Toml.FromModel(_root);
+                        content = SerializeSettings(_root);
                     }
 
                     var directory = Path.GetDirectoryName(_settingsPath);
@@ -402,7 +393,84 @@ internal sealed class SettingsRepository : IDisposable
         }
 
         DrawerLogger.LogInformation($"Writing settings table to '{path}'.");
-        File.WriteAllText(path, Toml.FromModel(table));
+        File.WriteAllText(path, SerializeSettings(table));
+    }
+
+    private static string SerializeSettings(TomlTable root)
+    {
+        var source = Toml.Parse(Toml.FromModel(root));
+        var result = new DocumentSyntax();
+
+        while (source.KeyValues.ChildrenCount > 0)
+        {
+            var keyValue = source.KeyValues.GetChild(0);
+            if (keyValue is null)
+            {
+                source.KeyValues.RemoveChildAt(0);
+                continue;
+            }
+
+            var key = keyValue.Key?.ToString().Trim() ?? string.Empty;
+            source.KeyValues.RemoveChild(keyValue);
+
+            if (key == "startup" && keyValue.Value is InlineTableSyntax startupInline)
+            {
+                var startupTable = new TableSyntax("startup");
+                MoveInlineTableItems(startupInline, startupTable.Items);
+                result.Tables.Add(startupTable);
+            }
+            else if (key == "drawers" && keyValue.Value is ArraySyntax drawersArray)
+            {
+                AppendDrawerTables(result, drawersArray);
+            }
+            else
+            {
+                result.KeyValues.Add(CloneKeyValue(keyValue));
+            }
+        }
+
+        return result.ToString();
+    }
+
+    private static void AppendDrawerTables(DocumentSyntax output, ArraySyntax drawersArray)
+    {
+        for (var index = 0; index < drawersArray.Items.ChildrenCount;)
+        {
+            var arrayItem = drawersArray.Items.GetChild(index)!;
+            if (arrayItem.Value is not InlineTableSyntax drawerInline)
+            {
+                index++;
+                continue;
+            }
+
+            drawersArray.Items.RemoveChild(arrayItem);
+            var drawerTable = new TableArraySyntax("drawers");
+            MoveInlineTableItems(drawerInline, drawerTable.Items);
+            output.Tables.Add(drawerTable);
+        }
+    }
+
+    private static void MoveInlineTableItems(InlineTableSyntax source, SyntaxList<KeyValueSyntax> destination)
+    {
+        while (source.Items.ChildrenCount > 0)
+        {
+            var item = (InlineTableItemSyntax)source.Items.GetChild(0)!;
+            source.Items.RemoveChild(item);
+            if (item.KeyValue is { } keyValue)
+            {
+                destination.Add(CloneKeyValue(keyValue));
+            }
+        }
+    }
+
+    private static KeyValueSyntax CloneKeyValue(KeyValueSyntax source)
+    {
+        var fragment = Toml.Parse(source.ToString());
+        var clone = fragment.KeyValues.GetChild(0)!;
+        fragment.KeyValues.RemoveChild(clone);
+        clone.EndOfLineToken = new SyntaxToken(TokenKind.NewLine, "\n");
+
+        return clone;
     }
 
     private static TomlTable CreateDefaultTable()
@@ -437,6 +505,55 @@ internal sealed class SettingsRepository : IDisposable
         var created = new TomlTable();
         root[key] = created;
         return created;
+    }
+
+    private static List<TomlTable> EnsureDrawersArray(TomlTable root)
+    {
+        if (TryGetDrawers(root, out var drawers))
+        {
+            return drawers;
+        }
+
+        root["drawers"] = new TomlTableArray();
+        return new List<TomlTable>();
+    }
+
+    private static bool TryGetDrawers(TomlTable root, out List<TomlTable> drawers)
+    {
+        drawers = new List<TomlTable>();
+        if (!root.TryGetValue("drawers", out var value))
+        {
+            return false;
+        }
+
+        switch (value)
+        {
+            case TomlTableArray tableArray:
+                drawers.AddRange(tableArray);
+                return true;
+            case TomlArray array:
+                drawers.AddRange(array.OfType<TomlTable>());
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static void AddDrawerEntry(TomlTable root, TomlTable drawer)
+    {
+        if (root.TryGetValue("drawers", out var value) && value is TomlArray array)
+        {
+            array.Add(drawer);
+            return;
+        }
+
+        if (value is TomlTableArray tableArray)
+        {
+            tableArray.Add(drawer);
+            return;
+        }
+
+        root["drawers"] = new TomlTableArray { drawer };
     }
 
     private static string ReadString(TomlTable table, string key, string fallback = "")
@@ -541,8 +658,13 @@ public sealed class SettingsSnapshot
         var startup = root.TryGetValue("startup", out var startupObj) && startupObj is TomlTable st
             ? st
             : new TomlTable();
-        var drawers = root.TryGetValue("drawers", out var drawersObj) && drawersObj is TomlTableArray drawerArray
-            ? ParseDrawers(drawerArray)
+        var drawers = root.TryGetValue("drawers", out var drawersObj)
+            ? drawersObj switch
+            {
+                TomlTableArray drawerArray => ParseDrawers(drawerArray),
+                TomlArray drawerArray => ParseDrawers(drawerArray),
+                _ => Array.Empty<DrawerDefinition>()
+            }
             : Array.Empty<DrawerDefinition>();
 
         var iconSize = GetInt(startup, "icon_size", AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax, AppConstants.Defaults.IconSizeDefault);
@@ -569,9 +691,19 @@ public sealed class SettingsSnapshot
 
     private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray tableArray)
     {
+        return ParseDrawers(tableArray.Cast<object>());
+    }
+
+    private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlArray array)
+    {
+        return ParseDrawers(array.Cast<object>());
+    }
+
+    private static IReadOnlyList<DrawerDefinition> ParseDrawers(IEnumerable<object> entries)
+    {
         var results = new List<DrawerDefinition>();
 
-        foreach (var entry in tableArray)
+        foreach (var entry in entries)
         {
             if (entry is not TomlTable drawerTable)
             {
@@ -597,11 +729,10 @@ public sealed class SettingsSnapshot
             }
 
             Size? preferredSize = null;
-            if (drawerTable.TryGetValue("size", out var sizeObj) && sizeObj is TomlTable sizeTable)
+            if (drawerTable.TryGetValue("size", out var sizeObj) && sizeObj is TomlArray sizeArray && sizeArray.Count == 2 &&
+                TryGetInteger(sizeArray[0], out var width) && TryGetInteger(sizeArray[1], out var height))
             {
-                var width = GetInt(sizeTable, "width", 200, 4000, 800);
-                var height = GetInt(sizeTable, "height", 200, 4000, 600);
-                preferredSize = new Size(width, height);
+                preferredSize = new Size(Math.Clamp(width, 200, 4000), Math.Clamp(height, 200, 4000));
             }
 
             results.Add(new DrawerDefinition(name, expandedPath, preferredSize));
@@ -646,6 +777,22 @@ public sealed class SettingsSnapshot
         }
 
         return Math.Clamp(fallback, min, max);
+    }
+
+    private static bool TryGetInteger(object? value, out int result)
+    {
+        switch (value)
+        {
+            case int integer:
+                result = integer;
+                return true;
+            case long integer when integer >= int.MinValue && integer <= int.MaxValue:
+                result = (int)integer;
+                return true;
+            default:
+                result = default;
+                return false;
+        }
     }
 
     private static string GetString(TomlTable table, string key, string fallback = "")

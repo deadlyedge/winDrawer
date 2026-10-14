@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
+// using System;
+// using System.Collections.Generic;
+// using System.Drawing;
 using System.Drawing.Text;
-using System.IO;
+// using System.IO;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Sunny.UI;
+// using System.Threading.Tasks;
+// using System.Windows.Forms;
+// using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -641,19 +641,19 @@ namespace winDrawer
             ApplySettings(_settingsSnapshot);
         }
 
-        private void ApplyAccentColor(Color accent)
-        {
-            if (accent.A == 0)
-            {
-                return;
-            }
+        // private void ApplyAccentColor(Color accent)
+        // {
+        //     if (accent.A == 0)
+        //     {
+        //         return;
+        //     }
 
-            var opaqueAccent = Color.FromArgb(255, accent.R, accent.G, accent.B);
-            addDrawerButton.FillColor = opaqueAccent;
-            addDrawerButton.FillHoverColor = ControlPaint.Light(opaqueAccent);
-            addDrawerButton.FillPressColor = ControlPaint.Dark(opaqueAccent);
-            addDrawerButton.FillSelectedColor = addDrawerButton.FillPressColor;
-        }
+        //     var opaqueAccent = Color.FromArgb(255, accent.R, accent.G, accent.B);
+        //     addDrawerButton.FillColor = opaqueAccent;
+        //     addDrawerButton.FillHoverColor = ControlPaint.Light(opaqueAccent);
+        //     addDrawerButton.FillPressColor = ControlPaint.Dark(opaqueAccent);
+        //     addDrawerButton.FillSelectedColor = addDrawerButton.FillPressColor;
+        // }
 
         private void ApplySettings(SettingsSnapshot snapshot)
         {

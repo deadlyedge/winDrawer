@@ -129,7 +129,7 @@ namespace winDrawer
 
         private static Color BlendColor(Color background, Color overlay)
         {
-            var alpha = overlay.A / 255d;
+            const double alpha = 0.7d;
             return Color.FromArgb(
                 (int)Math.Round(background.R * (1 - alpha) + overlay.R * alpha),
                 (int)Math.Round(background.G * (1 - alpha) + overlay.G * alpha),

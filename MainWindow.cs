@@ -24,10 +24,13 @@ namespace winDrawer
         private bool _drawerDragStarted;
         private int _drawerPressedIndex = -1;
         private Point _drawerPressPoint;
-        private int _pendingDrawerActivationIndex = -1;
-        private readonly System.Windows.Forms.Timer _drawerClickTimer = new()
+        private int _dropInsertionIndex = -1;
+        private int _dropRawInsertionIndex = -1;
+        private readonly Panel _drawerInsertionMarker = new()
         {
-            Interval = SystemInformation.DoubleClickTime + 20
+            Height = 3,
+            Visible = false,
+            Enabled = false
         };
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
@@ -47,19 +50,16 @@ namespace winDrawer
             _currentTheme = _settingsSnapshot.BuildThemePalette();
 
             DrawerLogger.LogDebug($"Loaded {_settingsSnapshot.Drawers.Count} drawers from settings.");
-
             InitializeComponent();
-            drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
             drawerListBox.MouseDown += DrawerListBox_MouseDown;
-            drawerListBox.MouseClick += DrawerListBox_MouseClick;
-            drawerListBox.MouseDoubleClick += DrawerListBox_MouseDoubleClick;
-            drawerListBox.MouseMove += DrawerListBox_MouseMove;
             drawerListBox.MouseUp += DrawerListBox_MouseUp;
+            drawerListBox.MouseMove += DrawerListBox_MouseMove;
             drawerListBox.DragEnter += DrawerListBox_DragEnter;
             drawerListBox.DragOver += DrawerListBox_DragOver;
             drawerListBox.DragDrop += DrawerListBox_DragDrop;
             drawerListBox.AllowDrop = true;
-            _drawerClickTimer.Tick += DrawerClickTimer_Tick;
+            drawerListBox.Controls.Add(_drawerInsertionMarker);
+            _drawerInsertionMarker.BringToFront();
 
             FormBorderStyle = FormBorderStyle.None;
             DoubleBuffered = true;
@@ -89,7 +89,6 @@ namespace winDrawer
             {
                 _logoFont?.Dispose();
                 // _headerGlyph?.Dispose();
-                _drawerClickTimer.Dispose();
 
                 try
                 {
@@ -273,8 +272,6 @@ namespace winDrawer
         // }
         private void PopulateDrawerList(IEnumerable<DrawerDefinition> drawers)
         {
-            drawerListBox.SelectedIndexChanged -= DrawerListBox_SelectedIndexChanged;
-
             drawerListBox.Items.Clear();
             _currentDrawers.Clear();
 
@@ -312,34 +309,8 @@ namespace winDrawer
             _suppressSelectionChange = true;
             drawerListBox.SelectedIndex = -1;
             _suppressSelectionChange = false;
-            drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
-
+            ClearDragInsertionMarker();
             DrawerLogger.LogInformation($"Drawer list populated with {_currentDrawers.Count} entries.");
-        }
-
-        private void DrawerListBox_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            if (_suppressSelectionChange || _drawerPointerDown || _isDrawerReordering || Control.MouseButtons != MouseButtons.None)
-            {
-                return;
-            }
-
-            ScheduleDrawerActivation(drawerListBox.SelectedIndex);
-        }
-
-        private void ScheduleDrawerActivation(int index)
-        {
-            _pendingDrawerActivationIndex = index;
-            _drawerClickTimer.Stop();
-            _drawerClickTimer.Start();
-        }
-
-        private void DrawerClickTimer_Tick(object? sender, EventArgs e)
-        {
-            _drawerClickTimer.Stop();
-            var index = _pendingDrawerActivationIndex;
-            _pendingDrawerActivationIndex = -1;
-            OpenOrToggleDrawer(index);
         }
 
         private void OpenOrToggleDrawer(int selectedIndex)
@@ -390,60 +361,27 @@ namespace winDrawer
         {
             _drawerDragStarted = false;
             var index = drawerListBox.IndexFromPoint(e.Location);
-            if (index < 0 || index >= _currentDrawers.Count)
-            {
-                _drawerClickTimer.Stop();
-                _pendingDrawerActivationIndex = -1;
-                _drawerPointerDown = false;
-                _drawerPressedIndex = -1;
-                return;
-            }
-
             if (e.Button == MouseButtons.Right)
             {
-                _drawerClickTimer.Stop();
-                _pendingDrawerActivationIndex = -1;
+                _drawerPointerDown = false;
+                _drawerPressedIndex = -1;
+                if (index >= 0 && index < _currentDrawers.Count)
+                {
+                    ShowDrawerSettings(index);
+                }
+                return;
+            }
+
+            if (e.Button != MouseButtons.Left || index < 0 || index >= _currentDrawers.Count)
+            {
                 _drawerPointerDown = false;
                 _drawerPressedIndex = -1;
                 return;
             }
 
-            if (e.Button != MouseButtons.Left)
-            {
-                return;
-            }
-
-            _drawerClickTimer.Stop();
-            _pendingDrawerActivationIndex = -1;
-
             _drawerPointerDown = true;
-            _drawerDragStarted = false;
             _drawerPressedIndex = index;
             _drawerPressPoint = e.Location;
-        }
-
-        private void DrawerListBox_MouseClick(object? sender, MouseEventArgs e)
-        {
-            if (e.Button != MouseButtons.Right)
-            {
-                return;
-            }
-
-            var index = drawerListBox.IndexFromPoint(e.Location);
-            if (index >= 0 && index < _currentDrawers.Count)
-            {
-                ShowDrawerSettings(index);
-            }
-        }
-
-        private void DrawerListBox_MouseDoubleClick(object? sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                _drawerClickTimer.Stop();
-                _pendingDrawerActivationIndex = -1;
-                OpenOrToggleDrawer(drawerListBox.IndexFromPoint(e.Location));
-            }
         }
 
         private void DrawerListBox_MouseMove(object? sender, MouseEventArgs e)
@@ -465,8 +403,6 @@ namespace winDrawer
 
             _drawerDragStarted = true;
             _isDrawerReordering = true;
-            _drawerClickTimer.Stop();
-            _pendingDrawerActivationIndex = -1;
             try
             {
                 drawerListBox.DoDragDrop(_currentDrawers[_drawerPressedIndex].Path, DragDropEffects.Move);
@@ -481,81 +417,111 @@ namespace winDrawer
 
         private void DrawerListBox_MouseUp(object? sender, MouseEventArgs e)
         {
-            var pressedIndex = _drawerPressedIndex;
+            var sourceIndex = _drawerPressedIndex;
             var wasDrag = _drawerDragStarted;
             _drawerPointerDown = false;
             _drawerPressedIndex = -1;
             _drawerDragStarted = false;
 
-            if (e.Button != MouseButtons.Left || wasDrag || pressedIndex < 0 || pressedIndex >= _currentDrawers.Count)
+            if (e.Button == MouseButtons.Left && !wasDrag && sourceIndex >= 0 && sourceIndex < _currentDrawers.Count &&
+                drawerListBox.IndexFromPoint(e.Location) == sourceIndex)
             {
-                return;
-            }
-
-            var releasedIndex = drawerListBox.IndexFromPoint(e.Location);
-            if (releasedIndex == pressedIndex)
-            {
-                ScheduleDrawerActivation(pressedIndex);
-            }
-            else
-            {
-                _drawerClickTimer.Stop();
-                _pendingDrawerActivationIndex = -1;
+                OpenOrToggleDrawer(sourceIndex);
             }
         }
 
         private void DrawerListBox_DragEnter(object? sender, DragEventArgs e)
         {
-            e.Effect = e.Data?.GetDataPresent(typeof(string)) == true
-                ? DragDropEffects.Move
-                : DragDropEffects.None;
+            e.Effect = e.Data?.GetDataPresent(typeof(string)) == true ? DragDropEffects.Move : DragDropEffects.None;
+            UpdateDragInsertionMarker(e);
         }
 
         private void DrawerListBox_DragOver(object? sender, DragEventArgs e)
         {
-            e.Effect = e.Data?.GetDataPresent(typeof(string)) == true
-                ? DragDropEffects.Move
-                : DragDropEffects.None;
+            e.Effect = e.Data?.GetDataPresent(typeof(string)) == true ? DragDropEffects.Move : DragDropEffects.None;
+            UpdateDragInsertionMarker(e);
         }
 
-        private void DrawerListBox_DragDrop(object? sender, DragEventArgs e)
+        private void DrawerListBox_DragLeave(object? sender, EventArgs e)
         {
-            if (e.Data?.GetData(typeof(string)) is not string draggedPath)
+            ClearDragInsertionMarker();
+        }
+
+        private void UpdateDragInsertionMarker(DragEventArgs e)
+        {
+            if (e.Data?.GetData(typeof(string)) is not string draggedPath || _currentDrawers.Count == 0)
             {
+                ClearDragInsertionMarker();
                 return;
             }
 
             var sourceIndex = _currentDrawers.FindIndex(drawer => PathsEqual(drawer.Path, draggedPath));
-            if (sourceIndex < 0)
+            var point = drawerListBox.PointToClient(new Point(e.X, e.Y));
+            var rawInsertionIndex = GetRawDropInsertionIndex(point);
+            if (sourceIndex < 0 || rawInsertionIndex < 0)
             {
+                ClearDragInsertionMarker();
                 return;
             }
 
-            var point = drawerListBox.PointToClient(new Point(e.X, e.Y));
-            var destinationIndex = drawerListBox.IndexFromPoint(point);
-            if (destinationIndex < 0)
+            _dropRawInsertionIndex = rawInsertionIndex;
+            _dropInsertionIndex = Math.Clamp(
+                rawInsertionIndex > sourceIndex ? rawInsertionIndex - 1 : rawInsertionIndex,
+                0,
+                _currentDrawers.Count - 1);
+
+            var markerY = rawInsertionIndex < _currentDrawers.Count
+                ? drawerListBox.GetItemRectangle(rawInsertionIndex).Top
+                : drawerListBox.GetItemRectangle(_currentDrawers.Count - 1).Bottom;
+            var markerHeight = Math.Max(2, (int)Math.Round(3 * DeviceDpi / 96d));
+            _drawerInsertionMarker.SetBounds(4, markerY - markerHeight / 2, Math.Max(1, drawerListBox.ClientSize.Width - 8), markerHeight);
+            _drawerInsertionMarker.BackColor = _currentTheme.Accent;
+            _drawerInsertionMarker.Visible = true;
+            _drawerInsertionMarker.BringToFront();
+        }
+
+        private int GetRawDropInsertionIndex(Point point)
+        {
+            var itemIndex = drawerListBox.IndexFromPoint(point);
+            if (itemIndex < 0)
             {
-                destinationIndex = point.Y < drawerListBox.GetItemRectangle(0).Top
-                    ? 0
-                    : _currentDrawers.Count;
-            }
-            else
-            {
-                var row = drawerListBox.GetItemRectangle(destinationIndex);
-                if (point.Y >= row.Top + row.Height / 2)
+                if (point.Y < drawerListBox.GetItemRectangle(0).Top)
                 {
-                    destinationIndex++;
+                    return 0;
                 }
+
+                return point.Y > drawerListBox.ClientSize.Height ? _currentDrawers.Count : -1;
             }
 
-            if (sourceIndex < destinationIndex)
+            var itemBounds = drawerListBox.GetItemRectangle(itemIndex);
+            return point.Y >= itemBounds.Top + itemBounds.Height / 2 ? itemIndex + 1 : itemIndex;
+        }
+
+        private void ClearDragInsertionMarker()
+        {
+            _dropInsertionIndex = -1;
+            _dropRawInsertionIndex = -1;
+            _drawerInsertionMarker.Visible = false;
+        }
+        private void DrawerListBox_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (e.Data?.GetData(typeof(string)) is not string draggedPath)
             {
-                destinationIndex--;
+                ClearDragInsertionMarker();
+                return;
             }
 
-            destinationIndex = Math.Clamp(destinationIndex, 0, _currentDrawers.Count - 1);
+            var sourceIndex = _currentDrawers.FindIndex(drawer => PathsEqual(drawer.Path, draggedPath));
+            if (sourceIndex < 0 || _dropInsertionIndex < 0)
+            {
+                ClearDragInsertionMarker();
+                return;
+            }
+
+            var destinationIndex = _dropInsertionIndex;
             if (destinationIndex == sourceIndex)
             {
+                ClearDragInsertionMarker();
                 return;
             }
 
@@ -583,8 +549,11 @@ namespace winDrawer
                 MessageBox.Show(this, $"Failed to save drawer order: {ex.Message}", "Reorder Drawers", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 ReloadSettingsFromStorage();
             }
+            finally
+            {
+                ClearDragInsertionMarker();
+            }
         }
-
         private static bool PathsEqual(string first, string second)
         {
             var left = Environment.ExpandEnvironmentVariables(first).Trim();

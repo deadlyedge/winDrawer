@@ -20,7 +20,7 @@ window_position = [100, 100]
 name = "Documents"
 path = "D:\\Users\\Example\\Documents"
 size = [800, 600]
-overlay_color = "#73FF8800"
+overlay_color = "#FF8800"
 
 [[drawers]]
 name = "Downloads"
@@ -39,11 +39,11 @@ path = "%USERPROFILE%\\Downloads"
 | `drawers[].name` | String | 路径末级名称 | UI 显示名称。空白名称可在读取时从路径末级名称推导。 |
 | `drawers[].path` | String | 必填 | Windows 文件/目录路径，使用标准 TOML 双引号字符串；空路径条目忽略并记录诊断。支持环境变量展开。 |
 | `drawers[].size` | 2 个整数的数组 | 未设置 | 抽屉窗口尺寸 `[width, height]`；数组必须恰有两个整数，分别夹取到 200–4000。 |
-| `drawers[].overlay_color` | `#AARRGGBB` 字符串 | 未设置 | 可选的抽屉背景蒙版颜色；`AA` 为透明度，`RRGGBB` 为颜色。缺少或格式无效时不叠加专属颜色，继续使用全局主题。 |
+| `drawers[].overlay_color` | `#RRGGBB` 字符串 | 未设置 | 可选的抽屉背景蒙版颜色；应用固定以 70% 不透明度覆盖主题背景。缺少或格式无效时不叠加专属颜色。 |
 
 `drawers[].size` 可整体省略；省略或格式无效时使用 UI 的标准初始尺寸，不要求自动写回配置。尺寸单位必须与窗口布局使用的单位一致，并在实现中由统一的窗口坐标策略解释。
 
-抽屉专属蒙版使用 8 位十六进制 ARGB 字符串，例如 `overlay_color = "#73FF8800"` 表示约 45% 不透明度的橙色。省略字段或在设置中选择“不叠加”时移除该字段。改名、更改绑定路径、颜色更新、排序和删除均只修改对应抽屉配置；删除抽屉不会删除或移动磁盘上的目录或文件。`[[drawers]]` 表的顺序即主窗口显示顺序。
+抽屉专属蒙版使用 6 位十六进制 RGB 字符串，例如 `overlay_color = "#FF8800"` 表示橙色；应用固定以 70% 不透明度混合到抽屉背景，不提供 Alpha 设置。省略字段或在设置中选择“不叠加”时移除该字段。旧版 8 位 `#AARRGGBB` 值仍可读取，读取时保留 RGB 并忽略原 Alpha。改名、更改绑定路径、颜色更新、排序和删除均只修改对应抽屉配置；删除抽屉不会删除或移动磁盘上的目录或文件。`[[drawers]]` 表的顺序即主窗口显示顺序。
 
 路径使用标准 TOML basic string，例如 `path = "D:\\Users\\Example\\Documents"`。配置文件中的 `\\` 在 TOML 解析后表示一个反斜杠，因此运行时路径仍是 Windows 资源管理器所用的 `D:\Users\Example\Documents`。应用通过 TOML 库序列化路径，不自定义字符串引号风格。
 

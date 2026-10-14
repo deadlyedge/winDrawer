@@ -7,8 +7,6 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly TextBox _nameTextBox = new();
     private readonly TextBox _pathTextBox = new();
     private readonly Panel _colorPreview = new();
-    private readonly TrackBar _opacityTrackBar = new();
-    private readonly Label _opacityValueLabel = new();
     private readonly ColorDialog _colorDialog = new();
     private Color? _selectedColor;
 
@@ -40,7 +38,7 @@ internal sealed class DrawerSettingsDialog : Form
         _selectedColor = drawer.OverlayColor;
         _colorPreview.SetBounds(126, 104, 44, 30);
         _colorPreview.BorderStyle = BorderStyle.FixedSingle;
-        _colorPreview.BackColor = _selectedColor ?? SystemColors.Control;
+        UpdateColorPreview();
         _colorPreview.AccessibleName = "Drawer overlay color preview";
 
         var colorLabel = CreateLabel("Overlay", 20, 108);
@@ -49,18 +47,7 @@ internal sealed class DrawerSettingsDialog : Form
         var clearColorButton = new Button { Text = "No overlay", Bounds = new Rectangle(300, 104, 95, 30) };
         clearColorButton.Click += (_, _) => SetSelectedColor(null);
 
-        var opacityLabel = CreateLabel("Opacity", 20, 153);
-        _opacityTrackBar.SetBounds(126, 143, 310, 42);
-        _opacityTrackBar.Minimum = 0;
-        _opacityTrackBar.Maximum = 100;
-        _opacityTrackBar.TickFrequency = 10;
-        _opacityTrackBar.Value = _selectedColor is { } initialColor
-            ? (int)Math.Round(initialColor.A * 100d / 255d)
-            : 45;
-        _opacityTrackBar.ValueChanged += (_, _) => UpdateOpacityValue();
-
-        _opacityValueLabel.SetBounds(442, 150, 55, 24);
-        UpdateOpacityValue();
+        var overlayInfoLabel = CreateLabel("Fixed 70% opacity", 126, 153);
 
         var saveButton = new Button { Text = "Save", Bounds = new Rectangle(250, 222, 78, 30) };
         var deleteButton = new Button { Text = "Delete", Bounds = new Rectangle(334, 222, 78, 30) };
@@ -76,7 +63,7 @@ internal sealed class DrawerSettingsDialog : Form
         {
             nameLabel, _nameTextBox, pathLabel, _pathTextBox, browseButton,
             colorLabel, _colorPreview, chooseColorButton, clearColorButton,
-            opacityLabel, _opacityTrackBar, _opacityValueLabel,
+            overlayInfoLabel,
             saveButton, deleteButton, cancelButton
         });
 
@@ -99,8 +86,7 @@ internal sealed class DrawerSettingsDialog : Form
                 return null;
             }
 
-            var alpha = (int)Math.Round(_opacityTrackBar.Value * 255d / 100d);
-            return Color.FromArgb(alpha, selected.R, selected.G, selected.B);
+            return Color.FromArgb(179, selected.R, selected.G, selected.B);
         }
     }
 
@@ -174,11 +160,21 @@ internal sealed class DrawerSettingsDialog : Form
     private void SetSelectedColor(Color? color)
     {
         _selectedColor = color;
-        _colorPreview.BackColor = color ?? SystemColors.Control;
+        UpdateColorPreview();
     }
 
-    private void UpdateOpacityValue()
+    private void UpdateColorPreview()
     {
-        _opacityValueLabel.Text = $"{_opacityTrackBar.Value}%";
+        if (_selectedColor is not { } color)
+        {
+            _colorPreview.BackColor = SystemColors.Control;
+            return;
+        }
+
+        const double opacity = 0.7d;
+        _colorPreview.BackColor = Color.FromArgb(
+            (int)Math.Round(SystemColors.Control.R * (1 - opacity) + color.R * opacity),
+            (int)Math.Round(SystemColors.Control.G * (1 - opacity) + color.G * opacity),
+            (int)Math.Round(SystemColors.Control.B * (1 - opacity) + color.B * opacity));
     }
 }

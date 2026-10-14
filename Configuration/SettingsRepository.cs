@@ -130,7 +130,7 @@ internal sealed class SettingsRepository : IDisposable
         }
 
         var normalizedColor = overlayColor is { } color
-            ? Color.FromArgb(color.A, color.R, color.G, color.B)
+            ? Color.FromArgb(179, color.R, color.G, color.B)
             : (Color?)null;
 
         lock (_writeLock)
@@ -309,7 +309,7 @@ internal sealed class SettingsRepository : IDisposable
 
     private static string FormatOverlayColor(Color color)
     {
-        return $"#{unchecked((uint)color.ToArgb()).ToString("X8", CultureInfo.InvariantCulture)}";
+        return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
     }
 
     /// <summary>
@@ -970,13 +970,21 @@ public sealed class SettingsSnapshot
     private static Color? ParseOverlayColor(TomlTable drawerTable)
     {
         var value = GetString(drawerTable, "overlay_color").Trim();
-        if (value.Length != 9 || value[0] != '#' ||
-            !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var argb))
+        if (value.Length != 7 || value[0] != '#' ||
+            !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rgb))
         {
-            return null;
+            if (value.Length == 9 && value[0] == '#' &&
+                uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var oldArgb))
+            {
+                rgb = oldArgb & 0x00FFFFFF;
+            }
+            else
+            {
+                return null;
+            }
         }
 
-        return Color.FromArgb(unchecked((int)argb));
+        return Color.FromArgb(179, (int)((rgb >> 16) & 0xFF), (int)((rgb >> 8) & 0xFF), (int)(rgb & 0xFF));
     }
 
     private static bool GetBoolean(TomlTable table, string key, bool fallback = false)

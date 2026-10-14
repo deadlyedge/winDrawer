@@ -30,6 +30,34 @@ dotnet build
 
 The default build output is under `bin\Debug\net10.0-windows\win-x64\`. `bin/` and `obj/` contain generated build files and are ignored by Git.
 
+### Publish
+
+```powershell
+dotnet publish .\winDrawer.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained false `
+  -p:PublishSingleFile=true `
+  -p:IncludeAllContentForSelfExtract=true `
+  -o .\publish\win-x64
+```
+
+or have .net runtime combined:
+
+```powershell
+dotnet publish .\winDrawer.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:IncludeAllContentForSelfExtract=true `
+  -p:DebugType=None `
+  -p:DebugSymbols=false `
+  -o .\publish\win-x64
+
+```
+
 ### Run
 
 ```powershell

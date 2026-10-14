@@ -19,6 +19,8 @@ namespace winDrawer
         private readonly List<Image> _imageListImages = new();
         private ThemePalette _theme;
         private Size _lastPersistedSize;
+        private CancellationTokenSource? _fileListLoadCancellation;
+        private int _fileListLoadGeneration;
 
         private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -35,6 +37,7 @@ namespace winDrawer
         };
 
         private sealed record DrawerItemInfo(string Path, bool IsDirectory);
+        private sealed record LoadedDrawerItem(string Path, string Name, bool IsDirectory, Image Image);
 
         internal DrawerWindow(SettingsRepository settingsRepository, DrawerDefinition drawer, ThemePalette theme)
         {
@@ -61,14 +64,14 @@ namespace winDrawer
             drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
             DpiChanged += DrawerWindow_DpiChanged;
 
-            refreshDrawerButton.Click += (_, _) => PopulateFileList();
+            refreshDrawerButton.Click += RefreshDrawerButton_Click;
             closeDrawerButton.Click += (_, _) => Close();
+            Disposed += (_, _) => CancelFileListLoad();
 
             Size = _drawer.PreferredSize ?? Size;
             _lastPersistedSize = Size;
 
-            PopulateFileList();
-            DrawerLogger.LogInformation($"DrawerWindow ready for '{_drawer.Name}'. Item count: {drawerContentsListView.Items.Count}.");
+            ShowListStatus("Loading...");
         }
 
         public void ApplyTheme(ThemePalette theme)
@@ -95,20 +98,10 @@ namespace winDrawer
 
         private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
         {
-            drawerContentsListView.BeginUpdate();
-            try
-            {
-                drawerContentsListView.Items.Clear();
-                drawerImageList.Images.Clear();
-                DisposeImageListImages();
-                drawerImageList.ImageSize = GetImageSize(e.DeviceDpiNew);
-            }
-            finally
-            {
-                drawerContentsListView.EndUpdate();
-            }
-
-            PopulateFileList();
+            CancelFileListLoad();
+            ClearFileList();
+            drawerImageList.ImageSize = GetImageSize(e.DeviceDpiNew);
+            _ = PopulateFileListAsync();
         }
 
         private static Size GetImageSize(int dpi)
@@ -126,6 +119,17 @@ namespace winDrawer
                 Size = _drawer.PreferredSize.Value;
                 _lastPersistedSize = Size;
             }
+
+            _ = PopulateFileListAsync();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+            if (!e.Cancel)
+            {
+                CancelFileListLoad();
+            }
         }
 
         protected override void OnResizeEnd(EventArgs e)
@@ -142,47 +146,206 @@ namespace winDrawer
             base.OnFormClosed(e);
         }
 
-        private void PopulateFileList()
+        private async void RefreshDrawerButton_Click(object? sender, EventArgs e)
         {
+            await PopulateFileListAsync();
+        }
+
+        private async Task PopulateFileListAsync()
+        {
+            if (IsDisposed || Disposing)
+            {
+                return;
+            }
+
+            var previousCancellation = _fileListLoadCancellation;
+            var cancellation = new CancellationTokenSource();
+            _fileListLoadCancellation = cancellation;
+            var generation = ++_fileListLoadGeneration;
+            previousCancellation?.Cancel();
+
             DrawerLogger.LogInformation($"Refreshing drawer contents for '{_drawer.Name}'.");
-            drawerContentsListView.BeginUpdate();
-            int directoryCount = 0;
-            int fileCount = 0;
+            ClearFileList();
+            fullPathLabel.Text = _drawer.Path;
+            ShowListStatus("Loading...");
+
             try
             {
-                drawerContentsListView.Items.Clear();
-                drawerImageList.Images.Clear();
-                DisposeImageListImages();
-                fullPathLabel.Text = _drawer.Path;
+                var imageSize = drawerImageList.ImageSize;
+                var items = await Task.Run(
+                    () => LoadDrawerItems(_drawer.Path, imageSize, cancellation.Token));
 
-                if (!Directory.Exists(_drawer.Path))
+                if (!IsCurrentLoad(generation, cancellation))
+                {
+                    DisposeLoadedItems(items);
+                    return;
+                }
+
+                if (items == null)
                 {
                     fullPathLabel.Text = $"{_drawer.Path} (missing)";
+                    ShowListStatus("Folder not found or inaccessible");
                     DrawerLogger.LogWarning($"Drawer path missing for '{_drawer.Name}': {_drawer.Path}");
                     return;
                 }
 
-                foreach (var directory in Directory.EnumerateDirectories(_drawer.Path)
-                             .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
+                try
                 {
-                    AddItem(directory, isDirectory: true);
-                    directoryCount++;
+                    ApplyLoadedItems(items);
+                }
+                finally
+                {
+                    DisposeLoadedItems(items);
                 }
 
-                foreach (var file in Directory.EnumerateFiles(_drawer.Path)
-                             .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
-                {
-                    AddItem(file, isDirectory: false);
-                    fileCount++;
-                }
-
+                var directoryCount = items.Count(item => item.IsDirectory);
+                var fileCount = items.Count - directoryCount;
                 DrawerLogger.LogInformation($"Drawer '{_drawer.Name}' loaded {directoryCount} directories and {fileCount} files.");
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                DrawerLogger.LogDebug($"Discarded an outdated load for drawer '{_drawer.Name}'.");
             }
             catch (Exception ex)
             {
+                if (!IsCurrentLoad(generation, cancellation))
+                {
+                    return;
+                }
+
                 DrawerLogger.LogError($"Failed to populate drawer '{_drawer.Name}'.", ex);
+                ClearFileList();
+                ShowListStatus("Failed to load", ex.Message);
                 MessageBox.Show(this, $"Failed to load drawer contents: {ex.Message}", "Drawer Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (ReferenceEquals(_fileListLoadCancellation, cancellation))
+                {
+                    _fileListLoadCancellation = null;
+                }
+
+                cancellation.Dispose();
+            }
+        }
+
+        private static List<LoadedDrawerItem>? LoadDrawerItems(string folderPath, Size imageSize, CancellationToken cancellationToken)
+        {
+            var items = new List<LoadedDrawerItem>();
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!Directory.Exists(folderPath))
+                {
+                    return null;
+                }
+
+                var directories = new List<string>();
+                foreach (var directory in Directory.EnumerateDirectories(folderPath))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    directories.Add(directory);
+                }
+
+                var files = new List<string>();
+                foreach (var file in Directory.EnumerateFiles(folderPath))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    files.Add(file);
+                }
+
+                directories.Sort((left, right) => CompareItemNames(left, right, cancellationToken));
+                files.Sort((left, right) => CompareItemNames(left, right, cancellationToken));
+
+                foreach (var directory in directories)
+                {
+                    AddLoadedItem(items, directory, isDirectory: true, imageSize, cancellationToken);
+                }
+
+                foreach (var file in files)
+                {
+                    AddLoadedItem(items, file, isDirectory: false, imageSize, cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                return items;
+            }
+            catch
+            {
+                DisposeLoadedItems(items);
+                throw;
+            }
+        }
+
+        private static int CompareItemNames(string left, string right, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return StringComparer.CurrentCultureIgnoreCase.Compare(Path.GetFileName(left), Path.GetFileName(right));
+        }
+
+        private static void AddLoadedItem(
+            ICollection<LoadedDrawerItem> items,
+            string path,
+            bool isDirectory,
+            Size imageSize,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var image = GetItemImage(path, isDirectory, imageSize);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var name = Path.GetFileName(path);
+                items.Add(new LoadedDrawerItem(path, string.IsNullOrEmpty(name) ? path : name, isDirectory, image));
+            }
+            catch
+            {
+                image.Dispose();
+                throw;
+            }
+        }
+
+        private void ApplyLoadedItems(IReadOnlyList<LoadedDrawerItem> items)
+        {
+            drawerContentsListView.BeginUpdate();
+            try
+            {
+                ClearFileList();
+                for (var index = 0; index < items.Count; index++)
+                {
+                    var loadedItem = items[index];
+                    var imageKey = index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    var imageListCopy = (Image)loadedItem.Image.Clone();
+                    try
+                    {
+                        drawerImageList.Images.Add(imageKey, imageListCopy);
+                        _imageListImages.Add(imageListCopy);
+                    }
+                    catch
+                    {
+                        imageListCopy.Dispose();
+                        throw;
+                    }
+
+                    var item = new ListViewItem(loadedItem.Name, imageKey)
+                    {
+                        ToolTipText = loadedItem.Path,
+                        Tag = new DrawerItemInfo(loadedItem.Path, loadedItem.IsDirectory)
+                    };
+
+                    drawerContentsListView.Items.Add(item);
+                }
+
+                if (items.Count == 0)
+                {
+                    ShowListStatus("Folder is empty");
+                }
+            }
+            catch
+            {
+                ClearFileList();
+                throw;
             }
             finally
             {
@@ -190,35 +353,58 @@ namespace winDrawer
             }
         }
 
-        private void AddItem(string path, bool isDirectory)
+        private void ClearFileList()
         {
-            var name = Path.GetFileName(path);
-            if (string.IsNullOrEmpty(name))
-            {
-                name = path;
-            }
-
-            var imageKey = drawerImageList.Images.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            using var image = GetItemImage(path, isDirectory);
-            var imageListCopy = (Image)image.Clone();
+            drawerContentsListView.BeginUpdate();
             try
             {
-                drawerImageList.Images.Add(imageKey, imageListCopy);
-                _imageListImages.Add(imageListCopy);
+                drawerContentsListView.Items.Clear();
+                drawerImageList.Images.Clear();
+                DisposeImageListImages();
             }
-            catch
+            finally
             {
-                imageListCopy.Dispose();
-                throw;
+                drawerContentsListView.EndUpdate();
             }
+        }
 
-            var item = new ListViewItem(name, imageKey)
+        private void ShowListStatus(string text, string? toolTip = null)
+        {
+            drawerContentsListView.Items.Clear();
+            var statusItem = new ListViewItem(text)
             {
-                ToolTipText = path,
-                Tag = new DrawerItemInfo(path, isDirectory)
+                ToolTipText = toolTip ?? text
             };
+            drawerContentsListView.Items.Add(statusItem);
+        }
 
-            drawerContentsListView.Items.Add(item);
+        private bool IsCurrentLoad(int generation, CancellationTokenSource cancellation)
+        {
+            return !IsDisposed && !Disposing &&
+                   generation == _fileListLoadGeneration &&
+                   ReferenceEquals(_fileListLoadCancellation, cancellation) &&
+                   !cancellation.IsCancellationRequested;
+        }
+
+        private void CancelFileListLoad()
+        {
+            _fileListLoadGeneration++;
+            var cancellation = _fileListLoadCancellation;
+            _fileListLoadCancellation = null;
+            cancellation?.Cancel();
+        }
+
+        private static void DisposeLoadedItems(IEnumerable<LoadedDrawerItem>? items)
+        {
+            if (items == null)
+            {
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                item.Image.Dispose();
+            }
         }
 
         private void DisposeImageListImages()
@@ -307,7 +493,7 @@ namespace winDrawer
             }
         }
 
-        private Image GetItemImage(string path, bool isDirectory)
+        private static Image GetItemImage(string path, bool isDirectory, Size imageSize)
         {
             if (isDirectory)
             {
@@ -316,7 +502,7 @@ namespace winDrawer
 
             if (IsImageFile(path))
             {
-                var thumbnail = TryCreateThumbnail(path, drawerImageList.ImageSize);
+                var thumbnail = TryCreateThumbnail(path, imageSize);
                 if (thumbnail != null)
                 {
                     return thumbnail;

@@ -47,6 +47,10 @@ internal static class AppConstants
         public const int IconSizeMin = 32;
         public const int IconSizeMax = 512;
         public const int IconSizeDefault = 96;
+        public const int MainWindowHeightMin = 100;
+        public const int MainWindowHeightMax = 1000;
+        public const int MainWindowHeightDefault = 200;
+        public const int MainWindowWidth = 200;
         public const int ThemeHue = 194;
         public const int ThemeSaturation = 100;
         public const int ThemeLightness = 41;

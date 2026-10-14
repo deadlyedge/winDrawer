@@ -65,6 +65,7 @@ internal sealed class SettingsRepository : IDisposable
             startup["start_with_windows"] = snapshot.StartWithWindows;
             startup["window_locked"] = snapshot.WindowLocked;
             startup["icon_size"] = snapshot.IconSize;
+            startup["window_height"] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
             startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
             startup["window_color_hsla"] = new TomlArray { snapshot.ThemeHue, snapshot.ThemeSaturation, snapshot.ThemeLightness, snapshot.ThemeAlpha };
 
@@ -829,6 +830,7 @@ internal sealed class SettingsRepository : IDisposable
                 ["start_with_windows"] = false,
                 ["window_locked"] = false,
                 ["icon_size"] = AppConstants.Defaults.IconSizeDefault,
+                ["window_height"] = AppConstants.Defaults.MainWindowHeightDefault,
                 ["window_position"] = new TomlArray { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y },
                 ["window_color_hsla"] = new TomlArray
                 {
@@ -946,7 +948,8 @@ public sealed class SettingsSnapshot
         int themeAlpha,
         Point windowPosition,
         int iconSize,
-        IEnumerable<DrawerDefinition>? drawers = null)
+        IEnumerable<DrawerDefinition>? drawers = null,
+        int windowHeight = global::winDrawer.AppConstants.Defaults.MainWindowHeightDefault)
     {
         StartWithWindows = startWithWindows;
         WindowLocked = windowLocked;
@@ -958,6 +961,7 @@ public sealed class SettingsSnapshot
         // ThumbnailHeight = thumbnailHeight;
         WindowPosition = windowPosition;
         IconSize = iconSize;
+        WindowHeight = Math.Clamp(windowHeight, global::winDrawer.AppConstants.Defaults.MainWindowHeightMin, global::winDrawer.AppConstants.Defaults.MainWindowHeightMax);
         _drawers = drawers != null
             ? new List<DrawerDefinition>(drawers)
             : new List<DrawerDefinition>();
@@ -973,6 +977,7 @@ public sealed class SettingsSnapshot
     // public int ThumbnailHeight { get; set; }
     public Point WindowPosition { get; set; }
     public int IconSize { get; set; }
+    public int WindowHeight { get; set; }
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public ThemePalette BuildThemePalette()
@@ -987,7 +992,7 @@ public sealed class SettingsSnapshot
 
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, WindowPosition, IconSize, _drawers);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, WindowPosition, IconSize, _drawers, WindowHeight);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -1015,6 +1020,7 @@ public sealed class SettingsSnapshot
             : Array.Empty<DrawerDefinition>();
 
         var iconSize = GetInt(startup, "icon_size", AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax, AppConstants.Defaults.IconSizeDefault);
+        var windowHeight = GetInt(startup, "window_height", AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);
         var windowPositionArray = GetIntArray(startup, "window_position", new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
         var windowColorHsla = GetIntArray(startup, "window_color_hsla", new int[]
         {
@@ -1033,7 +1039,8 @@ public sealed class SettingsSnapshot
             themeAlpha: windowColorHsla.Length > 3 ? Math.Clamp(windowColorHsla[3], AppConstants.Theme.AlphaMin, AppConstants.Theme.AlphaMax) : AppConstants.Defaults.ThemeAlpha,
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
             iconSize: iconSize,
-            drawers: drawers);
+            drawers: drawers,
+            windowHeight: windowHeight);
     }
 
     private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray tableArray)

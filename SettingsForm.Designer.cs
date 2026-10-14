@@ -30,6 +30,10 @@ partial class SettingsForm
         headerTableLayoutPanel = new UITableLayoutPanel();
         headerSettings = new UILabel();
         settingsTableLayoutPanel = new UITableLayoutPanel();
+        windowHeightTableLayoutPanel = new UITableLayoutPanel();
+        windowHeightLabel = new UILabel();
+        windowHeightTrackBar = new UITrackBar();
+        windowHeightValueLabel = new UILabel();
         behaviorCheckBoxGroup = new UICheckBoxGroup();
         visualGroupBox = new UIGroupBox();
         generalGroupBox = new UIGroupBox();
@@ -78,7 +82,7 @@ partial class SettingsForm
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
-        mainTableLayoutPanel.Size = new Size(783, 583);
+        mainTableLayoutPanel.Size = new Size(783, 649);
         mainTableLayoutPanel.TabIndex = 1;
         mainTableLayoutPanel.TagString = null;
         // 
@@ -114,19 +118,75 @@ partial class SettingsForm
         // 
         settingsTableLayoutPanel.ColumnCount = 1;
         settingsTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        settingsTableLayoutPanel.Controls.Add(behaviorCheckBoxGroup, 0, 0);
-        settingsTableLayoutPanel.Controls.Add(visualGroupBox, 0, 1);
-        settingsTableLayoutPanel.Controls.Add(generalGroupBox, 0, 2);
+        settingsTableLayoutPanel.Controls.Add(windowHeightTableLayoutPanel, 0, 0);
+        settingsTableLayoutPanel.Controls.Add(behaviorCheckBoxGroup, 0, 1);
+        settingsTableLayoutPanel.Controls.Add(visualGroupBox, 0, 2);
+        settingsTableLayoutPanel.Controls.Add(generalGroupBox, 0, 3);
         settingsTableLayoutPanel.Dock = DockStyle.Fill;
         settingsTableLayoutPanel.Location = new Point(3, 53);
         settingsTableLayoutPanel.Name = "settingsTableLayoutPanel";
-        settingsTableLayoutPanel.RowCount = 3;
+        settingsTableLayoutPanel.RowCount = 4;
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 66F));
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         settingsTableLayoutPanel.Size = new Size(777, 442);
         settingsTableLayoutPanel.TabIndex = 2;
         settingsTableLayoutPanel.TagString = null;
+        //
+        // windowHeightTableLayoutPanel
+        //
+        windowHeightTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
+        windowHeightTableLayoutPanel.ColumnCount = 3;
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
+        windowHeightTableLayoutPanel.Controls.Add(windowHeightLabel, 0, 0);
+        windowHeightTableLayoutPanel.Controls.Add(windowHeightTrackBar, 1, 0);
+        windowHeightTableLayoutPanel.Controls.Add(windowHeightValueLabel, 2, 0);
+        windowHeightTableLayoutPanel.Dock = DockStyle.Fill;
+        windowHeightTableLayoutPanel.Location = new Point(3, 3);
+        windowHeightTableLayoutPanel.Name = "windowHeightTableLayoutPanel";
+        windowHeightTableLayoutPanel.RowCount = 1;
+        windowHeightTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        windowHeightTableLayoutPanel.Size = new Size(777, 60);
+        windowHeightTableLayoutPanel.TabIndex = 3;
+        windowHeightTableLayoutPanel.TagString = null;
+        //
+        // windowHeightLabel
+        //
+        windowHeightLabel.Dock = DockStyle.Fill;
+        windowHeightLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        windowHeightLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        windowHeightLabel.Location = new Point(3, 0);
+        windowHeightLabel.Name = "windowHeightLabel";
+        windowHeightLabel.Size = new Size(164, 60);
+        windowHeightLabel.TabIndex = 0;
+        windowHeightLabel.Text = "window height";
+        windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
+        //
+        // windowHeightTrackBar
+        //
+        windowHeightTrackBar.Dock = DockStyle.Fill;
+        windowHeightTrackBar.FillColor = Color.FromArgb(64, 64, 64);
+        windowHeightTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        windowHeightTrackBar.Location = new Point(173, 3);
+        windowHeightTrackBar.MinimumSize = new Size(1, 1);
+        windowHeightTrackBar.Name = "windowHeightTrackBar";
+        windowHeightTrackBar.Size = new Size(522, 54);
+        windowHeightTrackBar.TabIndex = 1;
+        //
+        // windowHeightValueLabel
+        //
+        windowHeightValueLabel.Dock = DockStyle.Fill;
+        windowHeightValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        windowHeightValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        windowHeightValueLabel.Location = new Point(701, 0);
+        windowHeightValueLabel.Name = "windowHeightValueLabel";
+        windowHeightValueLabel.Size = new Size(73, 60);
+        windowHeightValueLabel.TabIndex = 2;
+        windowHeightValueLabel.Text = "400";
+        windowHeightValueLabel.TextAlign = ContentAlignment.MiddleCenter;
         // 
         // behaviorCheckBoxGroup
         // 
@@ -508,13 +568,13 @@ partial class SettingsForm
         // 
         AutoScaleMode = AutoScaleMode.None;
         BackColor = Color.DimGray;
-        ClientSize = new Size(783, 760);
+        ClientSize = new Size(783, 826);
         Controls.Add(mainTableLayoutPanel);
         Name = "SettingsForm";
         RectColor = Color.Transparent;
         ShowTitle = false;
         Text = "";
-        ZoomScaleRect = new Rectangle(0, 0, 783, 760);
+        ZoomScaleRect = new Rectangle(0, 0, 783, 826);
         mainTableLayoutPanel.ResumeLayout(false);
         headerTableLayoutPanel.ResumeLayout(false);
         settingsTableLayoutPanel.ResumeLayout(false);
@@ -530,6 +590,10 @@ partial class SettingsForm
     private Sunny.UI.UITableLayoutPanel headerTableLayoutPanel;
     private Sunny.UI.UILabel headerSettings;
     private Sunny.UI.UITableLayoutPanel settingsTableLayoutPanel;
+    private Sunny.UI.UITableLayoutPanel windowHeightTableLayoutPanel;
+    private Sunny.UI.UILabel windowHeightLabel;
+    private Sunny.UI.UITrackBar windowHeightTrackBar;
+    private Sunny.UI.UILabel windowHeightValueLabel;
     private Sunny.UI.UICheckBoxGroup behaviorCheckBoxGroup;
     private Sunny.UI.UIGroupBox visualGroupBox;
     private Sunny.UI.UIGroupBox generalGroupBox;

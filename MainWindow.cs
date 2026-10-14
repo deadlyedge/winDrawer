@@ -71,6 +71,7 @@ namespace winDrawer
             InitializeTray();
             WireDragHandlers();
             ApplySettings(_settingsSnapshot);
+            DpiChanged += (_, _) => ApplyMainWindowBounds(_settingsSnapshot);
 
             DrawerLogger.LogInformation("MainWindow initialization completed.");
 
@@ -822,6 +823,13 @@ namespace winDrawer
             var settings = new SettingsForm(_settingsSnapshot);
             EventHandler<ThemePreviewEventArgs>? previewHandler = (_, args) => ApplyTheme(args.Palette);
             settings.ThemePreviewChanged += previewHandler;
+            EventHandler? windowHeightPreviewHandler = (_, _) =>
+            {
+                var previewSnapshot = _settingsSnapshot.Clone();
+                previewSnapshot.WindowHeight = settings.WindowHeightPreview;
+                ApplyMainWindowBounds(previewSnapshot);
+            };
+            settings.WindowHeightPreviewChanged += windowHeightPreviewHandler;
 
             // Use a message filter to detect actual mouse-downs outside the settings window.
             var filter = new ClickOutsideFilter(settings);
@@ -835,6 +843,7 @@ namespace winDrawer
                 try
                 {
                     settings.ThemePreviewChanged -= previewHandler;
+                    settings.WindowHeightPreviewChanged -= windowHeightPreviewHandler;
                 }
                 catch { }
 
@@ -909,6 +918,8 @@ namespace winDrawer
                 else
                 {
                     DrawerLogger.LogInformation("Settings dialog cancelled; reverting preview.");
+                    settings.RestoreWindowHeightPreview();
+                    ApplyMainWindowBounds(_settingsSnapshot);
                     ApplyTheme(_settingsSnapshot.BuildThemePalette());
                 }
 
@@ -1034,11 +1045,32 @@ namespace winDrawer
         private void ApplySettings(SettingsSnapshot snapshot)
         {
             StartPosition = FormStartPosition.Manual;
-            Location = snapshot.WindowPosition;
+            ApplyMainWindowBounds(snapshot);
             ApplyTheme(snapshot.BuildThemePalette());
             PopulateDrawerList(snapshot.Drawers);
             // 如果有当前打开的drawer，更新list中的选中状态
             UpdateSelectedDrawer();
+        }
+
+        private void ApplyMainWindowBounds(SettingsSnapshot snapshot)
+        {
+            var dpiScale = DeviceDpi / 96d;
+            var desiredWidth = Math.Max(1, (int)Math.Round(AppConstants.Defaults.MainWindowWidth * dpiScale));
+            var desiredHeight = Math.Max(1, (int)Math.Round(snapshot.WindowHeight * dpiScale));
+            var desiredBounds = new Rectangle(snapshot.WindowPosition, new Size(desiredWidth, desiredHeight));
+            var workArea = Screen.FromRectangle(desiredBounds).WorkingArea;
+
+            ClientSize = new Size(
+                Math.Min(desiredWidth, workArea.Width),
+                Math.Min(desiredHeight, workArea.Height));
+            Location = new Point(
+                ClampToWorkArea(snapshot.WindowPosition.X, workArea.Left, workArea.Right - Width),
+                ClampToWorkArea(snapshot.WindowPosition.Y, workArea.Top, workArea.Bottom - Height));
+        }
+
+        private static int ClampToWorkArea(int value, int minimum, int maximum)
+        {
+            return Math.Clamp(value, minimum, Math.Max(minimum, maximum));
         }
 
         private void ApplyTheme(ThemePalette theme)

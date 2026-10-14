@@ -39,6 +39,18 @@ public partial class SettingsForm : UIForm
 
     public event EventHandler<ThemePreviewEventArgs>? ThemePreviewChanged;
 
+    public event EventHandler? WindowHeightPreviewChanged;
+
+    public int WindowHeightPreview => _workingSnapshot.WindowHeight;
+
+    public void RestoreWindowHeightPreview()
+    {
+        _workingSnapshot.WindowHeight = _originalSnapshot.WindowHeight;
+        windowHeightTrackBar.Value = _originalSnapshot.WindowHeight;
+        UpdateWindowHeightValueLabel();
+        WindowHeightPreviewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public Color SelectedAccentColor { get; private set; }
 
     public bool LaunchOnStartup => IsBehaviorChecked(StartWithWindowsIndex);
@@ -60,6 +72,8 @@ public partial class SettingsForm : UIForm
 
         opacityTrackBar.Minimum = AppConstants.Theme.AlphaMin;
         opacityTrackBar.Maximum = AppConstants.Theme.AlphaMax;
+        windowHeightTrackBar.Minimum = AppConstants.Defaults.MainWindowHeightMin;
+        windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
         behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
     }
@@ -70,6 +84,7 @@ public partial class SettingsForm : UIForm
         saturationTrackBar.ValueChanged += OnThemeTrackValueChanged;
         lightnessTrackBar.ValueChanged += OnThemeTrackValueChanged;
         opacityTrackBar.ValueChanged += OnThemeTrackValueChanged;
+        windowHeightTrackBar.ValueChanged += OnWindowHeightValueChanged;
 
         saveButton.Click += saveButton_Click;
         cancelButton.Click += cancelButton_Click;
@@ -107,6 +122,12 @@ public partial class SettingsForm : UIForm
 
         behaviorCheckBoxGroup.SelectedIndexes = selected;
 
+        windowHeightTrackBar.Value = Math.Clamp(
+            _workingSnapshot.WindowHeight,
+            windowHeightTrackBar.Minimum,
+            windowHeightTrackBar.Maximum);
+        UpdateWindowHeightValueLabel();
+
         hueTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeHue, hueTrackBar.Minimum, hueTrackBar.Maximum);
         saturationTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeSaturation, saturationTrackBar.Minimum, saturationTrackBar.Maximum);
         lightnessTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeLightness, lightnessTrackBar.Minimum, lightnessTrackBar.Maximum);
@@ -121,6 +142,18 @@ public partial class SettingsForm : UIForm
         saturationValueLabel.Text = $"{saturationTrackBar.Value}%";
         lightnessValueLabel.Text = $"{lightnessTrackBar.Value}%";
         opacityValueLabel.Text = $"{opacityTrackBar.Value}%";
+    }
+
+    private void OnWindowHeightValueChanged(object? sender, EventArgs e)
+    {
+        _workingSnapshot.WindowHeight = windowHeightTrackBar.Value;
+        UpdateWindowHeightValueLabel();
+        WindowHeightPreviewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void UpdateWindowHeightValueLabel()
+    {
+        windowHeightValueLabel.Text = $"{windowHeightTrackBar.Value} DIP";
     }
 
     private void OnThemeTrackValueChanged(object? sender, EventArgs e)
@@ -152,6 +185,7 @@ public partial class SettingsForm : UIForm
     private void cancelButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogInformation("SettingsForm: cancel requested.");
+        RestoreWindowHeightPreview();
         ResultSettings = _originalSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
@@ -277,6 +311,7 @@ public partial class SettingsForm : UIForm
 
         _workingSnapshot.StartWithWindows = selected.Contains(StartWithWindowsIndex);
         _workingSnapshot.WindowLocked = selected.Contains(LockPositionIndex);
+        _workingSnapshot.WindowHeight = windowHeightTrackBar.Value;
     }
 
     private bool IsBehaviorChecked(int index)

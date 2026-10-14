@@ -13,6 +13,7 @@
 start_with_windows = false
 window_locked = false
 icon_size = 96
+window_height = 400
 window_color_hsla = [194, 100, 41, 60]
 window_position = [100, 100]
 
@@ -34,6 +35,7 @@ path = "%USERPROFILE%\\Downloads"
 | `startup.start_with_windows` | Boolean | `false` | 是否在 Windows 登录时启动。若 UI 提供该选项，必须真正生效；是否纳入首版见产品需求。 |
 | `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止通过拖动区域移动主窗口。 |
 | `startup.icon_size` | Integer | `96` | 图标正方形边长，支持范围 32–512。超范围值夹取到范围内。 |
+| `startup.window_height` | Integer | `400` | 主窗口客户区高度，单位为 96 DPI 逻辑像素（DIP），支持范围 200–1000。屏幕空间不足时运行时高度会临时受工作区限制，但保存的期望值不变。缺失或类型无效时使用默认高度 400。 |
 | `startup.window_color_hsla` | 4 个整数的数组 | `[194, 100, 41, 60]` | 顺序为 Hue 0–360、Saturation 0–100、Lightness 0–100、Alpha 0–100。缺失或非法分量使用对应默认值/报告诊断，不得越界进入 UI。 |
 | `startup.window_position` | 2 个整数的数组 | `[100, 100]` | 主窗口桌面位置 `[x, y]`。必须有且仅需读取前两个整数；长度不足、类型错误时回退默认值并记录诊断。坐标单位与 DPI 转换以技术决策为准。 |
 | `drawers[].name` | String | 路径末级名称 | UI 显示名称。空白名称可在读取时从路径末级名称推导。 |
@@ -52,7 +54,7 @@ path = "%USERPROFILE%\\Downloads"
 1. 解析 TOML 后先验证类型，再转换为领域设置；UI 不直接消费原始 TOML 值。保存时序列化完整配置模型，确保 `[startup]`、`[[drawers]]` 表及其顺序均写入。
 2. 缺少 `[startup]` 时按默认值运行；缺字段使用上表默认值。
 3. 数值字段接受整数。是否兼容浮点/数字字符串不是格式要求；若为了兼容而接受，应添加测试，避免含糊转换。
-4. HSLA 数组缺少某个分量时只对该分量使用默认值；`window_position` 长度不足时整组回退默认值，不能产生索引越界。
+4. `startup.window_height` 缺失或类型无效时使用默认值 400；超出 200–1000 时夹取。HSLA 数组缺少某个分量时只对该分量使用默认值；`window_position` 长度不足时整组回退默认值，不能产生索引越界。
 5. `drawers` 中无效/缺少 `path` 的条目跳过并记录诊断；有效条目的空名称可从路径推导。`size` 只接受恰有两个整数的数组，不读取旧的 `[drawers.size]` 子表格式；缺少或无效的 `overlay_color` 按未设置处理。
 6. 对 `path` 先展开支持的 Windows 环境变量，再去除首尾空白；重复目录判断在 Windows 上忽略大小写。更改现有抽屉路径时，允许其原路径当前不存在；只有更换到另一条路径时，才要求目标目录存在。除非明确产品需求，不要对路径执行会改变其指向的规范化（例如擅自解析符号链接）。
 7. 目录当前不存在时仍可保留配置条目，以便其之后重新可用；UI 显示缺失状态。

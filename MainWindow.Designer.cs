@@ -170,7 +170,7 @@ namespace winDrawer
             // 
             AutoScaleDimensions = new SizeF(14F, 31F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(413, 400);
+            ClientSize = new Size(AppConstants.Defaults.MainWindowWidth, AppConstants.Defaults.MainWindowHeightDefault);
             Controls.Add(mainTableLayoutPanel);
             Name = "MainWindow";
             Text = "winDrawerMainWindow";

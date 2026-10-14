@@ -19,10 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="assets\drawer.icon.4.ico">
+    <Content Include="..\assets\drawer.icon.4.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="assets\fonts\Lobster-Regular.ttf">
+    <Content Include="..\assets\fonts\Lobster-Regular.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -1,6 +1,6 @@
 // using System;
 // using System.Collections.Generic;
-using System.Drawing;
+// using System.Drawing;
 using System.Globalization;
 // using System.IO;
 // using System.Linq;
@@ -24,7 +24,7 @@ internal sealed class SettingsRepository : IDisposable
     private readonly SemaphoreSlim _writeSignal = new(0);
     private readonly CancellationTokenSource _writerCts = new();
     private readonly object _writeLock = new();
-    private Task? _writerTask;
+    private readonly Task? _writerTask;
     private bool _dirty;
     private bool _writeInProgress;
     private TaskCompletionSource<bool>? _flushTcs;
@@ -766,7 +766,7 @@ internal sealed class SettingsRepository : IDisposable
         return result;
     }
 
-    private TomlTable CreateDrawerTable(TomlTable source, TomlMetadataStore metadataStore)
+    private static TomlTable CreateDrawerTable(TomlTable source, TomlMetadataStore metadataStore)
     {
         var drawer = new TomlTable();
         foreach (var key in source.Keys)

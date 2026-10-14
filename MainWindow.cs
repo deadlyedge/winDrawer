@@ -58,6 +58,8 @@ namespace winDrawer
             drawerListBox.DragOver += DrawerListBox_DragOver;
             drawerListBox.DragDrop += DrawerListBox_DragDrop;
             drawerListBox.AllowDrop = true;
+            drawerListBox.DrawItem += DrawerListBox_DrawItem;
+            drawerListBox.ListBox.DrawMode = DrawMode.OwnerDrawFixed;
             drawerListBox.Controls.Add(_drawerInsertionMarker);
             _drawerInsertionMarker.BringToFront();
 
@@ -292,7 +294,9 @@ namespace winDrawer
                     var itemLabel = Directory.Exists(drawer.Path)
                         ? displayName
                         : $"{displayName} (missing)";
-                    drawerListBox.Items.Add(itemLabel);
+                    drawerListBox.Items.Add(drawer.OverlayColor is { } overlayColor
+                        ? new DrawerListItem(itemLabel, overlayColor)
+                        : itemLabel);
                 }
             }
 
@@ -311,6 +315,56 @@ namespace winDrawer
             _suppressSelectionChange = false;
             ClearDragInsertionMarker();
             DrawerLogger.LogInformation($"Drawer list populated with {_currentDrawers.Count} entries.");
+        }
+
+        private sealed record DrawerListItem(string Text, Color OverlayColor)
+        {
+            public override string ToString() => Text;
+        }
+
+        private void DrawerListBox_DrawItem(object? sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0 || e.Index >= drawerListBox.Items.Count)
+            {
+                return;
+            }
+
+            var bounds = e.Bounds;
+            var selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            var background = drawerListBox.FillColor;
+            var foreground = drawerListBox.ForeColor;
+            if (selected)
+            {
+                background = drawerListBox.ItemSelectBackColor;
+                foreground = drawerListBox.ItemSelectForeColor;
+            }
+            else if ((e.State & DrawItemState.HotLight) == DrawItemState.HotLight)
+            {
+                background = drawerListBox.HoverColor;
+            }
+
+            var item = drawerListBox.Items[e.Index];
+            if (item is DrawerListItem coloredDrawerItem)
+            {
+                background = ThemePalette.BlendOverlayColor(background, coloredDrawerItem.OverlayColor);
+            }
+
+            using var backgroundBrush = new SolidBrush(background);
+            e.Graphics.FillRectangle(backgroundBrush, bounds);
+
+            var text = item is DrawerListItem drawerItem
+                ? drawerItem.Text
+                : drawerListBox.GetItemText(item);
+            bounds.Inflate(-8, 0);
+            TextRenderer.DrawText(
+                e.Graphics,
+                text,
+                drawerListBox.Font,
+                bounds,
+                foreground,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+
+            e.DrawFocusRectangle();
         }
 
         private void OpenOrToggleDrawer(int selectedIndex)

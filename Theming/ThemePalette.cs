@@ -107,6 +107,15 @@ public sealed class ThemePalette
             Math.Clamp(alpha, 0f, 1f));
     }
 
+    internal static Color BlendOverlayColor(Color background, Color overlay)
+    {
+        const double overlayOpacity = 0.7d;
+        return Color.FromArgb(
+            (int)Math.Round(background.R * (1 - overlayOpacity) + overlay.R * overlayOpacity),
+            (int)Math.Round(background.G * (1 - overlayOpacity) + overlay.G * overlayOpacity),
+            (int)Math.Round(background.B * (1 - overlayOpacity) + overlay.B * overlayOpacity));
+    }
+
     private static float AdjustLightness(float value, float delta)
     {
         return Math.Clamp(value + delta, 0f, 1f);

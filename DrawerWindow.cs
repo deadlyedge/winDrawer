@@ -16,7 +16,7 @@ namespace winDrawer
     {
         private readonly SettingsRepository _settingsRepository;
         private DrawerDefinition _drawer;
-        private readonly List<Image> _imageListImages = new();
+        private readonly List<Image> _imageListImages = [];
         private ThemePalette _theme;
         private Size _lastPersistedSize;
         private CancellationTokenSource? _fileListLoadCancellation;
@@ -129,11 +129,7 @@ namespace winDrawer
 
         private static Color BlendColor(Color background, Color overlay)
         {
-            const double alpha = 0.7d;
-            return Color.FromArgb(
-                (int)Math.Round(background.R * (1 - alpha) + overlay.R * alpha),
-                (int)Math.Round(background.G * (1 - alpha) + overlay.G * alpha),
-                (int)Math.Round(background.B * (1 - alpha) + overlay.B * alpha));
+            return ThemePalette.BlendOverlayColor(background, overlay);
         }
 
         private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
@@ -643,7 +639,7 @@ namespace winDrawer
             return !string.IsNullOrEmpty(extension) && ImageExtensions.Contains(extension);
         }
 
-        private static Image? TryCreateThumbnail(string path, Size targetSize)
+        private static Bitmap? TryCreateThumbnail(string path, Size targetSize)
         {
             Bitmap? bitmap = null;
             try

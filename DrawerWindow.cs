@@ -15,7 +15,7 @@ namespace winDrawer
     public partial class DrawerWindow : Form
     {
         private readonly SettingsRepository _settingsRepository;
-        private readonly DrawerDefinition _drawer;
+        private DrawerDefinition _drawer;
         private readonly List<Image> _imageListImages = new();
         private ThemePalette _theme;
         private Size _lastPersistedSize;
@@ -96,13 +96,19 @@ namespace winDrawer
             DrawerLogger.LogDebug($"Applying theme to drawer '{_drawer.Name}'.");
 
             Opacity = _theme.WindowOpacity;
-            BackColor = _theme.WindowBackground;
+            var contentBackground = _drawer.OverlayColor is { } contentOverlay
+                ? BlendColor(_theme.ContentBackground, contentOverlay)
+                : _theme.ContentBackground;
+            var windowBackground = _drawer.OverlayColor is { } overlayColor
+                ? BlendColor(_theme.WindowBackground, overlayColor)
+                : _theme.WindowBackground;
+            BackColor = windowBackground;
 
-            mainTableLayoutPanel.BackColor = _theme.WindowBackground;
+            mainTableLayoutPanel.BackColor = windowBackground;
             drawerHeaderTableLayoutPanel.BackColor = Color.Transparent;
             drawerButtonTableLayoutPanel.BackColor = Color.Transparent;
 
-            drawerContentsListView.BackColor = _theme.ContentBackground;
+            drawerContentsListView.BackColor = contentBackground;
             drawerContentsListView.ForeColor = _theme.TextPrimary;
 
             fullPathLabel.ForeColor = _theme.TextSecondary;
@@ -110,6 +116,24 @@ namespace winDrawer
 
             ApplyThemeToButton(refreshDrawerButton);
             ApplyThemeToButton(closeDrawerButton);
+        }
+
+        public void ApplyDrawerDefinition(DrawerDefinition drawer)
+        {
+            _drawer = drawer ?? throw new ArgumentNullException(nameof(drawer));
+            Text = _drawer.Name;
+            fullPathLabel.Text = _drawer.Path;
+            drawerToolTip.SetToolTip(fullPathLabel, _drawer.Path);
+            ApplyTheme(_theme);
+        }
+
+        private static Color BlendColor(Color background, Color overlay)
+        {
+            var alpha = overlay.A / 255d;
+            return Color.FromArgb(
+                (int)Math.Round(background.R * (1 - alpha) + overlay.R * alpha),
+                (int)Math.Round(background.G * (1 - alpha) + overlay.G * alpha),
+                (int)Math.Round(background.B * (1 - alpha) + overlay.B * alpha));
         }
 
         private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)

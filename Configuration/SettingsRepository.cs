@@ -1,6 +1,6 @@
 // using System;
 // using System.Collections.Generic;
-// using System.Drawing;
+using System.Drawing;
 using System.Globalization;
 // using System.IO;
 // using System.Linq;
@@ -8,7 +8,6 @@ using System.Globalization;
 // using System.Threading.Tasks;
 using Tomlyn;
 using Tomlyn.Model;
-using Tomlyn.Syntax;
 // using winDrawer;
 using winDrawer.Theming;
 
@@ -25,6 +24,7 @@ internal sealed class SettingsRepository : IDisposable
     private readonly object _writeLock = new();
     private Task? _writerTask;
     private bool _dirty;
+    private bool _writeInProgress;
     private TaskCompletionSource<bool>? _flushTcs;
 
     public SettingsRepository(string settingsPath)
@@ -112,6 +112,206 @@ internal sealed class SettingsRepository : IDisposable
         return false;
     }
 
+    public bool UpdateDrawer(string originalPath, string name, string newPath, Color? overlayColor, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(originalPath) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(newPath))
+        {
+            error = "Drawer name and folder path are required.";
+            return false;
+        }
+
+        var expandedOriginalPath = Environment.ExpandEnvironmentVariables(originalPath).Trim();
+        var expandedPath = Environment.ExpandEnvironmentVariables(newPath).Trim();
+        if (!PathsEqual(expandedOriginalPath, expandedPath) && !Directory.Exists(expandedPath))
+        {
+            error = "The selected folder does not exist or is inaccessible.";
+            return false;
+        }
+
+        var normalizedColor = overlayColor is { } color
+            ? Color.FromArgb(color.A, color.R, color.G, color.B)
+            : (Color?)null;
+
+        lock (_writeLock)
+        {
+            if (!TryGetDrawers(_root, out var drawers))
+            {
+                error = "The drawer configuration is unavailable.";
+                return false;
+            }
+
+            var matches = drawers.Where(entry => PathsEqual(ReadString(entry, "path"), originalPath)).ToList();
+            if (matches.Count != 1)
+            {
+                error = matches.Count == 0
+                    ? "The drawer could not be found in settings."
+                    : "The drawer path is duplicated in settings; edit was cancelled to avoid changing the wrong entry.";
+                return false;
+            }
+
+            if (drawers.Any(entry => !ReferenceEquals(entry, matches[0]) && PathsEqual(ReadString(entry, "path"), expandedPath)))
+            {
+                error = "Another drawer already uses the selected folder.";
+                return false;
+            }
+
+            matches[0]["name"] = name.Trim();
+            matches[0]["path"] = expandedPath;
+            if (normalizedColor is { } drawerColor)
+            {
+                matches[0]["overlay_color"] = FormatOverlayColor(drawerColor);
+            }
+            else
+            {
+                matches[0].Remove("overlay_color");
+            }
+
+            _dirty = true;
+        }
+
+        SignalSettingsWrite("drawer update");
+        return true;
+    }
+
+    public bool DeleteDrawer(string drawerPath, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(drawerPath))
+        {
+            error = "Drawer path is required.";
+            return false;
+        }
+
+        lock (_writeLock)
+        {
+            if (!TryGetDrawers(_root, out var drawers))
+            {
+                error = "The drawer configuration is unavailable.";
+                return false;
+            }
+
+            var matches = drawers.Where(entry => PathsEqual(ReadString(entry, "path"), drawerPath)).ToList();
+            if (matches.Count != 1)
+            {
+                error = matches.Count == 0
+                    ? "The drawer could not be found in settings."
+                    : "The drawer path is duplicated in settings; deletion was cancelled to avoid removing the wrong entry.";
+                return false;
+            }
+
+            if (!_root.TryGetValue("drawers", out var value) || !RemoveDrawerEntry(value, matches[0]))
+            {
+                error = "The drawer entry could not be removed from settings.";
+                return false;
+            }
+
+            _dirty = true;
+        }
+
+        SignalSettingsWrite("drawer deletion");
+        return true;
+    }
+
+    public bool ReorderDrawers(IReadOnlyList<string> orderedPaths, out string error)
+    {
+        error = string.Empty;
+        ArgumentNullException.ThrowIfNull(orderedPaths);
+
+        lock (_writeLock)
+        {
+            if (!TryGetDrawers(_root, out var drawers) || !_root.TryGetValue("drawers", out var value))
+            {
+                error = "The drawer configuration is unavailable.";
+                return false;
+            }
+
+            var rawCount = value switch
+            {
+                TomlTableArray tableArray => tableArray.Count,
+                TomlArray array => array.Count,
+                _ => -1
+            };
+            if (rawCount != drawers.Count || orderedPaths.Count != drawers.Count)
+            {
+                error = $"The drawer list contains invalid entries (raw={rawCount}, valid={drawers.Count}, requested={orderedPaths.Count}); reordering was cancelled to preserve the configuration.";
+                return false;
+            }
+
+            var byPath = new Dictionary<string, TomlTable>(StringComparer.OrdinalIgnoreCase);
+            foreach (var drawer in drawers)
+            {
+                var path = Environment.ExpandEnvironmentVariables(ReadString(drawer, "path")).Trim();
+                if (string.IsNullOrWhiteSpace(path) || !byPath.TryAdd(path, drawer))
+                {
+                    error = "Drawer paths are missing or duplicated in settings; reordering was cancelled.";
+                    return false;
+                }
+            }
+
+            var reordered = new List<TomlTable>(orderedPaths.Count);
+            var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var requestedPath in orderedPaths)
+            {
+                var path = Environment.ExpandEnvironmentVariables(requestedPath ?? string.Empty).Trim();
+                if (!seenPaths.Add(path) || !byPath.TryGetValue(path, out var entry))
+                {
+                    error = "The requested order does not match the configured drawers.";
+                    return false;
+                }
+
+                reordered.Add(entry);
+            }
+
+            switch (value)
+            {
+                case TomlTableArray tableArray:
+                    tableArray.Clear();
+                    foreach (var entry in reordered)
+                    {
+                        tableArray.Add(entry);
+                    }
+                    break;
+                case TomlArray array:
+                    array.Clear();
+                    foreach (var entry in reordered)
+                    {
+                        array.Add(entry);
+                    }
+                    break;
+                default:
+                    error = "The drawer configuration format is unsupported.";
+                    return false;
+            }
+
+            _dirty = true;
+        }
+
+        SignalSettingsWrite("drawer order update");
+        return true;
+    }
+
+    private static bool RemoveDrawerEntry(object? collection, TomlTable entry)
+    {
+        return collection switch
+        {
+            TomlTableArray tableArray => tableArray.Remove(entry),
+            TomlArray array => array.Remove(entry),
+            _ => false
+        };
+    }
+
+    private void SignalSettingsWrite(string reason)
+    {
+        DrawerLogger.LogInformation($"Queued {reason} for persistence.");
+        _writeSignal.Release();
+    }
+
+    private static string FormatOverlayColor(Color color)
+    {
+        return $"#{unchecked((uint)color.ToArgb()).ToString("X8", CultureInfo.InvariantCulture)}";
+    }
+
     /// <summary>
     /// Add a new drawer entry if it does not already exist.
     /// Returns true when a new entry was added; false if the path was already present or input invalid.
@@ -182,25 +382,30 @@ internal sealed class SettingsRepository : IDisposable
         TaskCompletionSource<bool> tcs;
         lock (_writeLock)
         {
-            if (!_dirty)
+            if (!_dirty && !_writeInProgress)
             {
                 DrawerLogger.LogDebug("Flush skipped because repository is not dirty.");
                 return true; // nothing to flush
             }
 
-            // create a TCS for this flush request; background writer will complete it after next write
-            _flushTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            // ensure writer is signaled
-            _writeSignal.Release();
+            if (_flushTcs?.Task.IsCompleted == true)
+            {
+                _flushTcs = null;
+            }
+
+            _flushTcs ??= new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             tcs = _flushTcs;
+            if (_dirty)
+            {
+                _writeSignal.Release();
+            }
         }
 
-        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout)).ConfigureAwait(false);
         var success = completed == tcs.Task && tcs.Task.IsCompletedSuccessfully;
-        // clear flush tcs if still set
         lock (_writeLock)
         {
-            if (ReferenceEquals(_flushTcs, tcs))
+            if (!success && ReferenceEquals(_flushTcs, tcs))
             {
                 _flushTcs = null;
             }
@@ -233,6 +438,56 @@ internal sealed class SettingsRepository : IDisposable
         DrawerLogger.LogInformation("Synchronous settings save completed.");
     }
 
+    public bool SavePendingChanges(TimeSpan timeout)
+    {
+        if (timeout <= TimeSpan.Zero)
+        {
+            return false;
+        }
+
+        if (_writerTask == null || _writerTask.IsCompleted)
+        {
+            string content;
+            lock (_writeLock)
+            {
+                content = SerializeSettings(_root);
+                _dirty = false;
+            }
+
+            try
+            {
+                var directory = Path.GetDirectoryName(_settingsPath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                File.WriteAllText(_settingsPath, content);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Failed to synchronously persist pending settings.", ex);
+                lock (_writeLock)
+                {
+                    _dirty = true;
+                }
+
+                return false;
+            }
+        }
+
+        try
+        {
+            return FlushAsync(timeout).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError("Failed to flush pending settings.", ex);
+            return false;
+        }
+    }
+
     private async Task BackgroundWriterLoop(CancellationToken token)
     {
         try
@@ -258,10 +513,8 @@ internal sealed class SettingsRepository : IDisposable
                     if (_dirty)
                     {
                         _dirty = false;
+                        _writeInProgress = true;
                         shouldWrite = true;
-                        tcs = _flushTcs;
-                        // clear _flushTcs here to avoid double-complete; we'll complete below after write
-                        _flushTcs = null;
                     }
                 }
 
@@ -270,11 +523,24 @@ internal sealed class SettingsRepository : IDisposable
                     try
                     {
                         DrawerLogger.LogDebug("Background writer persisting settings to disk.");
-                        // capture content under lock to avoid inconsistencies
                         string content;
                         lock (_writeLock)
                         {
                             content = SerializeSettings(_root);
+                        }
+
+                        if (token.IsCancellationRequested)
+                        {
+                            throw new OperationCanceledException(token);
+                        }
+
+                        lock (_writeLock)
+                        {
+                            if (_dirty)
+                            {
+                                _writeInProgress = false;
+                                continue;
+                            }
                         }
 
                         // write asynchronously
@@ -286,18 +552,45 @@ internal sealed class SettingsRepository : IDisposable
 
                         await File.WriteAllTextAsync(_settingsPath, content, token);
                         DrawerLogger.LogInformation("Background settings write completed.");
+                        lock (_writeLock)
+                        {
+                            _writeInProgress = false;
+                            if (!_dirty)
+                            {
+                                tcs = _flushTcs;
+                                _flushTcs = null;
+                            }
+                        }
+
                         tcs?.TrySetResult(true);
                     }
                     catch (OperationCanceledException)
                     {
                         DrawerLogger.LogInformation("Background writer write canceled.");
+                        lock (_writeLock)
+                        {
+                            _writeInProgress = false;
+                            if (!_dirty)
+                            {
+                                tcs = _flushTcs;
+                                _flushTcs = null;
+                            }
+                        }
+
                         tcs?.TrySetCanceled();
                         break;
                     }
                     catch (Exception ex)
                     {
-                        // swallow IO errors but signal flush as failed
                         DrawerLogger.LogError("Background writer failed to persist settings.", ex);
+                        lock (_writeLock)
+                        {
+                            _writeInProgress = false;
+                            _dirty = true;
+                            tcs = _flushTcs;
+                            _flushTcs = null;
+                        }
+
                         try { tcs?.TrySetException(ex); } catch { }
                     }
                 }
@@ -350,6 +643,11 @@ internal sealed class SettingsRepository : IDisposable
         DrawerLogger.LogInformation("Disposing SettingsRepository.");
         try
         {
+            if (_writerTask is { IsCompleted: false })
+            {
+                FlushAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+            }
+
             _writerCts.Cancel();
             _writeSignal.Release();
             _writerTask?.Wait(500);
@@ -398,79 +696,7 @@ internal sealed class SettingsRepository : IDisposable
 
     private static string SerializeSettings(TomlTable root)
     {
-        var source = Toml.Parse(Toml.FromModel(root));
-        var result = new DocumentSyntax();
-
-        while (source.KeyValues.ChildrenCount > 0)
-        {
-            var keyValue = source.KeyValues.GetChild(0);
-            if (keyValue is null)
-            {
-                source.KeyValues.RemoveChildAt(0);
-                continue;
-            }
-
-            var key = keyValue.Key?.ToString().Trim() ?? string.Empty;
-            source.KeyValues.RemoveChild(keyValue);
-
-            if (key == "startup" && keyValue.Value is InlineTableSyntax startupInline)
-            {
-                var startupTable = new TableSyntax("startup");
-                MoveInlineTableItems(startupInline, startupTable.Items);
-                result.Tables.Add(startupTable);
-            }
-            else if (key == "drawers" && keyValue.Value is ArraySyntax drawersArray)
-            {
-                AppendDrawerTables(result, drawersArray);
-            }
-            else
-            {
-                result.KeyValues.Add(CloneKeyValue(keyValue));
-            }
-        }
-
-        return result.ToString();
-    }
-
-    private static void AppendDrawerTables(DocumentSyntax output, ArraySyntax drawersArray)
-    {
-        for (var index = 0; index < drawersArray.Items.ChildrenCount;)
-        {
-            var arrayItem = drawersArray.Items.GetChild(index)!;
-            if (arrayItem.Value is not InlineTableSyntax drawerInline)
-            {
-                index++;
-                continue;
-            }
-
-            drawersArray.Items.RemoveChild(arrayItem);
-            var drawerTable = new TableArraySyntax("drawers");
-            MoveInlineTableItems(drawerInline, drawerTable.Items);
-            output.Tables.Add(drawerTable);
-        }
-    }
-
-    private static void MoveInlineTableItems(InlineTableSyntax source, SyntaxList<KeyValueSyntax> destination)
-    {
-        while (source.Items.ChildrenCount > 0)
-        {
-            var item = (InlineTableItemSyntax)source.Items.GetChild(0)!;
-            source.Items.RemoveChild(item);
-            if (item.KeyValue is { } keyValue)
-            {
-                destination.Add(CloneKeyValue(keyValue));
-            }
-        }
-    }
-
-    private static KeyValueSyntax CloneKeyValue(KeyValueSyntax source)
-    {
-        var fragment = Toml.Parse(source.ToString());
-        var clone = fragment.KeyValues.GetChild(0)!;
-        fragment.KeyValues.RemoveChild(clone);
-        clone.EndOfLineToken = new SyntaxToken(TokenKind.NewLine, "\n");
-
-        return clone;
+        return Toml.FromModel(root);
     }
 
     private static TomlTable CreateDefaultTable()
@@ -735,10 +961,22 @@ public sealed class SettingsSnapshot
                 preferredSize = new Size(Math.Clamp(width, 200, 4000), Math.Clamp(height, 200, 4000));
             }
 
-            results.Add(new DrawerDefinition(name, expandedPath, preferredSize));
+            results.Add(new DrawerDefinition(name, expandedPath, preferredSize, ParseOverlayColor(drawerTable)));
         }
 
         return results;
+    }
+
+    private static Color? ParseOverlayColor(TomlTable drawerTable)
+    {
+        var value = GetString(drawerTable, "overlay_color").Trim();
+        if (value.Length != 9 || value[0] != '#' ||
+            !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var argb))
+        {
+            return null;
+        }
+
+        return Color.FromArgb(unchecked((int)argb));
     }
 
     private static bool GetBoolean(TomlTable table, string key, bool fallback = false)

@@ -19,6 +19,16 @@ namespace winDrawer
         // private Image? _headerGlyph;
         private bool _isDragging;
         private Point _dragOffset;
+        private bool _drawerPointerDown;
+        private bool _isDrawerReordering;
+        private bool _drawerDragStarted;
+        private int _drawerPressedIndex = -1;
+        private Point _drawerPressPoint;
+        private int _pendingDrawerActivationIndex = -1;
+        private readonly System.Windows.Forms.Timer _drawerClickTimer = new()
+        {
+            Interval = SystemInformation.DoubleClickTime + 20
+        };
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
         private ThemePalette _currentTheme;
@@ -40,6 +50,16 @@ namespace winDrawer
 
             InitializeComponent();
             drawerListBox.SelectedIndexChanged += DrawerListBox_SelectedIndexChanged;
+            drawerListBox.MouseDown += DrawerListBox_MouseDown;
+            drawerListBox.MouseClick += DrawerListBox_MouseClick;
+            drawerListBox.MouseDoubleClick += DrawerListBox_MouseDoubleClick;
+            drawerListBox.MouseMove += DrawerListBox_MouseMove;
+            drawerListBox.MouseUp += DrawerListBox_MouseUp;
+            drawerListBox.DragEnter += DrawerListBox_DragEnter;
+            drawerListBox.DragOver += DrawerListBox_DragOver;
+            drawerListBox.DragDrop += DrawerListBox_DragDrop;
+            drawerListBox.AllowDrop = true;
+            _drawerClickTimer.Tick += DrawerClickTimer_Tick;
 
             FormBorderStyle = FormBorderStyle.None;
             DoubleBuffered = true;
@@ -54,11 +74,22 @@ namespace winDrawer
 
             LocationChanged += MainWindow_LocationChanged;
 
+            FormClosing += (_, e) =>
+            {
+                if (!_settingsRepository.SavePendingChanges(TimeSpan.FromSeconds(2)))
+                {
+                    DrawerLogger.LogError("Pending drawer configuration changes could not be persisted before closing.");
+                    MessageBox.Show(this, "Some drawer settings could not be saved. Please check that the settings file is writable.",
+                        "Settings Save Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    e.Cancel = true;
+                }
+            };
+
             FormClosed += (_, _) =>
             {
                 _logoFont?.Dispose();
                 // _headerGlyph?.Dispose();
-                _fontCollection.Dispose();
+                _drawerClickTimer.Dispose();
 
                 try
                 {
@@ -288,9 +319,36 @@ namespace winDrawer
 
         private void DrawerListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            if (_suppressSelectionChange) return;
+            if (_suppressSelectionChange || _drawerPointerDown || _isDrawerReordering || Control.MouseButtons != MouseButtons.None)
+            {
+                return;
+            }
 
-            var selectedIndex = drawerListBox.SelectedIndex;
+            ScheduleDrawerActivation(drawerListBox.SelectedIndex);
+        }
+
+        private void ScheduleDrawerActivation(int index)
+        {
+            _pendingDrawerActivationIndex = index;
+            _drawerClickTimer.Stop();
+            _drawerClickTimer.Start();
+        }
+
+        private void DrawerClickTimer_Tick(object? sender, EventArgs e)
+        {
+            _drawerClickTimer.Stop();
+            var index = _pendingDrawerActivationIndex;
+            _pendingDrawerActivationIndex = -1;
+            OpenOrToggleDrawer(index);
+        }
+
+        private void OpenOrToggleDrawer(int selectedIndex)
+        {
+            if (_suppressSelectionChange || _isDrawerReordering)
+            {
+                return;
+            }
+
             DrawerLogger.LogDebug($"Drawer list selection changed to index {selectedIndex}.");
             if (selectedIndex < 0 || selectedIndex >= _currentDrawers.Count)
             {
@@ -326,6 +384,301 @@ namespace winDrawer
                 drawerListBox.SelectedIndex = selectedIndex; // 设置新的选中状态
                 _suppressSelectionChange = false;
             }
+        }
+
+        private void DrawerListBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            _drawerDragStarted = false;
+            var index = drawerListBox.IndexFromPoint(e.Location);
+            if (index < 0 || index >= _currentDrawers.Count)
+            {
+                _drawerClickTimer.Stop();
+                _pendingDrawerActivationIndex = -1;
+                _drawerPointerDown = false;
+                _drawerPressedIndex = -1;
+                return;
+            }
+
+            if (e.Button == MouseButtons.Right)
+            {
+                _drawerClickTimer.Stop();
+                _pendingDrawerActivationIndex = -1;
+                _drawerPointerDown = false;
+                _drawerPressedIndex = -1;
+                return;
+            }
+
+            if (e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            _drawerClickTimer.Stop();
+            _pendingDrawerActivationIndex = -1;
+
+            _drawerPointerDown = true;
+            _drawerDragStarted = false;
+            _drawerPressedIndex = index;
+            _drawerPressPoint = e.Location;
+        }
+
+        private void DrawerListBox_MouseClick(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+            {
+                return;
+            }
+
+            var index = drawerListBox.IndexFromPoint(e.Location);
+            if (index >= 0 && index < _currentDrawers.Count)
+            {
+                ShowDrawerSettings(index);
+            }
+        }
+
+        private void DrawerListBox_MouseDoubleClick(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                _drawerClickTimer.Stop();
+                _pendingDrawerActivationIndex = -1;
+                OpenOrToggleDrawer(drawerListBox.IndexFromPoint(e.Location));
+            }
+        }
+
+        private void DrawerListBox_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (!_drawerPointerDown || _drawerPressedIndex < 0 || e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            var dragBounds = new Rectangle(
+                _drawerPressPoint.X - SystemInformation.DragSize.Width / 2,
+                _drawerPressPoint.Y - SystemInformation.DragSize.Height / 2,
+                SystemInformation.DragSize.Width,
+                SystemInformation.DragSize.Height);
+            if (dragBounds.Contains(e.Location))
+            {
+                return;
+            }
+
+            _drawerDragStarted = true;
+            _isDrawerReordering = true;
+            _drawerClickTimer.Stop();
+            _pendingDrawerActivationIndex = -1;
+            try
+            {
+                drawerListBox.DoDragDrop(_currentDrawers[_drawerPressedIndex].Path, DragDropEffects.Move);
+            }
+            finally
+            {
+                _isDrawerReordering = false;
+                _drawerPointerDown = false;
+                _drawerPressedIndex = -1;
+            }
+        }
+
+        private void DrawerListBox_MouseUp(object? sender, MouseEventArgs e)
+        {
+            var pressedIndex = _drawerPressedIndex;
+            var wasDrag = _drawerDragStarted;
+            _drawerPointerDown = false;
+            _drawerPressedIndex = -1;
+            _drawerDragStarted = false;
+
+            if (e.Button != MouseButtons.Left || wasDrag || pressedIndex < 0 || pressedIndex >= _currentDrawers.Count)
+            {
+                return;
+            }
+
+            var releasedIndex = drawerListBox.IndexFromPoint(e.Location);
+            if (releasedIndex == pressedIndex)
+            {
+                ScheduleDrawerActivation(pressedIndex);
+            }
+            else
+            {
+                _drawerClickTimer.Stop();
+                _pendingDrawerActivationIndex = -1;
+            }
+        }
+
+        private void DrawerListBox_DragEnter(object? sender, DragEventArgs e)
+        {
+            e.Effect = e.Data?.GetDataPresent(typeof(string)) == true
+                ? DragDropEffects.Move
+                : DragDropEffects.None;
+        }
+
+        private void DrawerListBox_DragOver(object? sender, DragEventArgs e)
+        {
+            e.Effect = e.Data?.GetDataPresent(typeof(string)) == true
+                ? DragDropEffects.Move
+                : DragDropEffects.None;
+        }
+
+        private void DrawerListBox_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (e.Data?.GetData(typeof(string)) is not string draggedPath)
+            {
+                return;
+            }
+
+            var sourceIndex = _currentDrawers.FindIndex(drawer => PathsEqual(drawer.Path, draggedPath));
+            if (sourceIndex < 0)
+            {
+                return;
+            }
+
+            var point = drawerListBox.PointToClient(new Point(e.X, e.Y));
+            var destinationIndex = drawerListBox.IndexFromPoint(point);
+            if (destinationIndex < 0)
+            {
+                destinationIndex = point.Y < drawerListBox.GetItemRectangle(0).Top
+                    ? 0
+                    : _currentDrawers.Count;
+            }
+            else
+            {
+                var row = drawerListBox.GetItemRectangle(destinationIndex);
+                if (point.Y >= row.Top + row.Height / 2)
+                {
+                    destinationIndex++;
+                }
+            }
+
+            if (sourceIndex < destinationIndex)
+            {
+                destinationIndex--;
+            }
+
+            destinationIndex = Math.Clamp(destinationIndex, 0, _currentDrawers.Count - 1);
+            if (destinationIndex == sourceIndex)
+            {
+                return;
+            }
+
+            var reorderedDrawers = new List<DrawerDefinition>(_currentDrawers);
+            var movedDrawer = reorderedDrawers[sourceIndex];
+            reorderedDrawers.RemoveAt(sourceIndex);
+            reorderedDrawers.Insert(destinationIndex, movedDrawer);
+
+            try
+            {
+                var orderedPaths = reorderedDrawers.Select(drawer => drawer.Path).ToList();
+                if (!_settingsRepository.ReorderDrawers(orderedPaths, out var error))
+                {
+                    DrawerLogger.LogWarning($"Drawer reorder was rejected: {error}");
+                    MessageBox.Show(this, error, "Reorder Drawers", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ReloadSettingsFromStorage();
+                    return;
+                }
+
+                ApplySnapshot(_settingsRepository.GetSnapshot());
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Failed to reorder drawers.", ex);
+                MessageBox.Show(this, $"Failed to save drawer order: {ex.Message}", "Reorder Drawers", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ReloadSettingsFromStorage();
+            }
+        }
+
+        private static bool PathsEqual(string first, string second)
+        {
+            var left = Environment.ExpandEnvironmentVariables(first).Trim();
+            var right = Environment.ExpandEnvironmentVariables(second).Trim();
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ShowDrawerSettings(int index)
+        {
+            if (index < 0 || index >= _currentDrawers.Count)
+            {
+                return;
+            }
+
+            var drawer = _currentDrawers[index];
+            using var dialog = new DrawerSettingsDialog(drawer);
+            var result = dialog.ShowDialog(this);
+            if (result == DialogResult.Cancel)
+            {
+                return;
+            }
+
+            if (result == DialogResult.Yes && dialog.DeleteRequested)
+            {
+                var confirmation = MessageBox.Show(
+                    this,
+                    $"Remove '{drawer.Name}' from the drawer list? The folder and its files will not be deleted.",
+                    "Delete Drawer",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+                if (confirmation != DialogResult.Yes)
+                {
+                    return;
+                }
+
+                if (!_settingsRepository.DeleteDrawer(drawer.Path, out var deleteError))
+                {
+                    MessageBox.Show(this, deleteError, "Delete Drawer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                CloseDrawerIfOpen(drawer.Path);
+                ReloadSettingsFromStorage();
+                return;
+            }
+
+            if (result != DialogResult.OK)
+            {
+                return;
+            }
+
+            var requestedPath = Environment.ExpandEnvironmentVariables(dialog.DrawerPath).Trim();
+            if (!PathsEqual(drawer.Path, requestedPath) && !Directory.Exists(requestedPath))
+            {
+                MessageBox.Show(this, $"The selected folder does not exist or is inaccessible:{Environment.NewLine}{requestedPath}",
+                    "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var pathChanged = !PathsEqual(drawer.Path, requestedPath);
+            if (pathChanged && _currentDrawers.Any(existing => !PathsEqual(existing.Path, drawer.Path) && PathsEqual(existing.Path, requestedPath)))
+            {
+                MessageBox.Show(this, "Another drawer already uses the selected folder.", "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!_settingsRepository.UpdateDrawer(drawer.Path, dialog.DrawerName, requestedPath, dialog.OverlayColor, out var updateError))
+            {
+                MessageBox.Show(this, updateError, "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (pathChanged)
+            {
+                CloseDrawerIfOpen(drawer.Path);
+            }
+            else
+            {
+                _currentDrawerWindow?.ApplyDrawerDefinition(_settingsRepository.GetSnapshot().Drawers[index]);
+            }
+
+            ReloadSettingsFromStorage();
+        }
+
+        private void CloseDrawerIfOpen(string path)
+        {
+            if (_currentOpenDrawer == null || !PathsEqual(_currentOpenDrawer.Path, path))
+            {
+                return;
+            }
+
+            _currentDrawerWindow?.Close();
+            _currentDrawerWindow = null;
+            _currentOpenDrawer = null;
         }
 
         private void OpenDrawer(DrawerDefinition drawer)

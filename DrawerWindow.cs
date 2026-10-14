@@ -57,6 +57,7 @@ namespace winDrawer
             DoubleBuffered = true;
             Text = _drawer.Name;
             fullPathLabel.Text = _drawer.Path;
+            drawerToolTip.SetToolTip(fullPathLabel, _drawer.Path);
             DrawerLogger.LogDebug($"Setting up DrawerWindow UI for '{_drawer.Name}'.");
 
             drawerImageList.ImageSize = GetImageSize(DeviceDpi);
@@ -64,6 +65,10 @@ namespace winDrawer
             drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
             DpiChanged += DrawerWindow_DpiChanged;
 
+            UpdateStandardFolderIcon(DeviceDpi);
+            drawerPathTableLayoutPanel.Click += OpenFolderButton_Click;
+            openFolderIconPictureBox.Click += OpenFolderButton_Click;
+            fullPathLabel.Click += OpenFolderButton_Click;
             refreshDrawerButton.Click += RefreshDrawerButton_Click;
             closeDrawerButton.Click += (_, _) => Close();
             Disposed += (_, _) => CancelFileListLoad();
@@ -72,6 +77,17 @@ namespace winDrawer
             _lastPersistedSize = Size;
 
             ShowListStatus("Loading...");
+        }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                const int wsCaption = 0x00C00000;
+                var parameters = base.CreateParams;
+                parameters.Style &= ~wsCaption;
+                return parameters;
+            }
         }
 
         public void ApplyTheme(ThemePalette theme)
@@ -98,6 +114,7 @@ namespace winDrawer
 
         private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
         {
+            UpdateStandardFolderIcon(e.DeviceDpiNew);
             CancelFileListLoad();
             ClearFileList();
             drawerImageList.ImageSize = GetImageSize(e.DeviceDpiNew);
@@ -149,6 +166,76 @@ namespace winDrawer
         private async void RefreshDrawerButton_Click(object? sender, EventArgs e)
         {
             await PopulateFileListAsync();
+        }
+
+        private void OpenFolderButton_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (!Directory.Exists(_drawer.Path))
+                {
+                    throw new DirectoryNotFoundException($"Folder not found: {_drawer.Path}");
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _drawer.Path,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError($"Failed to open drawer folder '{_drawer.Path}'.", ex);
+                MessageBox.Show(this, $"Failed to open folder {_drawer.Path}:{Environment.NewLine}{ex.Message}",
+                    "Open Folder Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UpdateStandardFolderIcon(int dpi)
+        {
+            Image? folderImage = null;
+            try
+            {
+                using var icon = ShellIcon.GetIcon("winDrawer-folder-icon", isDirectory: true, useFileAttributes: true);
+                using var source = (icon ?? SystemIcons.WinLogo).ToBitmap();
+                folderImage = ResizeIconToFit(source, GetFolderIconSize(dpi));
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogWarning($"Failed to load the standard Windows folder icon. {ex}");
+                using var fallback = SystemIcons.WinLogo.ToBitmap();
+                folderImage = ResizeIconToFit(fallback, GetFolderIconSize(dpi));
+            }
+
+            var previousImage = openFolderIconPictureBox.Image;
+            openFolderIconPictureBox.Image = folderImage;
+            previousImage?.Dispose();
+        }
+
+        private static Size GetFolderIconSize(int dpi)
+        {
+            const int logicalSize = 24;
+            var size = Math.Max(1, (int)Math.Round(logicalSize * dpi / 96d));
+            return new Size(size, size);
+        }
+
+        private static Image ResizeIconToFit(Image source, Size maximumSize)
+        {
+            var scale = Math.Min(
+                1d,
+                Math.Min(
+                    (double)maximumSize.Width / source.Width,
+                    (double)maximumSize.Height / source.Height));
+            var width = Math.Max(1, (int)Math.Round(source.Width * scale));
+            var height = Math.Max(1, (int)Math.Round(source.Height * scale));
+            var resized = new Bitmap(width, height);
+
+            using var graphics = Graphics.FromImage(resized);
+            graphics.Clear(Color.Transparent);
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            graphics.DrawImage(source, new Rectangle(0, 0, width, height));
+            return resized;
         }
 
         private async Task PopulateFileListAsync()

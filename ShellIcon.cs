@@ -32,12 +32,12 @@ internal static class ShellIcon
     [DllImport("User32.dll")]
     private static extern bool DestroyIcon(IntPtr hIcon);
 
-    public static Icon? GetIcon(string path, bool isDirectory)
+    public static Icon? GetIcon(string path, bool isDirectory, bool useFileAttributes = false)
     {
         var attributes = isDirectory ? FileAttributeDirectory : 0;
         var flags = ShgfiIcon | ShgfiLargeIcon;
 
-        if (!Directory.Exists(path) && !File.Exists(path))
+        if (useFileAttributes || (!Directory.Exists(path) && !File.Exists(path)))
         {
             flags |= ShgfiUseFileAttributes;
         }

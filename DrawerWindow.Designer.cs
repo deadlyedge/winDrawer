@@ -17,6 +17,8 @@ namespace winDrawer
                 drawerContentsListView.LargeImageList = null;
                 drawerImageList.Images.Clear();
                 DisposeImageListImages();
+                openFolderIconPictureBox.Image?.Dispose();
+                openFolderIconPictureBox.Image = null;
                 components.Dispose();
             }
 
@@ -28,16 +30,21 @@ namespace winDrawer
         private void InitializeComponent()
         {
             components = new Container();
+            drawerToolTip = new ToolTip(components);
             mainTableLayoutPanel = new UITableLayoutPanel();
             drawerContentsListView = new ListView();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
+            drawerPathTableLayoutPanel = new TableLayoutPanel();
+            openFolderIconPictureBox = new PictureBox();
             fullPathLabel = new UILabel();
-            drawerButtonTableLayoutPanel = new UITableLayoutPanel();
+            drawerButtonTableLayoutPanel = new FlowLayoutPanel();
             refreshDrawerButton = new UIButton();
             closeDrawerButton = new UIButton();
             mainTableLayoutPanel.SuspendLayout();
             drawerHeaderTableLayoutPanel.SuspendLayout();
+            drawerPathTableLayoutPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)openFolderIconPictureBox).BeginInit();
             drawerButtonTableLayoutPanel.SuspendLayout();
             SuspendLayout();
             // 
@@ -87,7 +94,7 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.ColumnCount = 2;
             drawerHeaderTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65F));
             drawerHeaderTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
-            drawerHeaderTableLayoutPanel.Controls.Add(fullPathLabel, 0, 0);
+            drawerHeaderTableLayoutPanel.Controls.Add(drawerPathTableLayoutPanel, 0, 0);
             drawerHeaderTableLayoutPanel.Controls.Add(drawerButtonTableLayoutPanel, 1, 0);
             drawerHeaderTableLayoutPanel.Dock = DockStyle.Fill;
             drawerHeaderTableLayoutPanel.Location = new Point(3, 536);
@@ -97,71 +104,105 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.Size = new Size(756, 44);
             drawerHeaderTableLayoutPanel.TabIndex = 0;
             drawerHeaderTableLayoutPanel.TagString = null;
-            // 
+            // drawerPathTableLayoutPanel
+            drawerPathTableLayoutPanel.ColumnCount = 2;
+            drawerPathTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
+            drawerPathTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            drawerPathTableLayoutPanel.Controls.Add(openFolderIconPictureBox, 0, 0);
+            drawerPathTableLayoutPanel.Controls.Add(fullPathLabel, 1, 0);
+            drawerPathTableLayoutPanel.BackColor = Color.Transparent;
+            drawerPathTableLayoutPanel.Dock = DockStyle.Fill;
+            drawerPathTableLayoutPanel.Margin = new Padding(0);
+            drawerPathTableLayoutPanel.Name = "drawerPathTableLayoutPanel";
+            drawerPathTableLayoutPanel.RowCount = 1;
+            drawerPathTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            drawerPathTableLayoutPanel.Size = new Size(485, 44);
+            drawerPathTableLayoutPanel.TabIndex = 0;
+            drawerPathTableLayoutPanel.Cursor = Cursors.Hand;
+            drawerPathTableLayoutPanel.AccessibleName = "Open drawer folder in File Explorer";
+            drawerPathTableLayoutPanel.AccessibleDescription = "Click to open this folder in File Explorer.";
+            drawerToolTip.SetToolTip(drawerPathTableLayoutPanel, "Click to open folder in File Explorer");
+            // openFolderIconPictureBox
+            openFolderIconPictureBox.AccessibleName = "Open folder in File Explorer";
+            openFolderIconPictureBox.AccessibleDescription = "Opens this drawer's folder in File Explorer.";
+            openFolderIconPictureBox.Cursor = Cursors.Hand;
+            openFolderIconPictureBox.Dock = DockStyle.Fill;
+            openFolderIconPictureBox.Margin = new Padding(0);
+            openFolderIconPictureBox.Name = "openFolderIconPictureBox";
+            openFolderIconPictureBox.Size = new Size(42, 44);
+            openFolderIconPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+            openFolderIconPictureBox.TabIndex = 0;
+            openFolderIconPictureBox.TabStop = false;
+            drawerToolTip.SetToolTip(openFolderIconPictureBox, "Click to open folder in File Explorer");
             // fullPathLabel
-            // 
             fullPathLabel.Dock = DockStyle.Fill;
             fullPathLabel.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             fullPathLabel.ForeColor = Color.FromArgb(224, 224, 224);
-            fullPathLabel.Location = new Point(3, 0);
+            fullPathLabel.Location = new Point(45, 0);
             fullPathLabel.Name = "fullPathLabel";
             fullPathLabel.Padding = new Padding(6, 0, 6, 0);
-            fullPathLabel.Size = new Size(485, 44);
-            fullPathLabel.TabIndex = 0;
+            fullPathLabel.Size = new Size(444, 44);
+            fullPathLabel.TabIndex = 1;
             fullPathLabel.Text = "folderFullPath";
             fullPathLabel.TextAlign = ContentAlignment.MiddleLeft;
-            // 
+            fullPathLabel.AutoEllipsis = true;
+            fullPathLabel.AccessibleDescription = "Path of the drawer folder.";
+            fullPathLabel.AccessibleName = "Open drawer folder in File Explorer";
+            fullPathLabel.Cursor = Cursors.Hand;
+            drawerToolTip.SetToolTip(fullPathLabel, "Click to open folder in File Explorer");
+            //
             // drawerButtonTableLayoutPanel
             // 
-            drawerButtonTableLayoutPanel.ColumnCount = 2;
-            drawerButtonTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            drawerButtonTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            drawerButtonTableLayoutPanel.Controls.Add(refreshDrawerButton, 0, 0);
-            drawerButtonTableLayoutPanel.Controls.Add(closeDrawerButton, 1, 0);
+            drawerButtonTableLayoutPanel.Controls.Add(closeDrawerButton);
+            drawerButtonTableLayoutPanel.Controls.Add(refreshDrawerButton);
             drawerButtonTableLayoutPanel.Dock = DockStyle.Fill;
             drawerButtonTableLayoutPanel.Location = new Point(491, 0);
             drawerButtonTableLayoutPanel.Margin = new Padding(0);
             drawerButtonTableLayoutPanel.Name = "drawerButtonTableLayoutPanel";
-            drawerButtonTableLayoutPanel.RowCount = 1;
-            drawerButtonTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             drawerButtonTableLayoutPanel.Size = new Size(265, 44);
             drawerButtonTableLayoutPanel.TabIndex = 1;
-            drawerButtonTableLayoutPanel.TagString = null;
+            drawerButtonTableLayoutPanel.FlowDirection = FlowDirection.RightToLeft;
+            drawerButtonTableLayoutPanel.WrapContents = false;
+            drawerButtonTableLayoutPanel.Padding = new Padding(0, 3, 3, 3);
             // 
             // refreshDrawerButton
             // 
             refreshDrawerButton.Cursor = Cursors.Hand;
-            refreshDrawerButton.Dock = DockStyle.Left;
-            refreshDrawerButton.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            refreshDrawerButton.Location = new Point(3, 3);
+            refreshDrawerButton.Font = new Font("Segoe MDL2 Assets", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            refreshDrawerButton.Location = new Point(219, 3);
             refreshDrawerButton.MinimumSize = new Size(1, 1);
             refreshDrawerButton.Name = "refreshDrawerButton";
             refreshDrawerButton.Radius = 2;
-            refreshDrawerButton.Size = new Size(100, 38);
+            refreshDrawerButton.Size = new Size(40, 38);
             refreshDrawerButton.TabIndex = 0;
-            refreshDrawerButton.Text = "refresh";
+            refreshDrawerButton.Text = "\uE72C";
+            refreshDrawerButton.AccessibleName = "Refresh folder contents";
+            refreshDrawerButton.AccessibleDescription = "Reloads the contents of this drawer.";
             refreshDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            drawerToolTip.SetToolTip(refreshDrawerButton, "Refresh folder contents");
             // 
             // closeDrawerButton
             // 
             closeDrawerButton.Cursor = Cursors.Hand;
-            closeDrawerButton.Dock = DockStyle.Right;
-            closeDrawerButton.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            closeDrawerButton.Location = new Point(131, 3);
+            closeDrawerButton.Font = new Font("Segoe MDL2 Assets", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            closeDrawerButton.Location = new Point(176, 3);
             closeDrawerButton.MinimumSize = new Size(1, 1);
             closeDrawerButton.Name = "closeDrawerButton";
             closeDrawerButton.Radius = 2;
-            closeDrawerButton.Size = new Size(100, 38);
+            closeDrawerButton.Size = new Size(40, 38);
             closeDrawerButton.TabIndex = 1;
-            closeDrawerButton.Text = "close";
+            closeDrawerButton.Text = "\uE8BB";
+            closeDrawerButton.AccessibleName = "Close drawer";
+            closeDrawerButton.AccessibleDescription = "Closes this drawer window.";
             closeDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+            drawerToolTip.SetToolTip(closeDrawerButton, "Close drawer");
             // 
             // DrawerWindow
             // 
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.DimGray;
             ClientSize = new Size(762, 583);
-            ControlBox = true;
+            ControlBox = false;
             Controls.Add(mainTableLayoutPanel);
             FormBorderStyle = FormBorderStyle.Sizable;
             MinimumSize = new Size(530, 320);
@@ -172,6 +213,8 @@ namespace winDrawer
             Text = "Drawer";
             mainTableLayoutPanel.ResumeLayout(false);
             drawerHeaderTableLayoutPanel.ResumeLayout(false);
+            drawerPathTableLayoutPanel.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)openFolderIconPictureBox).EndInit();
             drawerButtonTableLayoutPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -180,11 +223,14 @@ namespace winDrawer
 
         private UITableLayoutPanel mainTableLayoutPanel;
         private UITableLayoutPanel drawerHeaderTableLayoutPanel;
+        private TableLayoutPanel drawerPathTableLayoutPanel;
+        private PictureBox openFolderIconPictureBox;
         private UILabel fullPathLabel;
-        private UITableLayoutPanel drawerButtonTableLayoutPanel;
+        private FlowLayoutPanel drawerButtonTableLayoutPanel;
         private UIButton refreshDrawerButton;
         private UIButton closeDrawerButton;
         private ListView drawerContentsListView;
         private ImageList drawerImageList;
+        private ToolTip drawerToolTip;
     }
 }

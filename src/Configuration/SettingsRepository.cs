@@ -1,16 +1,8 @@
-// using System;
-// using System.Collections.Generic;
-// using System.Drawing;
 using System.Globalization;
-// using System.IO;
-// using System.Linq;
-// using System.Threading;
-// using System.Threading.Tasks;
 using Tomlyn;
 using Tomlyn.Model;
 using Tomlyn.Serialization;
 using Tomlyn.Syntax;
-// using winDrawer;
 using winDrawer.Theming;
 
 namespace winDrawer.Configuration;
@@ -23,7 +15,7 @@ internal sealed class SettingsRepository : IDisposable
     // Background writer state
     private readonly SemaphoreSlim _writeSignal = new(0);
     private readonly CancellationTokenSource _writerCts = new();
-    private readonly object _writeLock = new();
+    private readonly Lock _writeLock = new();
     private readonly Task? _writerTask;
     private bool _dirty;
     private bool _writeInProgress;
@@ -864,12 +856,12 @@ internal sealed class SettingsRepository : IDisposable
         }
 
         root["drawers"] = new TomlTableArray();
-        return new List<TomlTable>();
+        return [];
     }
 
     private static bool TryGetDrawers(TomlTable root, out List<TomlTable> drawers)
     {
-        drawers = new List<TomlTable>();
+        drawers = [];
         if (!root.TryGetValue("drawers", out var value))
         {
             return false;
@@ -935,49 +927,31 @@ internal sealed class SettingsRepository : IDisposable
 }
 
 
-public sealed class SettingsSnapshot
+public sealed class SettingsSnapshot(
+    bool startWithWindows,
+    bool windowLocked,
+    int themeHue,
+    int themeSaturation,
+    int themeLightness,
+    int themeAlpha,
+    Point windowPosition,
+    int iconSize,
+    IEnumerable<DrawerDefinition>? drawers = null,
+    int windowHeight = winDrawer.AppConstants.Defaults.MainWindowHeightDefault)
 {
-    private readonly List<DrawerDefinition> _drawers;
+    private readonly List<DrawerDefinition> _drawers = drawers != null
+            ? [.. drawers]
+            : [];
 
-    public SettingsSnapshot(
-        bool startWithWindows,
-        bool windowLocked,
-        int themeHue,
-        int themeSaturation,
-        int themeLightness,
-        int themeAlpha,
-        Point windowPosition,
-        int iconSize,
-        IEnumerable<DrawerDefinition>? drawers = null,
-        int windowHeight = global::winDrawer.AppConstants.Defaults.MainWindowHeightDefault)
-    {
-        StartWithWindows = startWithWindows;
-        WindowLocked = windowLocked;
-        ThemeHue = themeHue;
-        ThemeSaturation = themeSaturation;
-        ThemeLightness = themeLightness;
-        ThemeAlpha = themeAlpha;
-        // ThumbnailWidth = thumbnailWidth;
-        // ThumbnailHeight = thumbnailHeight;
-        WindowPosition = windowPosition;
-        IconSize = iconSize;
-        WindowHeight = Math.Clamp(windowHeight, global::winDrawer.AppConstants.Defaults.MainWindowHeightMin, global::winDrawer.AppConstants.Defaults.MainWindowHeightMax);
-        _drawers = drawers != null
-            ? new List<DrawerDefinition>(drawers)
-            : new List<DrawerDefinition>();
-    }
-
-    public bool StartWithWindows { get; set; }
-    public bool WindowLocked { get; set; }
-    public int ThemeHue { get; set; }
-    public int ThemeSaturation { get; set; }
-    public int ThemeLightness { get; set; }
-    public int ThemeAlpha { get; set; }
-    // public int ThumbnailWidth { get; set; }
-    // public int ThumbnailHeight { get; set; }
-    public Point WindowPosition { get; set; }
-    public int IconSize { get; set; }
-    public int WindowHeight { get; set; }
+    public bool StartWithWindows { get; set; } = startWithWindows;
+    public bool WindowLocked { get; set; } = windowLocked;
+    public int ThemeHue { get; set; } = themeHue;
+    public int ThemeSaturation { get; set; } = themeSaturation;
+    public int ThemeLightness { get; set; } = themeLightness;
+    public int ThemeAlpha { get; set; } = themeAlpha;
+    public Point WindowPosition { get; set; } = windowPosition;
+    public int IconSize { get; set; } = iconSize;
+    public int WindowHeight { get; set; } = Math.Clamp(windowHeight, winDrawer.AppConstants.Defaults.MainWindowHeightMin, winDrawer.AppConstants.Defaults.MainWindowHeightMax);
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public ThemePalette BuildThemePalette()
@@ -1015,9 +989,9 @@ public sealed class SettingsSnapshot
             {
                 TomlTableArray drawerArray => ParseDrawers(drawerArray),
                 TomlArray drawerArray => ParseDrawers(drawerArray),
-                _ => Array.Empty<DrawerDefinition>()
+                _ => []
             }
-            : Array.Empty<DrawerDefinition>();
+            : [];
 
         var iconSize = GetInt(startup, "icon_size", AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax, AppConstants.Defaults.IconSizeDefault);
         var windowHeight = GetInt(startup, "window_height", AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);

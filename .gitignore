@@ -14,8 +14,8 @@ reference
 [Dd]ebug/
 [Rr]elease/
 x64/
-/bin/
-/obj/
+bin/
+obj/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

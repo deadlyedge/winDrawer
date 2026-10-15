@@ -1,27 +1,15 @@
-// using System;
-// using System.Drawing;
-// using System.IO;
-// using System.Windows.Forms;
-
 namespace winDrawer;
 
 /// <summary>
 /// Encapsulates the system tray icon and associated menu interactions for the main window.
 /// </summary>
-internal sealed class TrayController : IDisposable
+internal sealed class TrayController(Action toggleAction, Action openSettingsAction, Action exitAction) : IDisposable
 {
-    private readonly Action _toggleAction;
-    private readonly Action _openSettingsAction;
-    private readonly Action _exitAction;
+    private readonly Action _toggleAction = toggleAction ?? throw new ArgumentNullException(nameof(toggleAction));
+    private readonly Action _openSettingsAction = openSettingsAction ?? throw new ArgumentNullException(nameof(openSettingsAction));
+    private readonly Action _exitAction = exitAction ?? throw new ArgumentNullException(nameof(exitAction));
     private NotifyIcon? _trayIcon;
     private ContextMenuStrip? _trayMenu;
-
-    public TrayController(Action toggleAction, Action openSettingsAction, Action exitAction)
-    {
-        _toggleAction = toggleAction ?? throw new ArgumentNullException(nameof(toggleAction));
-        _openSettingsAction = openSettingsAction ?? throw new ArgumentNullException(nameof(openSettingsAction));
-        _exitAction = exitAction ?? throw new ArgumentNullException(nameof(exitAction));
-    }
 
     public void Initialize(string iconPath, Icon? fallbackIcon, string tooltipText)
     {

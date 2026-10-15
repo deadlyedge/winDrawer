@@ -1,12 +1,5 @@
-// using System;
-// using System.Collections.Generic;
-// using System.Drawing;
 using System.Drawing.Text;
-// using System.IO;
 using System.Diagnostics;
-// using System.Threading.Tasks;
-// using System.Windows.Forms;
-// using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -16,7 +9,6 @@ namespace winDrawer
     {
         private readonly PrivateFontCollection _fontCollection = new();
         private Font? _logoFont;
-        // private Image? _headerGlyph;
         private bool _isDragging;
         private Point _dragOffset;
         private bool _drawerPointerDown;
@@ -119,7 +111,6 @@ namespace winDrawer
 
             TryLoadFont(fontPath);
             TryApplyIcon(iconPath);
-            // TryApplyHeaderIcon(Path.Combine(baseDir, "assets", "icons", "question_unknown.png"));
         }
 
         private void TryLoadFont(string fontPath)
@@ -176,7 +167,7 @@ namespace winDrawer
 
             _trayController = new TrayController(
                 ToggleVisibility,
-                () => settingsButton_Click(this, EventArgs.Empty),
+                () => SettingsButton_Click(this, EventArgs.Empty),
                 () =>
                 {
                     DrawerLogger.LogInformation("Application exit initiated from tray.");
@@ -189,18 +180,12 @@ namespace winDrawer
         // Message filter used to detect clicks outside the settings window so we can close it.
         // It will only act after the settings window has been activated (to avoid closing
         // when the mouse merely moves over/near the window).
-        private class ClickOutsideFilter : IMessageFilter
+        private class ClickOutsideFilter(Form target) : IMessageFilter
         {
-            private readonly Form _target;
-            public bool WasActivated { get; set; }
+            private readonly Form _target = target;
+      public bool WasActivated { get; set; } = false;
 
-            public ClickOutsideFilter(Form target)
-            {
-                _target = target;
-                WasActivated = false;
-            }
-
-            public bool PreFilterMessage(ref Message m)
+      public bool PreFilterMessage(ref Message m)
             {
                 const int WM_LBUTTONDOWN = 0x0201;
                 const int WM_RBUTTONDOWN = 0x0204;
@@ -261,18 +246,6 @@ namespace winDrawer
             }
         }
 
-        // private void TryApplyHeaderIcon(string iconPath)
-        // {
-        //     if (!File.Exists(iconPath))
-        //     {
-        //         headerIcon.Visible = false;
-        //         return;
-        //     }
-
-        //     _headerGlyph = Image.FromFile(iconPath);
-        //     headerIcon.Image = _headerGlyph;
-        //     headerIcon.Visible = true;
-        // }
         private void PopulateDrawerList(IEnumerable<DrawerDefinition> drawers)
         {
             drawerListBox.Items.Clear();
@@ -723,9 +696,11 @@ namespace winDrawer
             try
             {
                 DrawerLogger.LogInformation($"Creating drawer window for '{drawer.Name}' ({drawer.Path}).");
-                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, _currentTheme);
-                drawerWindow.StartPosition = FormStartPosition.Manual;
-                drawerWindow.Location = new Point(Right, Top);
+                var drawerWindow = new DrawerWindow(_settingsRepository, drawer, _currentTheme)
+                {
+                    StartPosition = FormStartPosition.Manual,
+                    Location = new Point(Right, Top)
+                };
                 _currentDrawerWindow = drawerWindow;
                 drawerWindow.FormClosed += (_, _) =>
                 {
@@ -815,26 +790,26 @@ namespace winDrawer
             // Enqueue save: background writer in SettingsRepository will persist asynchronously.
         }
 
-        private void settingsButton_Click(object sender, EventArgs e)
+        private void SettingsButton_Click(object sender, EventArgs e)
         {
             DrawerLogger.LogInformation("Opening settings window.");
 
             // Show Settings as a modeless window that closes when the user *clicks outside* the window.
             var settings = new SettingsForm(_settingsSnapshot);
-            EventHandler<ThemePreviewEventArgs>? previewHandler = (_, args) => ApplyTheme(args.Palette);
-            settings.ThemePreviewChanged += previewHandler;
-            EventHandler? windowHeightPreviewHandler = (_, _) =>
+            void previewHandler(object? _, ThemePreviewEventArgs args) => ApplyTheme(args.Palette);
+            settings.ThemePreviewChanged += (EventHandler<ThemePreviewEventArgs>?)previewHandler;
+            void windowHeightPreviewHandler(object? _1, EventArgs _2)
             {
                 var previewSnapshot = _settingsSnapshot.Clone();
                 previewSnapshot.WindowHeight = settings.WindowHeightPreview;
                 ApplyMainWindowBounds(previewSnapshot);
-            };
-            settings.WindowHeightPreviewChanged += windowHeightPreviewHandler;
+            }
+            settings.WindowHeightPreviewChanged += (EventHandler?)windowHeightPreviewHandler;
 
             // Use a message filter to detect actual mouse-downs outside the settings window.
             var filter = new ClickOutsideFilter(settings);
-            EventHandler? activatedHandler = (_, _) => { filter.WasActivated = true; };
-            settings.Activated += activatedHandler;
+            void activatedHandler(object? _1, EventArgs _2) { filter.WasActivated = true; }
+            settings.Activated += (EventHandler?)activatedHandler;
             Application.AddMessageFilter(filter);
 
             settings.FormClosed += (_, _) =>
@@ -842,15 +817,15 @@ namespace winDrawer
                 DrawerLogger.LogInformation($"Settings window closed with result {settings.DialogResult}, shutdown={settings.ShutdownRequested}.");
                 try
                 {
-                    settings.ThemePreviewChanged -= previewHandler;
-                    settings.WindowHeightPreviewChanged -= windowHeightPreviewHandler;
+                    settings.ThemePreviewChanged -= (global::System.EventHandler<ThemePreviewEventArgs>?)previewHandler;
+                    settings.WindowHeightPreviewChanged -= (global::System.EventHandler?)windowHeightPreviewHandler;
                 }
                 catch { }
 
                 // Remove the message filter we added and the activation handler.
                 try
                 {
-                    settings.Activated -= activatedHandler;
+                    settings.Activated -= (global::System.EventHandler?)activatedHandler;
                 }
                 catch { }
                 try
@@ -935,7 +910,7 @@ namespace winDrawer
             DrawerLogger.LogDebug("Settings window displayed.");
         }
 
-        private void addDrawerButton_Click(object sender, EventArgs e)
+        private void AddDrawerButton_Click(object sender, EventArgs e)
         {
             using var dialog = new FolderBrowserDialog
             {
@@ -981,24 +956,6 @@ namespace winDrawer
             }
         }
 
-        private void openDrawerFolderButton_Click(object sender, EventArgs e)
-        {
-            using var dialog = new FolderBrowserDialog
-            {
-                Description = "Select the folder you want to link as a drawer."
-            };
-
-            if (dialog.ShowDialog(this) == DialogResult.OK)
-            {
-                DrawerLogger.LogInformation($"Drawer source folder selected: '{dialog.SelectedPath}'.");
-                MessageBox.Show($"Selected folder: {dialog.SelectedPath}", "Drawer Source", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                DrawerLogger.LogDebug("Drawer source folder selection cancelled.");
-            }
-        }
-
         private void ReloadSettingsFromStorage()
         {
             try
@@ -1027,20 +984,6 @@ namespace winDrawer
             DrawerLogger.LogDebug("Applying settings snapshot to UI.");
             ApplySettings(_settingsSnapshot);
         }
-
-        // private void ApplyAccentColor(Color accent)
-        // {
-        //     if (accent.A == 0)
-        //     {
-        //         return;
-        //     }
-
-        //     var opaqueAccent = Color.FromArgb(255, accent.R, accent.G, accent.B);
-        //     addDrawerButton.FillColor = opaqueAccent;
-        //     addDrawerButton.FillHoverColor = ControlPaint.Light(opaqueAccent);
-        //     addDrawerButton.FillPressColor = ControlPaint.Dark(opaqueAccent);
-        //     addDrawerButton.FillSelectedColor = addDrawerButton.FillPressColor;
-        // }
 
         private void ApplySettings(SettingsSnapshot snapshot)
         {

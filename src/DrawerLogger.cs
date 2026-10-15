@@ -1,7 +1,5 @@
-// using System;
 using System.Diagnostics;
 using System.Globalization;
-// using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace winDrawer;
@@ -11,7 +9,7 @@ namespace winDrawer;
 /// </summary>
 internal static class DrawerLogger
 {
-    private static readonly object SyncRoot = new();
+    private static readonly Lock SyncRoot = new();
     private static readonly string LogFilePath = ResolveLogFilePath();
 
     private static string ResolveLogFilePath()

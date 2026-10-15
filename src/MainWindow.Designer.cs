@@ -115,7 +115,7 @@ namespace winDrawer
             settingsButton.TabIndex = 1;
             settingsButton.Text = "settings";
             settingsButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            settingsButton.Click += settingsButton_Click;
+            settingsButton.Click += SettingsButton_Click;
             // 
             // drawerListBox
             // 
@@ -164,7 +164,7 @@ namespace winDrawer
             addDrawerButton.TabIndex = 1;
             addDrawerButton.Text = "add drawer";
             addDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            addDrawerButton.Click += addDrawerButton_Click;
+            addDrawerButton.Click += AddDrawerButton_Click;
             // 
             // MainWindow
             // 

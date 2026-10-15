@@ -55,7 +55,7 @@ partial class SettingsForm
         previewPanel = new UIPanel();
         footerGroupBox = new UIGroupBox();
         shutDownButton = new UIButton();
-        defautlSettingsButton = new UIButton();
+        defaultSettingsButton = new UIButton();
         openSettingsTomlButton = new UIButton();
         cancelButton = new UIButton();
         saveButton = new UIButton();
@@ -249,7 +249,7 @@ partial class SettingsForm
         //
         generalFlowPanel.BackColor = Color.FromArgb(64, 64, 64);
         generalFlowPanel.Controls.Add(shutDownButton);
-        generalFlowPanel.Controls.Add(defautlSettingsButton);
+        generalFlowPanel.Controls.Add(defaultSettingsButton);
         generalFlowPanel.Controls.Add(openSettingsTomlButton);
         generalFlowPanel.Dock = DockStyle.Fill;
         generalFlowPanel.FlowDirection = FlowDirection.LeftToRight;
@@ -304,7 +304,6 @@ partial class SettingsForm
         lightnessValueLabel.TabIndex = 12;
         lightnessValueLabel.Text = "100";
         lightnessValueLabel.TextAlign = ContentAlignment.MiddleLeft;
-        lightnessValueLabel.Click += uiLabel5_Click;
         // 
         // opacityValueLabel
         // 
@@ -498,24 +497,24 @@ partial class SettingsForm
         shutDownButton.TabIndex = 4;
         shutDownButton.Text = "shut down app";
         shutDownButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        // 
-        // defautlSettingsButton
-        // 
-        defautlSettingsButton.FillColor = Color.YellowGreen;
-        defautlSettingsButton.FillDisableColor = Color.DarkGray;
-        defautlSettingsButton.FillHoverColor = Color.LightCoral;
-        defautlSettingsButton.FillPressColor = Color.DarkRed;
-        defautlSettingsButton.FillSelectedColor = Color.Brown;
-        defautlSettingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        defautlSettingsButton.Location = new Point(233, 4);
-        defautlSettingsButton.Margin = new Padding(3, 4, 12, 4);
-        defautlSettingsButton.MinimumSize = new Size(1, 1);
-        defautlSettingsButton.Name = "defautlSettingsButton";
-        defautlSettingsButton.Radius = 20;
-        defautlSettingsButton.Size = new Size(120, 40);
-        defautlSettingsButton.TabIndex = 3;
-        defautlSettingsButton.Text = "default";
-        defautlSettingsButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        //
+        // defaultSettingsButton
+        //
+        defaultSettingsButton.FillColor = Color.YellowGreen;
+        defaultSettingsButton.FillDisableColor = Color.DarkGray;
+        defaultSettingsButton.FillHoverColor = Color.LightCoral;
+        defaultSettingsButton.FillPressColor = Color.DarkRed;
+        defaultSettingsButton.FillSelectedColor = Color.Brown;
+        defaultSettingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        defaultSettingsButton.Location = new Point(233, 4);
+        defaultSettingsButton.Margin = new Padding(3, 4, 12, 4);
+        defaultSettingsButton.MinimumSize = new Size(1, 1);
+        defaultSettingsButton.Name = "defaultSettingsButton";
+        defaultSettingsButton.Radius = 20;
+        defaultSettingsButton.Size = new Size(120, 40);
+        defaultSettingsButton.TabIndex = 3;
+        defaultSettingsButton.Text = "default";
+        defaultSettingsButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
         //
         // openSettingsTomlButton
         //
@@ -616,7 +615,7 @@ partial class SettingsForm
     private Sunny.UI.UIGroupBox footerGroupBox;
     private Sunny.UI.UIButton cancelButton;
     private Sunny.UI.UIButton saveButton;
-    private Sunny.UI.UIButton defautlSettingsButton;
+    private Sunny.UI.UIButton defaultSettingsButton;
     private Sunny.UI.UIButton shutDownButton;
     private Sunny.UI.UIButton openSettingsTomlButton;
 }

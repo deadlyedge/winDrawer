@@ -1,13 +1,6 @@
-// using System;
-
 namespace winDrawer.Theming;
 
-public sealed class ThemePreviewEventArgs : EventArgs
+public sealed class ThemePreviewEventArgs(ThemePalette palette) : EventArgs
 {
-    public ThemePreviewEventArgs(ThemePalette palette)
-    {
-        Palette = palette ?? throw new ArgumentNullException(nameof(palette));
-    }
-
-    public ThemePalette Palette { get; }
+    public ThemePalette Palette { get; } = palette ?? throw new ArgumentNullException(nameof(palette));
 }

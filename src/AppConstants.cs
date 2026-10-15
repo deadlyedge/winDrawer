@@ -1,7 +1,3 @@
-// using System;
-// using System.Drawing;
-// using System.IO;
-
 namespace winDrawer;
 
 /// <summary>

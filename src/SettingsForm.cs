@@ -1,9 +1,4 @@
-// using System;
-// using System.Collections.Generic;
 using System.Diagnostics;
-// using System.Drawing;
-// using System.IO;
-// using System.Windows.Forms;
 using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
@@ -86,11 +81,11 @@ public partial class SettingsForm : UIForm
         opacityTrackBar.ValueChanged += OnThemeTrackValueChanged;
         windowHeightTrackBar.ValueChanged += OnWindowHeightValueChanged;
 
-        saveButton.Click += saveButton_Click;
-        cancelButton.Click += cancelButton_Click;
-        shutDownButton.Click += shutDownButton_Click;
-        defautlSettingsButton.Click += defautlSettingsButton_Click;
-        openSettingsTomlButton.Click += openSettingsTomlButton_Click;
+        saveButton.Click += SaveButton_Click;
+        cancelButton.Click += CancelButton_Click;
+        shutDownButton.Click += ShutDownButton_Click;
+        defaultSettingsButton.Click += DefaultSettingsButton_Click;
+        openSettingsTomlButton.Click += OpenSettingsTomlButton_Click;
     }
 
     private void WireDragHandlers()
@@ -167,7 +162,7 @@ public partial class SettingsForm : UIForm
         UpdatePreview();
     }
 
-    private void saveButton_Click(object? sender, EventArgs e)
+    private void SaveButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogInformation("SettingsForm: save requested.");
         if (!TrySynchronizeStartupRegistration())
@@ -182,7 +177,7 @@ public partial class SettingsForm : UIForm
         Close();
     }
 
-    private void cancelButton_Click(object? sender, EventArgs e)
+    private void CancelButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogInformation("SettingsForm: cancel requested.");
         RestoreWindowHeightPreview();
@@ -193,7 +188,7 @@ public partial class SettingsForm : UIForm
         Close();
     }
 
-    private void shutDownButton_Click(object? sender, EventArgs e)
+    private void ShutDownButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogWarning("SettingsForm: shutdown requested.");
         ShutdownRequested = true;
@@ -201,12 +196,12 @@ public partial class SettingsForm : UIForm
         Close();
     }
 
-    private void defautlSettingsButton_Click(object? sender, EventArgs e)
+    private void DefaultSettingsButton_Click(object? sender, EventArgs e)
     {
         DrawerLogger.LogDebug("SettingsForm: default settings button clicked.");
     }
 
-    private void openSettingsTomlButton_Click(object? sender, EventArgs e)
+    private void OpenSettingsTomlButton_Click(object? sender, EventArgs e)
     {
         var settingsPath = SettingsRepository.GetDefaultPath();
         try
@@ -285,16 +280,6 @@ public partial class SettingsForm : UIForm
         }
     }
 
-    private void uiLabel5_Click(object? sender, EventArgs e)
-    {
-        DrawerLogger.LogDebug("SettingsForm: lightness value label clicked.");
-    }
-
-    // private void uiLabel1_Click(object? sender, EventArgs e)
-    // {
-    //     Console.WriteLine("[SettingsForm] saturation label clicked.");
-    // }
-
     private void UpdatePreview()
     {
         var palette = _workingSnapshot.BuildThemePalette();
@@ -302,7 +287,6 @@ public partial class SettingsForm : UIForm
         previewPanel.FillColor = palette.Accent;
         previewPanel.RectColor = palette.Border;
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(palette));
-        // previewLabel.Text = $"hsla({_workingSnapshot.ThemeHue}, {_workingSnapshot.ThemeSaturation}%, {_workingSnapshot.ThemeLightness}%, {_workingSnapshot.ThemeAlpha / 100f:0.00})";
     }
 
     private void SyncWorkingSnapshotFromUi()

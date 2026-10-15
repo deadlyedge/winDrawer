@@ -1,19 +1,11 @@
 namespace winDrawer.Configuration
 {
-    public sealed class DrawerDefinition
+    public sealed class DrawerDefinition(string name, string path, Size? preferredSize, Color? overlayColor = null)
     {
-        public DrawerDefinition(string name, string path, Size? preferredSize, Color? overlayColor = null)
-        {
-            Name = name;
-            Path = path;
-            PreferredSize = preferredSize;
-            OverlayColor = overlayColor;
-        }
-
-        public string Name { get; }
-        public string Path { get; }
-        public Size? PreferredSize { get; }
-        public Color? OverlayColor { get; }
+        public string Name { get; } = name;
+        public string Path { get; } = path;
+        public Size? PreferredSize { get; } = preferredSize;
+        public Color? OverlayColor { get; } = overlayColor;
 
         public override string ToString() => Name;
     }

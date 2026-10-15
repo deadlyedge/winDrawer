@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SunnyUI" Version="3.8.8" />
+    <PackageReference Include="SunnyUI" Version="3.9.8" />
     <PackageReference Include="Tomlyn" Version="2.10.1" />
   </ItemGroup>
 

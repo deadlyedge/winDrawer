@@ -56,29 +56,25 @@ public partial class SettingsForm : UIForm
 
     private void ConfigureControls()
     {
-        hueTrackBar.Minimum = AppConstants.Theme.HueMin;
-        hueTrackBar.Maximum = AppConstants.Theme.HueMax;
-
-        saturationTrackBar.Minimum = AppConstants.Theme.SaturationMin;
-        saturationTrackBar.Maximum = AppConstants.Theme.SaturationMax;
-
-        lightnessTrackBar.Minimum = AppConstants.Theme.LightnessMin;
-        lightnessTrackBar.Maximum = AppConstants.Theme.LightnessMax;
-
         opacityTrackBar.Minimum = AppConstants.Theme.OpacityMin;
         opacityTrackBar.Maximum = AppConstants.Theme.OpacityMax;
         windowHeightTrackBar.Minimum = AppConstants.Defaults.MainWindowHeightMin;
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
         behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
+
+        previewPanel.Cursor = Cursors.Hand;
+        previewPanel.TabStop = true;
+        previewPanel.AccessibleRole = AccessibleRole.PushButton;
+        previewPanel.AccessibleName = "Theme color preview. Activate to choose a color.";
+        previewPanel.AccessibleDescription = "Opens the Windows color selection dialog.";
     }
 
     private void WireEvents()
     {
-        hueTrackBar.ValueChanged += OnThemeTrackValueChanged;
-        saturationTrackBar.ValueChanged += OnThemeTrackValueChanged;
-        lightnessTrackBar.ValueChanged += OnThemeTrackValueChanged;
-        opacityTrackBar.ValueChanged += OnThemeTrackValueChanged;
+        previewPanel.Click += OnThemeColorPreviewClick;
+        previewPanel.KeyDown += OnThemeColorPreviewKeyDown;
+        opacityTrackBar.ValueChanged += OnOpacityValueChanged;
         windowHeightTrackBar.ValueChanged += OnWindowHeightValueChanged;
 
         saveButton.Click += SaveButton_Click;
@@ -123,10 +119,6 @@ public partial class SettingsForm : UIForm
             windowHeightTrackBar.Maximum);
         UpdateWindowHeightValueLabel();
 
-        var (hue, saturation, lightness) = ThemePalette.ToHsl(_workingSnapshot.WindowColor);
-        hueTrackBar.Value = Math.Clamp(hue, hueTrackBar.Minimum, hueTrackBar.Maximum);
-        saturationTrackBar.Value = Math.Clamp(saturation, saturationTrackBar.Minimum, saturationTrackBar.Maximum);
-        lightnessTrackBar.Value = Math.Clamp(lightness, lightnessTrackBar.Minimum, lightnessTrackBar.Maximum);
         opacityTrackBar.Value = Math.Clamp(_workingSnapshot.WindowOpacity, opacityTrackBar.Minimum, opacityTrackBar.Maximum);
 
         UpdateValueLabels();
@@ -134,9 +126,6 @@ public partial class SettingsForm : UIForm
 
     private void UpdateValueLabels()
     {
-        hueValueLabel.Text = $"{hueTrackBar.Value}\u00B0";
-        saturationValueLabel.Text = $"{saturationTrackBar.Value}%";
-        lightnessValueLabel.Text = $"{lightnessTrackBar.Value}%";
         opacityValueLabel.Text = $"{opacityTrackBar.Value}%";
     }
 
@@ -152,16 +141,72 @@ public partial class SettingsForm : UIForm
         windowHeightValueLabel.Text = $"{windowHeightTrackBar.Value} DIP";
     }
 
-    private void OnThemeTrackValueChanged(object? sender, EventArgs e)
+    private void OnOpacityValueChanged(object? sender, EventArgs e)
     {
-        _workingSnapshot.WindowColor = ThemePalette.ColorFromHsl(
-            hueTrackBar.Value,
-            saturationTrackBar.Value,
-            lightnessTrackBar.Value);
         _workingSnapshot.WindowOpacity = opacityTrackBar.Value;
 
         UpdateValueLabels();
         UpdatePreview();
+    }
+
+    private void OnThemeColorPreviewClick(object? sender, EventArgs e)
+    {
+        using var dialog = new ColorDialog
+        {
+            Color = _workingSnapshot.WindowColor,
+            AllowFullOpen = true,
+            FullOpen = true,
+            AnyColor = true,
+            SolidColorOnly = true
+        };
+
+        dialog.CustomColors = GetThemeDialogCustomColors(_workingSnapshot.WindowColor);
+
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        _workingSnapshot.WindowColor = Color.FromArgb(dialog.Color.R, dialog.Color.G, dialog.Color.B);
+        UpdatePreview();
+    }
+
+    private void OnThemeColorPreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode is not Keys.Enter and not Keys.Space)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+        OnThemeColorPreviewClick(sender, EventArgs.Empty);
+    }
+
+    private static int[] GetThemeDialogCustomColors(Color currentColor)
+    {
+        static int ToDialogColor(Color color) =>
+            color.R | (color.G << 8) | (color.B << 16);
+
+        return
+        [
+            ToDialogColor(currentColor),
+            ToDialogColor(Color.FromArgb(0, 5, 51)),
+            ToDialogColor(Color.FromArgb(9, 140, 210)),
+            ToDialogColor(Color.FromArgb(64, 64, 64)),
+            ToDialogColor(Color.White),
+            ToDialogColor(Color.Black),
+            ToDialogColor(Color.Red),
+            ToDialogColor(Color.Green),
+            ToDialogColor(Color.Blue),
+            ToDialogColor(Color.Yellow),
+            ToDialogColor(Color.Magenta),
+            ToDialogColor(Color.Cyan),
+            ToDialogColor(Color.Orange),
+            ToDialogColor(Color.Purple),
+            ToDialogColor(Color.LightGray),
+            ToDialogColor(Color.DarkGray)
+        ];
     }
 
     private void SaveButton_Click(object? sender, EventArgs e)
@@ -286,8 +331,10 @@ public partial class SettingsForm : UIForm
     {
         var palette = _workingSnapshot.BuildThemePalette();
         SelectedAccentColor = palette.Accent;
-        previewPanel.FillColor = palette.Accent;
+        previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = palette.Border;
+        previewPanel.ForeColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
+        previewPanel.Text = ThemePalette.FormatHexColor(_workingSnapshot.WindowColor);
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(palette));
     }
 

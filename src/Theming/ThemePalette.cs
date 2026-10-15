@@ -51,21 +51,12 @@ public sealed class ThemePalette
         return CreatePalette(hue, saturation / 100f, lightness / 100f, Math.Clamp(opacity, 0, 100) / 100d);
     }
 
-    public static (int Hue, int Saturation, int Lightness) ToHsl(Color color)
+    private static (int Hue, int Saturation, int Lightness) ToHsl(Color color)
     {
         return (
             Math.Clamp((int)Math.Round(color.GetHue(), MidpointRounding.AwayFromZero), 0, 360),
             Math.Clamp((int)Math.Round(color.GetSaturation() * 100, MidpointRounding.AwayFromZero), 0, 100),
             Math.Clamp((int)Math.Round(color.GetBrightness() * 100, MidpointRounding.AwayFromZero), 0, 100));
-    }
-
-    public static Color ColorFromHsl(int hue, int saturation, int lightness)
-    {
-        return FromHslInternal(
-            Math.Clamp(hue, 0, 360),
-            Math.Clamp(saturation, 0, 100) / 100f,
-            Math.Clamp(lightness, 0, 100) / 100f,
-            1f);
     }
 
     public static bool TryParseHexColor(string? value, out Color color)
@@ -148,6 +139,14 @@ public sealed class ThemePalette
             (int)Math.Round(background.B * (1 - overlayOpacity) + overlay.B * overlayOpacity));
     }
 
+    internal static Color GetReadableTextColor(Color background)
+    {
+        var luminance = GetRelativeLuminance(background);
+        return luminance > 0.6
+            ? Color.FromArgb(48, 48, 48)
+            : Color.FromArgb(242, 242, 242);
+    }
+
     private static float AdjustLightness(float value, float delta)
     {
         return Math.Clamp(value + delta, 0f, 1f);
@@ -200,14 +199,6 @@ public sealed class ThemePalette
             return p + (q - p) * (2f / 3f - t) * 6f;
         }
         return p;
-    }
-
-    private static Color GetReadableTextColor(Color background)
-    {
-        var luminance = GetRelativeLuminance(background);
-        return luminance > 0.6
-            ? Color.FromArgb(48, 48, 48)
-            : Color.FromArgb(242, 242, 242);
     }
 
     private static double GetRelativeLuminance(Color color)

@@ -1,6 +1,6 @@
 # winDrawer 后续开发计划：首次运行默认值与界面收尾
 
-> 状态：阶段 6.1 配置/schema、文档及开发者用户目录配置已实施；阶段 6.2–6.7 尚未实施。
+> 状态：阶段 6.1 配置/schema、文档及开发者用户目录配置与阶段 6.2 系统颜色选择/主题面板精简已实施；阶段 6.3–6.7 尚未实施。
 >
 > 本计划承接 [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) 已完成的抽屉管理、主题和窗口体验工作，将 [`TODOs.md`](TODOs.md) 中的待办收敛为可实施、可验收的阶段。实施时以用户最新明确要求为准；若与现有开发约定冲突，先记录并更新相应文档。
 
@@ -20,10 +20,11 @@
 - 当前活动用户设置位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`。首次创建逻辑在 `SettingsRepository.LoadOrCreateTable`；用户配置不存在时从程序集内嵌的根目录模板初始化。
 - 根目录配置应被当作**新用户的初始化模板**，而不是每次启动时覆盖用户设置的来源。若活动设置已经存在，保持其内容、注释、抽屉顺序和用户数据不变。
 - 单文件发布/从快捷方式启动时，不能假定当前工作目录是仓库根目录。模板必须由项目显式随应用部署（或作为嵌入资源读取）；不得依赖 `Environment.CurrentDirectory` 恰好指向仓库。
-- 当前主主题使用 H/S/L 滑块与独立 Alpha 控件，设置存储为 `window_color_hsla`；抽屉颜色当前通过 WinForms `ColorDialog` 选择，并以 `overlay_color = "#RRGGBB"` 持久化，固定按 70% 混合。新需求明确要求主题区只显示颜色预览和透明度滑块，点击预览打开系统颜色控件；主题与抽屉颜色统一使用 `#RRGGBB`，主题透明度改为独立字段，不保留 HSLA 设置字段。
+- 阶段 6.2 前主主题区曾使用 H/S/L 滑块。现已改为可点击的 RGB 颜色预览和独立透明度滑块；抽屉颜色继续通过 WinForms `ColorDialog` 选择，并以 `overlay_color = "#RRGGBB"` 持久化，固定按 70% 混合。主题颜色统一以 `#RRGGBB` 表示，透明度独立保存，不使用 HSLA 设置字段。
 - 新 UI 与配置要求优先于旧计划和 `AGENTS.md` 中保留 H/S/L/HSLA 控件的旧约定；已同步更新 `AGENTS.md`。程序尚未发布，不实现 HSLA 运行时迁移；开发用用户目录配置直接按新格式修改，保留颜色/透明度数值及其余设置。
 - 目标 TOML 字段为 `startup.window_color = "#RRGGBB"` 与 `startup.window_opacity`（整数百分比，与透明度滑块的 0–100 范围一致）；抽屉继续使用 `drawers[].overlay_color = "#RRGGBB"` 并固定 70% 混合。主题内部可按需要推导派生颜色，但不得把 HSLA 作为设置 UI 或持久化字段。
 - 系统颜色控件的可定制范围应先通过 WinForms/Windows 实际能力评估，例如初始颜色、完整颜色选择模式、预设颜色和自定义颜色列表；采用系统控件本身支持且可验证的选项，不以自绘控件复刻 H/S/L 面板。
+- `ColorDialog` 评估结果：`Color` 设置打开时的当前颜色；`AllowFullOpen = true` 允许进入自定义颜色面板，`FullOpen = true` 初始展开该面板；`AnyColor = true` 显示完整基本颜色集；`CustomColors` 使用整数 BGR/`COLORREF` 色值数组。Windows 公共对话框有 16 个自定义颜色槽，应用传入 16 个值并将当前颜色/应用预设色放入其中。`SolidColorOnly` 用于限制为纯色选择，主要影响 256 色及以下系统中的组合色显示。WinForms 未提供修改原生对话框字体、布局、控件位置或主题的属性；这些外观保持 Windows 公共对话框默认行为。模态原生对话框没有选择变化事件，应用在用户确认后立即更新主题预览，取消选择则保持现值。
 - `SettingsForm` 已按 Behavior、Visual、General 分区。整理分区时先盘点现有控件和行为，目标是更清楚的分组和对齐，不删除或悄然改变功能。
 - `DrawerSettingsDialog` 已加载品牌字体文件，但各类控件的字体使用不完全一致。统一字体时必须保留无字体文件/字体加载失败时的系统字体回退，并明确 `Font`、`PrivateFontCollection` 的所有权和释放时机。
 - `DrawerWindow` 通过移除 `WS_CAPTION` 隐藏标题栏，Designer 仍设置 `FormBorderStyle.Sizable`；底部刷新/关闭按钮使用 Segoe MDL2 Assets 字形，当前主题应用代码也会给按钮设置主题颜色。边框和图标颜色问题应在实际窗口截图/运行效果下定位，不能只凭静态属性假定已解决。

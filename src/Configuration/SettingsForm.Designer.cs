@@ -39,19 +39,9 @@ partial class SettingsForm
         generalGroupBox = new UIGroupBox();
         generalFlowPanel = new FlowLayoutPanel();
         visualTableLayoutPanel = new UITableLayoutPanel();
-        lightnessValueLabel = new UILabel();
         opacityValueLabel = new UILabel();
-        saturationValueLabel = new UILabel();
-        hueValueLabel = new UILabel();
-        previewLabel = new UILabel();
-        saturationTrackBar = new UITrackBar();
         opacityTrackBar = new UITrackBar();
-        lightnessTrackBar = new UITrackBar();
         opacityLabel = new UILabel();
-        lightnessLabel = new UILabel();
-        saturationLabel = new UILabel();
-        hueLabel = new UILabel();
-        hueTrackBar = new UITrackBar();
         previewPanel = new UIPanel();
         footerGroupBox = new UIGroupBox();
         shutDownButton = new UIButton();
@@ -153,27 +143,6 @@ partial class SettingsForm
         windowHeightTableLayoutPanel.TabIndex = 3;
         windowHeightTableLayoutPanel.TagString = null;
         //
-        // windowHeightLabel
-        //
-        windowHeightLabel.Dock = DockStyle.Fill;
-        windowHeightLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        windowHeightLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        windowHeightLabel.Location = new Point(3, 0);
-        windowHeightLabel.Name = "windowHeightLabel";
-        windowHeightLabel.Size = new Size(164, 60);
-        windowHeightLabel.TabIndex = 0;
-        windowHeightLabel.Text = "window height";
-        windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
-        //
-        // windowHeightTrackBar
-        //
-        windowHeightTrackBar.Dock = DockStyle.Fill;
-        windowHeightTrackBar.FillColor = Color.FromArgb(64, 64, 64);
-        windowHeightTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        windowHeightTrackBar.Location = new Point(173, 3);
-        windowHeightTrackBar.MinimumSize = new Size(1, 1);
-        windowHeightTrackBar.Name = "windowHeightTrackBar";
-        windowHeightTrackBar.Size = new Size(522, 54);
         windowHeightTrackBar.TabIndex = 1;
         //
         // windowHeightValueLabel
@@ -199,7 +168,7 @@ partial class SettingsForm
         behaviorCheckBoxGroup.ForeColor = Color.FromArgb(224, 224, 224);
         behaviorCheckBoxGroup.HoverColor = Color.Gray;
         behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with windows", "Lock position" });
-        behaviorCheckBoxGroup.Location = new Point(10, 10);
+        opacityTrackBar.Location = new Point(141, 123);
         behaviorCheckBoxGroup.Margin = new Padding(10);
         behaviorCheckBoxGroup.MinimumSize = new Size(1, 1);
         behaviorCheckBoxGroup.Name = "behaviorCheckBoxGroup";
@@ -261,205 +230,67 @@ partial class SettingsForm
         generalFlowPanel.WrapContents = false;
         // 
         // visualTableLayoutPanel
-        // 
-        visualTableLayoutPanel.ColumnCount = 4;
+        //
+        visualTableLayoutPanel.ColumnCount = 3;
         visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
         visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
-        visualTableLayoutPanel.Controls.Add(lightnessValueLabel, 2, 2);
-        visualTableLayoutPanel.Controls.Add(opacityValueLabel, 2, 3);
-        visualTableLayoutPanel.Controls.Add(saturationValueLabel, 2, 1);
-        visualTableLayoutPanel.Controls.Add(hueValueLabel, 2, 0);
-        visualTableLayoutPanel.Controls.Add(previewLabel, 3, 0);
-        visualTableLayoutPanel.Controls.Add(saturationTrackBar, 1, 1);
-        visualTableLayoutPanel.Controls.Add(opacityTrackBar, 1, 3);
-        visualTableLayoutPanel.Controls.Add(lightnessTrackBar, 1, 2);
-        visualTableLayoutPanel.Controls.Add(opacityLabel, 0, 3);
-        visualTableLayoutPanel.Controls.Add(lightnessLabel, 0, 2);
-        visualTableLayoutPanel.Controls.Add(saturationLabel, 0, 1);
-        visualTableLayoutPanel.Controls.Add(hueLabel, 0, 0);
-        visualTableLayoutPanel.Controls.Add(hueTrackBar, 1, 0);
-        visualTableLayoutPanel.Controls.Add(previewPanel, 3, 1);
+        visualTableLayoutPanel.Controls.Add(previewPanel, 0, 0);
+        visualTableLayoutPanel.SetColumnSpan(previewPanel, 3);
+        visualTableLayoutPanel.Controls.Add(opacityLabel, 0, 1);
+        visualTableLayoutPanel.Controls.Add(opacityTrackBar, 1, 1);
+        visualTableLayoutPanel.Controls.Add(opacityValueLabel, 2, 1);
         visualTableLayoutPanel.Dock = DockStyle.Fill;
         visualTableLayoutPanel.Location = new Point(32, 64);
         visualTableLayoutPanel.Name = "visualTableLayoutPanel";
-        visualTableLayoutPanel.RowCount = 4;
-        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+        visualTableLayoutPanel.RowCount = 2;
+        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
+        visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
         visualTableLayoutPanel.Size = new Size(693, 200);
         visualTableLayoutPanel.TabIndex = 0;
         visualTableLayoutPanel.TagString = null;
-        // 
-        // lightnessValueLabel
-        // 
-        lightnessValueLabel.Dock = DockStyle.Left;
-        lightnessValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        lightnessValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        lightnessValueLabel.Location = new Point(418, 100);
-        lightnessValueLabel.Name = "lightnessValueLabel";
-        lightnessValueLabel.Size = new Size(63, 50);
-        lightnessValueLabel.TabIndex = 12;
-        lightnessValueLabel.Text = "100";
-        lightnessValueLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
+        //
         // opacityValueLabel
-        // 
-        opacityValueLabel.Dock = DockStyle.Left;
+        //
+        opacityValueLabel.Dock = DockStyle.Fill;
         opacityValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         opacityValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        opacityValueLabel.Location = new Point(418, 150);
         opacityValueLabel.Name = "opacityValueLabel";
-        opacityValueLabel.Size = new Size(63, 50);
         opacityValueLabel.TabIndex = 11;
-        opacityValueLabel.Text = "100";
-        opacityValueLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // saturationValueLabel
-        // 
-        saturationValueLabel.Dock = DockStyle.Left;
-        saturationValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        saturationValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        saturationValueLabel.Location = new Point(418, 50);
-        saturationValueLabel.Name = "saturationValueLabel";
-        saturationValueLabel.Size = new Size(63, 50);
-        saturationValueLabel.TabIndex = 10;
-        saturationValueLabel.Text = "90";
-        saturationValueLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // hueValueLabel
-        // 
-        hueValueLabel.Dock = DockStyle.Left;
-        hueValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        hueValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        hueValueLabel.Location = new Point(418, 0);
-        hueValueLabel.Name = "hueValueLabel";
-        hueValueLabel.Size = new Size(63, 50);
-        hueValueLabel.TabIndex = 9;
-        hueValueLabel.Text = "80";
-        hueValueLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // previewLabel
-        // 
-        previewLabel.Dock = DockStyle.Fill;
-        previewLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        previewLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        previewLabel.Location = new Point(487, 0);
-        previewLabel.Name = "previewLabel";
-        previewLabel.Size = new Size(203, 50);
-        previewLabel.TabIndex = 8;
-        previewLabel.Text = "Preview";
-        previewLabel.TextAlign = ContentAlignment.MiddleCenter;
-        // 
-        // saturationTrackBar
-        // 
-        saturationTrackBar.Dock = DockStyle.Fill;
-        saturationTrackBar.FillColor = Color.FromArgb(64, 64, 64);
-        saturationTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        saturationTrackBar.Location = new Point(141, 53);
-        saturationTrackBar.MinimumSize = new Size(1, 1);
-        saturationTrackBar.Name = "saturationTrackBar";
-        saturationTrackBar.Size = new Size(271, 44);
-        saturationTrackBar.TabIndex = 7;
-        // 
+        opacityValueLabel.Text = "95%";
+        opacityValueLabel.TextAlign = ContentAlignment.MiddleCenter;
+        //
         // opacityTrackBar
-        // 
+        //
         opacityTrackBar.Dock = DockStyle.Fill;
         opacityTrackBar.FillColor = Color.FromArgb(64, 64, 64);
         opacityTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        opacityTrackBar.Location = new Point(141, 153);
         opacityTrackBar.MinimumSize = new Size(1, 1);
         opacityTrackBar.Name = "opacityTrackBar";
-        opacityTrackBar.Size = new Size(271, 44);
+        opacityTrackBar.Size = new Size(510, 60);
         opacityTrackBar.TabIndex = 6;
-        // 
-        // lightnessTrackBar
-        // 
-        lightnessTrackBar.Dock = DockStyle.Fill;
-        lightnessTrackBar.FillColor = Color.FromArgb(64, 64, 64);
-        lightnessTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        lightnessTrackBar.Location = new Point(141, 103);
-        lightnessTrackBar.MinimumSize = new Size(1, 1);
-        lightnessTrackBar.Name = "lightnessTrackBar";
-        lightnessTrackBar.Size = new Size(271, 44);
-        lightnessTrackBar.TabIndex = 5;
-        // 
+        //
         // opacityLabel
-        // 
-        opacityLabel.Dock = DockStyle.Left;
+        //
+        opacityLabel.Dock = DockStyle.Fill;
         opacityLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         opacityLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        opacityLabel.Location = new Point(3, 150);
         opacityLabel.Name = "opacityLabel";
-        opacityLabel.Size = new Size(132, 50);
         opacityLabel.TabIndex = 3;
         opacityLabel.Text = "Opacity";
         opacityLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // lightnessLabel
-        // 
-        lightnessLabel.Dock = DockStyle.Left;
-        lightnessLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        lightnessLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        lightnessLabel.Location = new Point(3, 100);
-        lightnessLabel.Name = "lightnessLabel";
-        lightnessLabel.Size = new Size(132, 50);
-        lightnessLabel.TabIndex = 2;
-        lightnessLabel.Text = "Lightness";
-        lightnessLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // saturationLabel
-        // 
-        saturationLabel.Dock = DockStyle.Left;
-        saturationLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        saturationLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        saturationLabel.Location = new Point(3, 50);
-        saturationLabel.Name = "saturationLabel";
-        saturationLabel.Size = new Size(132, 50);
-        saturationLabel.TabIndex = 1;
-        saturationLabel.Text = "Saturation";
-        saturationLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // saturationLabel.Click += uiLabel1_Click;
-        // 
-        // hueLabel
-        // 
-        hueLabel.Dock = DockStyle.Left;
-        hueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        hueLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        hueLabel.Location = new Point(3, 0);
-        hueLabel.Name = "hueLabel";
-        hueLabel.Size = new Size(132, 50);
-        hueLabel.TabIndex = 0;
-        hueLabel.Text = "Hue";
-        hueLabel.TextAlign = ContentAlignment.MiddleLeft;
-        // 
-        // hueTrackBar
-        // 
-        hueTrackBar.Dock = DockStyle.Fill;
-        hueTrackBar.FillColor = Color.FromArgb(64, 64, 64);
-        hueTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
-        hueTrackBar.Location = new Point(141, 3);
-        hueTrackBar.MinimumSize = new Size(1, 1);
-        hueTrackBar.Name = "hueTrackBar";
-        hueTrackBar.Size = new Size(271, 44);
-        hueTrackBar.TabIndex = 4;
-        // 
+        //
         // previewPanel
-        // 
+        //
         previewPanel.Dock = DockStyle.Fill;
         previewPanel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         previewPanel.ForeColor = Color.Gray;
-        previewPanel.Location = new Point(488, 55);
-        previewPanel.Margin = new Padding(4, 5, 4, 5);
+        previewPanel.Margin = new Padding(4, 5, 4, 10);
         previewPanel.MinimumSize = new Size(1, 1);
         previewPanel.Name = "previewPanel";
         previewPanel.Padding = new Padding(10);
-        visualTableLayoutPanel.SetRowSpan(previewPanel, 3);
-        previewPanel.Size = new Size(201, 140);
         previewPanel.TabIndex = 13;
-        previewPanel.Text = "color preview";
+        previewPanel.Text = "#000533";
         previewPanel.TextAlignment = ContentAlignment.MiddleCenter;
         // 
         // footerGroupBox
@@ -475,7 +306,6 @@ partial class SettingsForm
         footerGroupBox.Name = "footerGroupBox";
         footerGroupBox.Padding = new Padding(0);
         footerGroupBox.RectSides = ToolStripStatusLabelBorderSides.None;
-        footerGroupBox.Size = new Size(775, 40);
         footerGroupBox.TabIndex = 3;
         footerGroupBox.Text = null;
         footerGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
@@ -598,19 +428,9 @@ partial class SettingsForm
     private Sunny.UI.UIGroupBox generalGroupBox;
     private System.Windows.Forms.FlowLayoutPanel generalFlowPanel;
     private Sunny.UI.UITableLayoutPanel visualTableLayoutPanel;
-    private Sunny.UI.UILabel lightnessValueLabel;
     private Sunny.UI.UILabel opacityValueLabel;
-    private Sunny.UI.UILabel saturationValueLabel;
-    private Sunny.UI.UILabel hueValueLabel;
-    private Sunny.UI.UILabel previewLabel;
-    private Sunny.UI.UITrackBar saturationTrackBar;
     private Sunny.UI.UITrackBar opacityTrackBar;
-    private Sunny.UI.UITrackBar lightnessTrackBar;
     private Sunny.UI.UILabel opacityLabel;
-    private Sunny.UI.UILabel lightnessLabel;
-    private Sunny.UI.UILabel saturationLabel;
-    private Sunny.UI.UILabel hueLabel;
-    private Sunny.UI.UITrackBar hueTrackBar;
     private Sunny.UI.UIPanel previewPanel;
     private Sunny.UI.UIGroupBox footerGroupBox;
     private Sunny.UI.UIButton cancelButton;

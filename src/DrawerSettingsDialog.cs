@@ -48,6 +48,8 @@ internal sealed class DrawerSettingsDialog : Form
         MinimumSize = new Size(500, 310);
         DoubleBuffered = true;
 
+        ConfigureColorDialog(_colorDialog);
+
         ConfigureBrandFont();
         ConfigureLayout(drawer);
         ApplyStyle();
@@ -476,10 +478,8 @@ internal sealed class DrawerSettingsDialog : Form
 
     private void ChooseColorButton_Click(object? sender, EventArgs e)
     {
-        if (_selectedColor is { } current)
-        {
-            _colorDialog.Color = current;
-        }
+        _colorDialog.Color = _selectedColor ?? AppConstants.Defaults.ThemeColor;
+        _colorDialog.CustomColors = GetDrawerDialogCustomColors(_selectedColor, _colorDialog.Color);
 
         if (_colorDialog.ShowDialog(this) == DialogResult.OK)
         {
@@ -502,5 +502,48 @@ internal sealed class DrawerSettingsDialog : Form
         }
 
         _colorPreview.BackColor = ThemePalette.BlendOverlayColor(Color.FromArgb(64, 64, 64), color);
+    }
+
+    private static void ConfigureColorDialog(ColorDialog dialog)
+    {
+        dialog.AllowFullOpen = true;
+        dialog.FullOpen = true;
+        dialog.AnyColor = true;
+        dialog.SolidColorOnly = true;
+    }
+
+    private static int[] GetDrawerDialogCustomColors(Color? selectedColor, Color initialColor)
+    {
+        static int ToDialogColor(Color color) =>
+            color.R | (color.G << 8) | (color.B << 16);
+
+        var colors = new List<int> { ToDialogColor(initialColor) };
+        if (selectedColor is { } selected)
+        {
+            colors.Add(ToDialogColor(selected));
+        }
+        else
+        {
+            colors.Add(ToDialogColor(Color.FromArgb(0, 5, 51)));
+        }
+
+        colors.AddRange(
+        [
+            ToDialogColor(Color.FromArgb(9, 140, 210)),
+            ToDialogColor(Color.FromArgb(64, 64, 64)),
+            ToDialogColor(Color.White),
+            ToDialogColor(Color.Black),
+            ToDialogColor(Color.Red),
+            ToDialogColor(Color.Green),
+            ToDialogColor(Color.Blue),
+            ToDialogColor(Color.Yellow),
+            ToDialogColor(Color.Magenta),
+            ToDialogColor(Color.Cyan),
+            ToDialogColor(Color.Orange),
+            ToDialogColor(Color.Purple),
+            ToDialogColor(Color.LightGray),
+            ToDialogColor(Color.DarkGray)
+        ]);
+        return colors.ToArray();
     }
 }

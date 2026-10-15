@@ -34,7 +34,7 @@ The default build output is under `bin\Debug\net10.0-windows\win-x64\`. `bin/` a
 ### Publish
 
 ```powershell
-dotnet publish .\winDrawer.csproj `
+dotnet publish .\src\winDrawer.csproj `
   -c Release `
   -r win-x64 `
   --self-contained false `

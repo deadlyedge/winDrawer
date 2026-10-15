@@ -9,6 +9,10 @@ internal sealed class ScrollableListView : ListView
     private const int ScrollInfoPage = 0x0002;
     private const int ScrollInfoPosition = 0x0004;
     private const int ScrollInfoMask = ScrollInfoRange | ScrollInfoPage | ScrollInfoPosition;
+    private const int HorizontalScrollBarStyle = 0x00100000;
+    private const int ScrollBarHorizontal = 0;
+    private const int WindowStyleIndex = -16;
+    private const int WindowStyleChangingMessage = 0x007C;
 
     private const int ListViewScrollMessage = 0x1014;
     private const int ListViewInsertItemMessage = 0x1007;
@@ -19,6 +23,7 @@ internal sealed class ScrollableListView : ListView
     private const int ListViewGetItemSpacingMessage = 0x1033;
     private const int ListViewSetItemCountMessage = 0x102F;
     private const int WindowSizeMessage = 0x0005;
+    private const int WindowStyleChangedMessage = 0x007D;
     private const int LeftButtonUpMessage = 0x0202;
     private const int MouseWheelMessage = 0x020A;
     private const int KeyDownMessage = 0x0100;
@@ -31,10 +36,34 @@ internal sealed class ScrollableListView : ListView
 
     public event EventHandler? ViewportChanged;
 
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var parameters = base.CreateParams;
+            parameters.Style &= ~HorizontalScrollBarStyle;
+            return parameters;
+        }
+    }
+
     protected override void WndProc(ref Message m)
     {
         var message = m.Msg;
+        if (message == WindowStyleChangingMessage &&
+            m.WParam.ToInt32() == WindowStyleIndex &&
+            m.LParam != IntPtr.Zero)
+        {
+            var proposedStyle = Marshal.ReadInt32(m.LParam, sizeof(int));
+            Marshal.WriteInt32(m.LParam, sizeof(int), proposedStyle & ~HorizontalScrollBarStyle);
+        }
+
         base.WndProc(ref m);
+
+        if (message is WindowSizeMessage or WindowStyleChangedMessage or ListViewInsertItemMessage or
+            ListViewDeleteItemMessage or ListViewDeleteAllItemsMessage or ListViewSetItemCountMessage)
+        {
+            ShowScrollBar(Handle, ScrollBarHorizontal, false);
+        }
 
         if (message is WindowSizeMessage or ListViewInsertItemMessage or ListViewDeleteItemMessage or
             ListViewDeleteAllItemsMessage or ListViewSetItemCountMessage)
@@ -207,6 +236,10 @@ internal sealed class ScrollableListView : ListView
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetScrollInfo(IntPtr windowHandle, int bar, ref NativeScrollInfo scrollInfo);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ShowScrollBar(IntPtr windowHandle, int bar, [MarshalAs(UnmanagedType.Bool)] bool show);
 
     [DllImport("user32.dll", EntryPoint = "SendMessageW", SetLastError = true)]
     private static extern IntPtr SendMessage(IntPtr windowHandle, int message, IntPtr wParam, IntPtr lParam);

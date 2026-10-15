@@ -4,7 +4,7 @@
 >
 > 历史目标：把 winDrawer 收敛为一个易懂、可维护的 Windows 文件夹快捷入口，保留常见图片缩略图和当时的 HSLA 主题调色功能；停止投入任意图标尺寸调优。后续主题要求见下方更新说明。
 >
-> **后续主题要求更新：** 本文中保留 H/S/L、HSLA 控件及 `window_color_hsla` 的规定是阶段 0–4 的历史需求/验收记录，不代表后续功能要求；它们已被 [`NEXT_DEVELOPMENT_PLAN.md`](NEXT_DEVELOPMENT_PLAN.md) 中的新需求取代。后续实现以新计划为准：主题设置只保留可点击颜色预览和独立透明度滑块，颜色用 `#RRGGBB` 保存，透明度单独保存，并迁移现有 HSLA 用户设置。
+> **后续主题要求更新：** 本文中保留 H/S/L、HSLA 控件及 `window_color_hsla` 的规定是阶段 0–4 的历史需求/验收记录，不代表后续功能要求；它们已被 [`NEXT_DEVELOPMENT_PLAN.md`](NEXT_DEVELOPMENT_PLAN.md) 中的新需求取代。后续实现以新计划为准：主题设置只保留可点击颜色预览和独立透明度滑块，颜色用 `#RRGGBB` 保存，透明度单独保存。本项目尚未发布，不实现 HSLA 运行时迁移。
 
 ## 1. 已确认的产品行为
 
@@ -120,7 +120,7 @@ TrayController.cs                  可选：托盘生命周期
 
 1. 简化 SettingsRepository 的职责与代码；设置只在用户有明确变更时保存。
 2. 验证缺字段、错误类型、损坏 TOML、无效/重复路径和目录不存在等情况。
-3. 暂缓旧配置自动迁移。当前设置文件使用 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；不自动读取、复制、移动或删除程序目录中的旧设置。
+3. **历史阶段约定：** 当时暂缓旧配置自动迁移，设置文件使用 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`。本项目尚未发布，当前 schema 调整以 `NEXT_DEVELOPMENT_PLAN.md` 为准；不搜索、复制、移动其它目录中的设置文件。
 4. 将新日志写入 `%USERPROFILE%\.config\winDrawer\Drawer.log`，与用户配置放在同一目录；暂不迁移程序目录中的旧日志。日志目录创建或写入失败均不得阻止应用启动。
 5. **阶段 3 历史文档要求（主题字段已被后续计划取代）：** 当时配置文档说明 HSLA 控件与 `window_color_hsla` 的对应关系。后续字段变更、迁移与设置 UI 以 `NEXT_DEVELOPMENT_PLAN.md` 为准。
 

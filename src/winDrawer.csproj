@@ -20,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\Drawer-settings.toml">
+      <LogicalName>winDrawer.DefaultSettings.toml</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\assets\drawer.icon.4.ico">
       <LogicalName>winDrawer.drawer.icon.4.ico</LogicalName>
     </EmbeddedResource>

@@ -65,8 +65,8 @@ public partial class SettingsForm : UIForm
         lightnessTrackBar.Minimum = AppConstants.Theme.LightnessMin;
         lightnessTrackBar.Maximum = AppConstants.Theme.LightnessMax;
 
-        opacityTrackBar.Minimum = AppConstants.Theme.AlphaMin;
-        opacityTrackBar.Maximum = AppConstants.Theme.AlphaMax;
+        opacityTrackBar.Minimum = AppConstants.Theme.OpacityMin;
+        opacityTrackBar.Maximum = AppConstants.Theme.OpacityMax;
         windowHeightTrackBar.Minimum = AppConstants.Defaults.MainWindowHeightMin;
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
@@ -123,10 +123,11 @@ public partial class SettingsForm : UIForm
             windowHeightTrackBar.Maximum);
         UpdateWindowHeightValueLabel();
 
-        hueTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeHue, hueTrackBar.Minimum, hueTrackBar.Maximum);
-        saturationTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeSaturation, saturationTrackBar.Minimum, saturationTrackBar.Maximum);
-        lightnessTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeLightness, lightnessTrackBar.Minimum, lightnessTrackBar.Maximum);
-        opacityTrackBar.Value = Math.Clamp(_workingSnapshot.ThemeAlpha, opacityTrackBar.Minimum, opacityTrackBar.Maximum);
+        var (hue, saturation, lightness) = ThemePalette.ToHsl(_workingSnapshot.WindowColor);
+        hueTrackBar.Value = Math.Clamp(hue, hueTrackBar.Minimum, hueTrackBar.Maximum);
+        saturationTrackBar.Value = Math.Clamp(saturation, saturationTrackBar.Minimum, saturationTrackBar.Maximum);
+        lightnessTrackBar.Value = Math.Clamp(lightness, lightnessTrackBar.Minimum, lightnessTrackBar.Maximum);
+        opacityTrackBar.Value = Math.Clamp(_workingSnapshot.WindowOpacity, opacityTrackBar.Minimum, opacityTrackBar.Maximum);
 
         UpdateValueLabels();
     }
@@ -153,10 +154,11 @@ public partial class SettingsForm : UIForm
 
     private void OnThemeTrackValueChanged(object? sender, EventArgs e)
     {
-        _workingSnapshot.ThemeHue = hueTrackBar.Value;
-        _workingSnapshot.ThemeSaturation = saturationTrackBar.Value;
-        _workingSnapshot.ThemeLightness = lightnessTrackBar.Value;
-        _workingSnapshot.ThemeAlpha = opacityTrackBar.Value;
+        _workingSnapshot.WindowColor = ThemePalette.ColorFromHsl(
+            hueTrackBar.Value,
+            saturationTrackBar.Value,
+            lightnessTrackBar.Value);
+        _workingSnapshot.WindowOpacity = opacityTrackBar.Value;
 
         UpdateValueLabels();
         UpdatePreview();

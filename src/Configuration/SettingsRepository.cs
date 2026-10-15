@@ -1,4 +1,3 @@
-using System.Globalization;
 using Tomlyn;
 using Tomlyn.Model;
 using Tomlyn.Serialization;
@@ -59,8 +58,8 @@ internal sealed class SettingsRepository : IDisposable
             startup["icon_size"] = snapshot.IconSize;
             startup["window_height"] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
             startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
-            startup["window_color_hsla"] = new TomlArray { snapshot.ThemeHue, snapshot.ThemeSaturation, snapshot.ThemeLightness, snapshot.ThemeAlpha };
-
+            startup["window_color"] = ThemePalette.FormatHexColor(snapshot.WindowColor);
+            startup["window_opacity"] = Math.Clamp(snapshot.WindowOpacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax);
             // Mark dirty and signal background writer
             _dirty = true;
         }
@@ -221,12 +220,7 @@ internal sealed class SettingsRepository : IDisposable
                 return false;
             }
 
-            var rawCount = value switch
-            {
-                TomlTableArray tableArray => tableArray.Count,
-                TomlArray array => array.Count,
-                _ => -1
-            };
+            var rawCount = value is TomlTableArray existingTableArray ? existingTableArray.Count : -1;
             if (rawCount != drawers.Count || orderedPaths.Count != drawers.Count)
             {
                 error = $"The drawer list contains invalid entries (raw={rawCount}, valid={drawers.Count}, requested={orderedPaths.Count}); reordering was cancelled to preserve the configuration.";
@@ -258,25 +252,16 @@ internal sealed class SettingsRepository : IDisposable
                 reordered.Add(entry);
             }
 
-            switch (value)
+            if (value is not TomlTableArray tableArray)
             {
-                case TomlTableArray tableArray:
-                    tableArray.Clear();
-                    foreach (var entry in reordered)
-                    {
-                        tableArray.Add(entry);
-                    }
-                    break;
-                case TomlArray array:
-                    array.Clear();
-                    foreach (var entry in reordered)
-                    {
-                        array.Add(entry);
-                    }
-                    break;
-                default:
-                    error = "The drawer configuration format is unsupported.";
-                    return false;
+                error = "The drawer configuration format is unsupported.";
+                return false;
+            }
+
+            tableArray.Clear();
+            foreach (var entry in reordered)
+            {
+                tableArray.Add(entry);
             }
 
             _dirty = true;
@@ -288,12 +273,7 @@ internal sealed class SettingsRepository : IDisposable
 
     private static bool RemoveDrawerEntry(object? collection, TomlTable entry)
     {
-        return collection switch
-        {
-            TomlTableArray tableArray => tableArray.Remove(entry),
-            TomlArray array => array.Remove(entry),
-            _ => false
-        };
+        return collection is TomlTableArray tableArray && tableArray.Remove(entry);
     }
 
     private void SignalSettingsWrite(string reason)
@@ -416,12 +396,6 @@ internal sealed class SettingsRepository : IDisposable
     /// </summary>
     public void Save()
     {
-        var directory = Path.GetDirectoryName(_settingsPath);
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
         string content;
         lock (_writeLock)
         {
@@ -429,7 +403,7 @@ internal sealed class SettingsRepository : IDisposable
         }
 
         DrawerLogger.LogInformation("Performing synchronous settings save.");
-        File.WriteAllText(_settingsPath, content);
+        WriteSettingsContent(_settingsPath, content);
         DrawerLogger.LogInformation("Synchronous settings save completed.");
     }
 
@@ -451,13 +425,7 @@ internal sealed class SettingsRepository : IDisposable
 
             try
             {
-                var directory = Path.GetDirectoryName(_settingsPath);
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                File.WriteAllText(_settingsPath, content);
+                WriteSettingsContent(_settingsPath, content);
                 return true;
             }
             catch (Exception ex)
@@ -538,14 +506,7 @@ internal sealed class SettingsRepository : IDisposable
                             }
                         }
 
-                        // write asynchronously
-                        var directory = Path.GetDirectoryName(_settingsPath);
-                        if (!string.IsNullOrEmpty(directory))
-                        {
-                            Directory.CreateDirectory(directory);
-                        }
-
-                        await File.WriteAllTextAsync(_settingsPath, content, token);
+                        await WriteSettingsContentAsync(_settingsPath, content, token);
                         DrawerLogger.LogInformation("Background settings write completed.");
                         lock (_writeLock)
                         {
@@ -616,13 +577,7 @@ internal sealed class SettingsRepository : IDisposable
                         content = SerializeSettings(_root);
                     }
 
-                    var directory = Path.GetDirectoryName(_settingsPath);
-                    if (!string.IsNullOrEmpty(directory))
-                    {
-                        Directory.CreateDirectory(directory);
-                    }
-
-                    File.WriteAllText(_settingsPath, content);
+                    WriteSettingsContent(_settingsPath, content);
                     DrawerLogger.LogInformation("Final settings flush completed.");
                 }
                 catch (Exception ex)
@@ -658,8 +613,8 @@ internal sealed class SettingsRepository : IDisposable
     {
         if (!File.Exists(path))
         {
-            DrawerLogger.LogInformation($"Settings file not found. Creating defaults at '{path}'.");
-            var table = CreateDefaultTable();
+            DrawerLogger.LogInformation($"Settings file not found. Initializing from embedded defaults at '{path}'.");
+            var table = LoadEmbeddedDefaultTable();
             WriteTable(path, table);
             return table;
         }
@@ -677,7 +632,21 @@ internal sealed class SettingsRepository : IDisposable
         }
     }
 
+    private static TomlTable LoadEmbeddedDefaultTable()
+    {
+        using var stream = typeof(SettingsRepository).Assembly.GetManifestResourceStream("winDrawer.DefaultSettings.toml")
+            ?? throw new InvalidOperationException("The embedded default settings template is missing.");
+        using var reader = new StreamReader(stream);
+        var settings = TomlSerializer.Deserialize<TomlTable>(reader.ReadToEnd());
+        return settings ?? throw new InvalidDataException("The embedded default settings template is empty.");
+    }
+
     private void WriteTable(string path, TomlTable table)
+    {
+        WriteSettingsContent(path, SerializeSettings(table));
+    }
+
+    private static void WriteSettingsContent(string path, string content)
     {
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(directory))
@@ -685,8 +654,45 @@ internal sealed class SettingsRepository : IDisposable
             Directory.CreateDirectory(directory);
         }
 
-        DrawerLogger.LogInformation($"Writing settings table to '{path}'.");
-        File.WriteAllText(path, SerializeSettings(table));
+        var outputDirectory = string.IsNullOrEmpty(directory) ? Environment.CurrentDirectory : directory;
+        var temporaryPath = Path.Combine(outputDirectory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            File.WriteAllText(temporaryPath, content);
+            File.Move(temporaryPath, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
+    private static async Task WriteSettingsContentAsync(string path, string content, CancellationToken token)
+    {
+        var directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var outputDirectory = string.IsNullOrEmpty(directory) ? Environment.CurrentDirectory : directory;
+        var temporaryPath = Path.Combine(outputDirectory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, content, token);
+            token.ThrowIfCancellationRequested();
+            File.Move(temporaryPath, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
     }
 
     private string SerializeSettings(TomlTable root)
@@ -700,15 +706,6 @@ internal sealed class SettingsRepository : IDisposable
             {
                 case TomlTableArray tableArray:
                     orderedRoot["drawers"] = CreateDrawerTableArray(tableArray, metadataStore);
-                    break;
-                case TomlArray array when array.All(entry => entry is TomlTable):
-                    var drawerTables = new TomlTableArray();
-                    foreach (var drawer in array.Cast<TomlTable>())
-                    {
-                        drawerTables.Add(CreateDrawerTable(drawer, metadataStore));
-                    }
-
-                    orderedRoot["drawers"] = drawerTables;
                     break;
                 default:
                     orderedRoot["drawers"] = drawers;
@@ -813,29 +810,6 @@ internal sealed class SettingsRepository : IDisposable
         metadataStore.SetProperties(table, metadata);
     }
 
-    private static TomlTable CreateDefaultTable()
-    {
-        return new TomlTable
-        {
-            ["startup"] = new TomlTable
-            {
-                ["start_with_windows"] = false,
-                ["window_locked"] = false,
-                ["icon_size"] = AppConstants.Defaults.IconSizeDefault,
-                ["window_height"] = AppConstants.Defaults.MainWindowHeightDefault,
-                ["window_position"] = new TomlArray { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y },
-                ["window_color_hsla"] = new TomlArray
-                {
-                    AppConstants.Defaults.ThemeHue,
-                    AppConstants.Defaults.ThemeSaturation,
-                    AppConstants.Defaults.ThemeLightness,
-                    AppConstants.Defaults.ThemeAlpha
-                }
-            },
-            ["drawers"] = new TomlTableArray()
-        };
-    }
-
     private static TomlTable EnsureTable(TomlTable root, string key)
     {
         if (root.TryGetValue(key, out var existing) && existing is TomlTable existingTable)
@@ -867,28 +841,18 @@ internal sealed class SettingsRepository : IDisposable
             return false;
         }
 
-        switch (value)
+        if (value is not TomlTableArray tableArray)
         {
-            case TomlTableArray tableArray:
-                drawers.AddRange(tableArray);
-                return true;
-            case TomlArray array:
-                drawers.AddRange(array.OfType<TomlTable>());
-                return true;
-            default:
-                return false;
+            return false;
         }
+
+        drawers.AddRange(tableArray);
+        return true;
     }
 
     private static void AddDrawerEntry(TomlTable root, TomlTable drawer)
     {
-        if (root.TryGetValue("drawers", out var value) && value is TomlArray array)
-        {
-            array.Add(drawer);
-            return;
-        }
-
-        if (value is TomlTableArray tableArray)
+        if (root.TryGetValue("drawers", out var value) && value is TomlTableArray tableArray)
         {
             tableArray.Add(drawer);
             return;
@@ -904,11 +868,7 @@ internal sealed class SettingsRepository : IDisposable
             return fallback;
         }
 
-        return value switch
-        {
-            string s => s,
-            _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? fallback
-        };
+        return value is string text ? text : fallback;
     }
 
 
@@ -930,10 +890,8 @@ internal sealed class SettingsRepository : IDisposable
 public sealed class SettingsSnapshot(
     bool startWithWindows,
     bool windowLocked,
-    int themeHue,
-    int themeSaturation,
-    int themeLightness,
-    int themeAlpha,
+    Color windowColor,
+    int windowOpacity,
     Point windowPosition,
     int iconSize,
     IEnumerable<DrawerDefinition>? drawers = null,
@@ -945,10 +903,8 @@ public sealed class SettingsSnapshot(
 
     public bool StartWithWindows { get; set; } = startWithWindows;
     public bool WindowLocked { get; set; } = windowLocked;
-    public int ThemeHue { get; set; } = themeHue;
-    public int ThemeSaturation { get; set; } = themeSaturation;
-    public int ThemeLightness { get; set; } = themeLightness;
-    public int ThemeAlpha { get; set; } = themeAlpha;
+    public Color WindowColor { get; set; } = Color.FromArgb(windowColor.R, windowColor.G, windowColor.B);
+    public int WindowOpacity { get; set; } = Math.Clamp(windowOpacity, 0, 100);
     public Point WindowPosition { get; set; } = windowPosition;
     public int IconSize { get; set; } = iconSize;
     public int WindowHeight { get; set; } = Math.Clamp(windowHeight, winDrawer.AppConstants.Defaults.MainWindowHeightMin, winDrawer.AppConstants.Defaults.MainWindowHeightMax);
@@ -956,7 +912,7 @@ public sealed class SettingsSnapshot(
 
     public ThemePalette BuildThemePalette()
     {
-        return ThemePalette.FromHsla(ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha);
+        return ThemePalette.FromColor(WindowColor, WindowOpacity);
     }
 
     public Color GetAccentColor()
@@ -966,17 +922,26 @@ public sealed class SettingsSnapshot(
 
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, ThemeHue, ThemeSaturation, ThemeLightness, ThemeAlpha, WindowPosition, IconSize, _drawers, WindowHeight);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, WindowColor, WindowOpacity, WindowPosition, IconSize, _drawers, WindowHeight);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
     {
-        if (!table.TryGetValue(key, out var value) || value is not TomlArray arr)
+        if (!table.TryGetValue(key, out var value) || value is not TomlArray array || array.Count != fallback.Length)
         {
-            return fallback;
+            return (int[])fallback.Clone();
         }
 
-        return arr.Cast<object>().Select(v => Convert.ToInt32(v)).ToArray();
+        var result = new int[fallback.Length];
+        for (var index = 0; index < array.Count; index++)
+        {
+            if (!TryGetInteger(array[index], out result[index]))
+            {
+                return (int[])fallback.Clone();
+            }
+        }
+
+        return result;
     }
 
     internal static SettingsSnapshot FromModel(TomlTable root)
@@ -984,50 +949,29 @@ public sealed class SettingsSnapshot(
         var startup = root.TryGetValue("startup", out var startupObj) && startupObj is TomlTable st
             ? st
             : new TomlTable();
-        var drawers = root.TryGetValue("drawers", out var drawersObj)
-            ? drawersObj switch
-            {
-                TomlTableArray drawerArray => ParseDrawers(drawerArray),
-                TomlArray drawerArray => ParseDrawers(drawerArray),
-                _ => []
-            }
+        var drawers = root.TryGetValue("drawers", out var drawersObj) && drawersObj is TomlTableArray drawerArray
+            ? ParseDrawers(drawerArray)
             : [];
 
         var iconSize = GetInt(startup, "icon_size", AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax, AppConstants.Defaults.IconSizeDefault);
         var windowHeight = GetInt(startup, "window_height", AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);
         var windowPositionArray = GetIntArray(startup, "window_position", new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
-        var windowColorHsla = GetIntArray(startup, "window_color_hsla", new int[]
-        {
-            AppConstants.Defaults.ThemeHue,
-            AppConstants.Defaults.ThemeSaturation,
-            AppConstants.Defaults.ThemeLightness,
-            AppConstants.Defaults.ThemeAlpha
-        });
+        var windowColor = ThemePalette.TryParseHexColor(GetString(startup, "window_color"), out var parsedColor)
+            ? parsedColor
+            : AppConstants.Defaults.ThemeColor;
 
         return new SettingsSnapshot(
             startWithWindows: GetBoolean(startup, "start_with_windows"),
             windowLocked: GetBoolean(startup, "window_locked"),
-            themeHue: windowColorHsla.Length > 0 ? Math.Clamp(windowColorHsla[0], AppConstants.Theme.HueMin, AppConstants.Theme.HueMax) : AppConstants.Defaults.ThemeHue,
-            themeSaturation: windowColorHsla.Length > 1 ? Math.Clamp(windowColorHsla[1], AppConstants.Theme.SaturationMin, AppConstants.Theme.SaturationMax) : AppConstants.Defaults.ThemeSaturation,
-            themeLightness: windowColorHsla.Length > 2 ? Math.Clamp(windowColorHsla[2], AppConstants.Theme.LightnessMin, AppConstants.Theme.LightnessMax) : AppConstants.Defaults.ThemeLightness,
-            themeAlpha: windowColorHsla.Length > 3 ? Math.Clamp(windowColorHsla[3], AppConstants.Theme.AlphaMin, AppConstants.Theme.AlphaMax) : AppConstants.Defaults.ThemeAlpha,
+            windowColor: windowColor,
+            windowOpacity: GetInt(startup, "window_opacity", AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax, AppConstants.Defaults.ThemeOpacity),
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
             iconSize: iconSize,
             drawers: drawers,
             windowHeight: windowHeight);
     }
 
-    private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray tableArray)
-    {
-        return ParseDrawers(tableArray.Cast<object>());
-    }
-
-    private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlArray array)
-    {
-        return ParseDrawers(array.Cast<object>());
-    }
-
-    private static IReadOnlyList<DrawerDefinition> ParseDrawers(IEnumerable<object> entries)
+    private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray entries)
     {
         var results = new List<DrawerDefinition>();
 
@@ -1071,40 +1015,14 @@ public sealed class SettingsSnapshot(
 
     private static Color? ParseOverlayColor(TomlTable drawerTable)
     {
-        var value = GetString(drawerTable, "overlay_color").Trim();
-        if (value.Length != 7 || value[0] != '#' ||
-            !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rgb))
-        {
-            if (value.Length == 9 && value[0] == '#' &&
-                uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var oldArgb))
-            {
-                rgb = oldArgb & 0x00FFFFFF;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        return Color.FromArgb(179, (int)((rgb >> 16) & 0xFF), (int)((rgb >> 8) & 0xFF), (int)(rgb & 0xFF));
+        return ThemePalette.TryParseHexColor(GetString(drawerTable, "overlay_color"), out var color)
+            ? Color.FromArgb(179, color.R, color.G, color.B)
+            : null;
     }
 
     private static bool GetBoolean(TomlTable table, string key, bool fallback = false)
     {
-        if (table.TryGetValue(key, out var value))
-        {
-            if (value is bool b)
-            {
-                return b;
-            }
-
-            if (value is string s && bool.TryParse(s, out var result))
-            {
-                return result;
-            }
-        }
-
-        return fallback;
+        return table.TryGetValue(key, out var value) && value is bool boolean ? boolean : fallback;
     }
 
     private static int GetInt(TomlTable table, string key, int min, int max, int fallback)
@@ -1115,12 +1033,8 @@ public sealed class SettingsSnapshot(
             {
                 case int i:
                     return Math.Clamp(i, min, max);
-                case long l:
+                case long l when l >= int.MinValue && l <= int.MaxValue:
                     return Math.Clamp((int)l, min, max);
-                case double d:
-                    return Math.Clamp((int)Math.Round(d, MidpointRounding.AwayFromZero), min, max);
-                case string s when int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed):
-                    return Math.Clamp(parsed, min, max);
             }
         }
 
@@ -1150,11 +1064,7 @@ public sealed class SettingsSnapshot(
             return fallback;
         }
 
-        return value switch
-        {
-            string s => s,
-            _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? fallback
-        };
+        return value is string text ? text : fallback;
     }
 
 }

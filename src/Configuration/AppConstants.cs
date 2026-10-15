@@ -47,10 +47,8 @@ internal static class AppConstants
         public const int MainWindowHeightMax = 1000;
         public const int MainWindowHeightDefault = 200;
         public const int MainWindowWidth = 200;
-        public const int ThemeHue = 194;
-        public const int ThemeSaturation = 100;
-        public const int ThemeLightness = 41;
-        public const int ThemeAlpha = 60;
+        public static readonly Color ThemeColor = Color.FromArgb(0, 5, 51);
+        public const int ThemeOpacity = 95;
         public const float LogoFontSize = 14f;
     }
 
@@ -62,8 +60,8 @@ internal static class AppConstants
         public const int SaturationMax = 100;
         public const int LightnessMin = 0;
         public const int LightnessMax = 100;
-        public const int AlphaMin = 0;
-        public const int AlphaMax = 100;
+        public const int OpacityMin = 0;
+        public const int OpacityMax = 100;
     }
 
     internal static class Ui

@@ -6,7 +6,7 @@ winDrawer is a small Windows Forms utility for keeping frequently used folders c
 
 - **Folder shortcuts** – Open configured folders and browse direct child items in a Windows `ListView`.
 - **Image thumbnails** – JPG/JPEG and PNG thumbnails appear as list icons; other items use Windows Shell icons.
-- **Live theming** – Adjust hue, saturation, lightness and opacity using the existing HSLA controls and preview changes before saving.
+- **Live theming** – Adjust the theme color and window opacity, and preview changes before saving.
 - **Adjustable main window** – Set the main window height; the drawer list uses the remaining area and scrolls naturally.
 - **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
 - **Windows login startup** – Optionally register the app to start for the current user.
@@ -69,7 +69,7 @@ The main window launches without a border and can be dragged by its header. Sele
 
 ## Configuration
 
-- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, window height and position, HSLA theme values, and drawer data. Old settings files are not automatically migrated, read, copied, or removed. Back up and manually merge old settings if needed. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
+- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, window height and position, the `#RRGGBB` theme color, separate window opacity, and drawer data. The project is not yet released and does not migrate legacy HSLA settings. A missing user settings file is initialized from the embedded root `Drawer-settings.toml` template. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
 - **Assets** – Icons and fonts live under `assets\`. The application expects:
   - `assets\drawer.icon.4.ico` for the window and tray icon.
   - `assets\fonts\Lobster-Regular.ttf` for the logo.
@@ -78,7 +78,7 @@ The main window launches without a border and can be dragged by its header. Sele
 ### Managing folders and settings
 
 1. Use **Add Drawer** to add a frequently used folder; use the existing remove action to remove a shortcut.
-2. In settings, adjust the existing Hue, Saturation, Lightness, and Alpha controls; changes preview live and can be saved or cancelled.
+2. In settings, adjust the theme color and window opacity; changes preview live and can be saved or cancelled.
 3. Adjust **window height** to resize the main window. The drawer list scrolls to keep every configured folder available.
 4. Enable **Start with windows** to register startup for the current Windows user.
 5. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
@@ -90,7 +90,7 @@ The main window launches without a border and can be dragged by its header. Sele
 - `DrawerWindow.cs` – Presentation of drawer contents, thumbnail generation, and theme application.
 - `SettingsForm.cs` – Modeless settings panel with live theme preview.
 - `Configuration/SettingsRepository.cs` – Handles reading/writing `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
-- `Theming/ThemePalette.cs` – Calculates derived colours from HSLA input.
+- `Theming/ThemePalette.cs` – Parses RGB hex colors and calculates the derived theme palette.
 - `AppConstants.cs` – Central store for shared constants (file names, UI dimensions, defaults).
 - `DrawerLogger.cs` – File-backed logger with debugger mirroring.
 - `TrayController.cs` – Encapsulates NotifyIcon setup and lifecycle.

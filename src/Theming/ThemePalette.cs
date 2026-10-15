@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace winDrawer.Theming;
 
 /// <summary>
@@ -43,12 +45,56 @@ public sealed class ThemePalette
     public Color TextSecondary { get; }
     public double WindowOpacity { get; }
 
-    public static ThemePalette FromHsla(int hue, int saturation, int lightness, int alpha)
+    public static ThemePalette FromColor(Color color, int opacity)
+    {
+        var (hue, saturation, lightness) = ToHsl(color);
+        return CreatePalette(hue, saturation / 100f, lightness / 100f, Math.Clamp(opacity, 0, 100) / 100d);
+    }
+
+    public static (int Hue, int Saturation, int Lightness) ToHsl(Color color)
+    {
+        return (
+            Math.Clamp((int)Math.Round(color.GetHue(), MidpointRounding.AwayFromZero), 0, 360),
+            Math.Clamp((int)Math.Round(color.GetSaturation() * 100, MidpointRounding.AwayFromZero), 0, 100),
+            Math.Clamp((int)Math.Round(color.GetBrightness() * 100, MidpointRounding.AwayFromZero), 0, 100));
+    }
+
+    public static Color ColorFromHsl(int hue, int saturation, int lightness)
+    {
+        return FromHslInternal(
+            Math.Clamp(hue, 0, 360),
+            Math.Clamp(saturation, 0, 100) / 100f,
+            Math.Clamp(lightness, 0, 100) / 100f,
+            1f);
+    }
+
+    public static bool TryParseHexColor(string? value, out Color color)
+    {
+        color = Color.Empty;
+        if (value is not { Length: 7 } || value[0] != '#' ||
+            !uint.TryParse(value.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rgb))
+        {
+            return false;
+        }
+
+        color = Color.FromArgb(
+            (int)((rgb >> 16) & 0xFF),
+            (int)((rgb >> 8) & 0xFF),
+            (int)(rgb & 0xFF));
+        return true;
+    }
+
+    public static string FormatHexColor(Color color)
+    {
+        return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+    }
+
+    private static ThemePalette CreatePalette(int hue, float saturation, float lightness, double opacity)
     {
         var clampedHue = Math.Clamp(hue, 0, 360);
-        var clampedSaturation = Math.Clamp(saturation, 0, 100) / 100f;
-        var clampedLightness = Math.Clamp(lightness, 0, 100) / 100f;
-        var clampedAlpha = Math.Clamp(alpha, 0, 100) / 100d;
+        var clampedSaturation = Math.Clamp(saturation, 0f, 1f);
+        var clampedLightness = Math.Clamp(lightness, 0f, 1f);
+        opacity = Math.Clamp(opacity, 0d, 1d);
 
         const float borderOffset = -0.18f;
         const float hoverOffset = 0.12f;
@@ -62,24 +108,22 @@ public sealed class ThemePalette
         var contentLightness = AdjustLightness(clampedLightness, contentOffset);
         var cardLightness = AdjustLightness(clampedLightness, cardOffset);
 
-        var accent = FromHslaInternal(clampedHue, clampedSaturation, accentLightness, 1f);
-        var accentHover = FromHslaInternal(clampedHue, clampedSaturation, hoverLightness, 1f);
-        var accentPressed = FromHslaInternal(clampedHue, clampedSaturation, accentPressedLightness, 1f);
+        var accent = FromHslInternal(clampedHue, clampedSaturation, accentLightness, 1f);
+        var accentHover = FromHslInternal(clampedHue, clampedSaturation, hoverLightness, 1f);
+        var accentPressed = FromHslInternal(clampedHue, clampedSaturation, accentPressedLightness, 1f);
         var border = Color.FromArgb(255, accent.R, accent.G, accent.B);
 
         // Reduce saturation for backgrounds to avoid overly vibrant panels.
         var backgroundSaturation = Math.Clamp(clampedSaturation * 0.35f, 0f, 1f);
         var contentSaturation = Math.Clamp(clampedSaturation * 0.25f, 0f, 1f);
 
-        var windowBackground = FromHslaInternal(clampedHue, backgroundSaturation, contentLightness, 1f);
-        var contentBackground = FromHslaInternal(clampedHue, backgroundSaturation, hoverLightness, 1f);
-        var cardBackground = FromHslaInternal(clampedHue, contentSaturation, cardLightness, 1f);
+        var windowBackground = FromHslInternal(clampedHue, backgroundSaturation, contentLightness, 1f);
+        var contentBackground = FromHslInternal(clampedHue, backgroundSaturation, hoverLightness, 1f);
+        var cardBackground = FromHslInternal(clampedHue, contentSaturation, cardLightness, 1f);
 
         var textPrimary = GetReadableTextColor(windowBackground);
         var textSecondary = Blend(textPrimary, windowBackground, 0.35f);
         var accentText = GetReadableTextColor(accent);
-
-        var opacity = Math.Clamp(clampedAlpha, 0.05d, 1d);
 
         return new ThemePalette(
             accent,
@@ -93,15 +137,6 @@ public sealed class ThemePalette
             textPrimary,
             textSecondary,
             opacity);
-    }
-
-    public static Color FromHsla(int hue, float saturation, float lightness, float alpha)
-    {
-        return FromHslaInternal(
-            Math.Clamp(hue, 0, 360),
-            Math.Clamp(saturation, 0f, 1f),
-            Math.Clamp(lightness, 0f, 1f),
-            Math.Clamp(alpha, 0f, 1f));
     }
 
     internal static Color BlendOverlayColor(Color background, Color overlay)
@@ -118,7 +153,7 @@ public sealed class ThemePalette
         return Math.Clamp(value + delta, 0f, 1f);
     }
 
-    private static Color FromHslaInternal(int hue, float saturation, float lightness, float alpha)
+    private static Color FromHslInternal(int hue, float saturation, float lightness, float alpha)
     {
         if (Math.Abs(saturation) < 0.0001f)
         {

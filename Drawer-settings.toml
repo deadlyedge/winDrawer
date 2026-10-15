@@ -4,5 +4,6 @@
 start_with_windows = false
 window_locked = false
 window_position = [109, 13]
-window_color_hsla = [234, 100, 10, 95]
+window_color = "#000533"
+window_opacity = 95
 window_height = 200

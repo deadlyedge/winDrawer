@@ -57,7 +57,11 @@ namespace winDrawer
             drawerImageList.ImageSize = GetImageSize(DeviceDpi);
             drawerContentsListView.LargeImageList = drawerImageList;
             drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
+            drawerContentsListView.ViewportChanged += DrawerContentsListView_ViewportChanged;
+            drawerContentsScrollBar.ValueChanged += DrawerContentsScrollBar_ValueChanged;
+            drawerContentsHostPanel.Resize += DrawerContentsHostPanel_Resize;
             DpiChanged += DrawerWindow_DpiChanged;
+            UpdateDrawerScrollBarDpi(DeviceDpi);
 
             UpdateStandardFolderIcon(DeviceDpi);
             drawerPathTableLayoutPanel.Click += OpenFolderButton_Click;
@@ -104,6 +108,12 @@ namespace winDrawer
 
             drawerContentsListView.BackColor = contentBackground;
             drawerContentsListView.ForeColor = _theme.TextPrimary;
+            drawerContentsScrollBar.FillColor = contentBackground;
+            drawerContentsScrollBar.FillWidth = Math.Max(6, (int)Math.Round(10 * DeviceDpi / 96d));
+            drawerContentsScrollBar.ForeColor = _theme.Border;
+            drawerContentsScrollBar.HoverColor = _theme.Border;
+            drawerContentsScrollBar.PressColor = _theme.Border;
+            SynchronizeDrawerScrollBar();
 
             fullPathLabel.ForeColor = _theme.TextSecondary;
             fullPathLabel.BackColor = Color.Transparent;
@@ -129,10 +139,72 @@ namespace winDrawer
         private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
         {
             UpdateStandardFolderIcon(e.DeviceDpiNew);
+            UpdateDrawerScrollBarDpi(e.DeviceDpiNew);
             CancelFileListLoad();
             ClearFileList();
             drawerImageList.ImageSize = GetImageSize(e.DeviceDpiNew);
             _ = PopulateFileListAsync();
+        }
+
+        private void UpdateDrawerScrollBarDpi(int dpi)
+        {
+            var scale = Math.Max(1, dpi) / 96f;
+            drawerContentsScrollBar.FillWidth = Math.Max(6, (int)Math.Round(10 * scale));
+            drawerContentsScrollBar.Width = Math.Max(18, (int)Math.Round(18 * scale));
+            drawerContentsScrollBar.AccessibleName = "Scroll folder contents";
+            drawerContentsScrollBar.AccessibleRole = AccessibleRole.ScrollBar;
+            PositionDrawerScrollBar();
+        }
+
+        private void PositionDrawerScrollBar()
+        {
+            if (!drawerContentsListView.IsHandleCreated)
+            {
+                return;
+            }
+
+            var scrollBarWidth = drawerContentsScrollBar.Width;
+            var viewportWidth = Math.Max(1, drawerContentsHostPanel.ClientSize.Width - scrollBarWidth);
+            drawerContentsListView.SetBounds(0, 0, drawerContentsHostPanel.ClientSize.Width, drawerContentsHostPanel.ClientSize.Height);
+            drawerContentsScrollBar.SetBounds(viewportWidth, 0, scrollBarWidth, drawerContentsHostPanel.ClientSize.Height);
+        }
+
+        private void DrawerContentsListView_ViewportChanged(object? sender, EventArgs e)
+        {
+            SynchronizeDrawerScrollBar();
+        }
+
+        private void DrawerContentsHostPanel_Resize(object? sender, EventArgs e)
+        {
+            PositionDrawerScrollBar();
+            SynchronizeDrawerScrollBar();
+        }
+
+        private void DrawerContentsScrollBar_ValueChanged(object? sender, EventArgs e)
+        {
+            drawerContentsListView.ScrollToVerticalPosition(drawerContentsScrollBar.Value);
+        }
+
+        private void SynchronizeDrawerScrollBar()
+        {
+            if (IsDisposed || Disposing || !drawerContentsListView.IsHandleCreated)
+            {
+                return;
+            }
+
+            if (!drawerContentsListView.TryGetVerticalScrollInfo(out var maximumPosition, out var position, out var viewportSize) ||
+                maximumPosition <= 0)
+            {
+                drawerContentsScrollBar.Visible = false;
+                PositionDrawerScrollBar();
+                return;
+            }
+
+            drawerContentsScrollBar.Maximum = maximumPosition;
+            drawerContentsScrollBar.Value = position;
+            drawerContentsScrollBar.Visible = true;
+            PositionDrawerScrollBar();
+            drawerContentsScrollBar.BringToFront();
         }
 
         private static Size GetImageSize(int dpi)
@@ -151,6 +223,8 @@ namespace winDrawer
                 _lastPersistedSize = Size;
             }
 
+            PositionDrawerScrollBar();
+            SynchronizeDrawerScrollBar();
             _ = PopulateFileListAsync();
         }
 
@@ -452,6 +526,8 @@ namespace winDrawer
             {
                 drawerContentsListView.EndUpdate();
             }
+
+            SynchronizeDrawerScrollBar();
         }
 
         private void ClearFileList()
@@ -467,6 +543,8 @@ namespace winDrawer
             {
                 drawerContentsListView.EndUpdate();
             }
+
+            SynchronizeDrawerScrollBar();
         }
 
         private void ShowListStatus(string text, string? toolTip = null)
@@ -477,6 +555,7 @@ namespace winDrawer
                 ToolTipText = toolTip ?? text
             };
             drawerContentsListView.Items.Add(statusItem);
+            SynchronizeDrawerScrollBar();
         }
 
         private bool IsCurrentLoad(int generation, CancellationTokenSource cancellation)

@@ -32,7 +32,9 @@ namespace winDrawer
             components = new Container();
             drawerToolTip = new ToolTip(components);
             mainTableLayoutPanel = new UITableLayoutPanel();
-            drawerContentsListView = new ListView();
+            drawerContentsHostPanel = new Panel();
+            drawerContentsListView = new ScrollableListView();
+            drawerContentsScrollBar = new UIScrollBar();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
             drawerPathTableLayoutPanel = new TableLayoutPanel();
@@ -53,7 +55,7 @@ namespace winDrawer
             mainTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
             mainTableLayoutPanel.ColumnCount = 1;
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            mainTableLayoutPanel.Controls.Add(drawerContentsListView, 0, 0);
+            mainTableLayoutPanel.Controls.Add(drawerContentsHostPanel, 0, 0);
             mainTableLayoutPanel.Controls.Add(drawerHeaderTableLayoutPanel, 0, 1);
             mainTableLayoutPanel.Dock = DockStyle.Fill;
             mainTableLayoutPanel.Location = new Point(0, 0);
@@ -65,12 +67,24 @@ namespace winDrawer
             mainTableLayoutPanel.Size = new Size(762, 583);
             mainTableLayoutPanel.TabIndex = 0;
             mainTableLayoutPanel.TagString = null;
+            //
+            // drawerContentsHostPanel
+            //
+            drawerContentsHostPanel.BackColor = Color.FromArgb(56, 56, 56);
+            drawerContentsHostPanel.Controls.Add(drawerContentsListView);
+            drawerContentsHostPanel.Controls.Add(drawerContentsScrollBar);
+            drawerContentsHostPanel.Dock = DockStyle.Fill;
+            drawerContentsHostPanel.Location = new Point(0, 0);
+            drawerContentsHostPanel.Margin = new Padding(0);
+            drawerContentsHostPanel.Name = "drawerContentsHostPanel";
+            drawerContentsHostPanel.Size = new Size(762, 533);
+            drawerContentsHostPanel.TabIndex = 0;
             // 
             // drawerContentsListView
             // 
             drawerContentsListView.BackColor = Color.FromArgb(56, 56, 56);
             drawerContentsListView.BorderStyle = BorderStyle.None;
-            drawerContentsListView.Dock = DockStyle.Fill;
+            drawerContentsListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             drawerContentsListView.ForeColor = Color.WhiteSmoke;
             drawerContentsListView.HideSelection = false;
             drawerContentsListView.Location = new Point(0, 0);
@@ -222,6 +236,7 @@ namespace winDrawer
         #endregion
 
         private UITableLayoutPanel mainTableLayoutPanel;
+        private Panel drawerContentsHostPanel;
         private UITableLayoutPanel drawerHeaderTableLayoutPanel;
         private TableLayoutPanel drawerPathTableLayoutPanel;
         private PictureBox openFolderIconPictureBox;
@@ -229,7 +244,8 @@ namespace winDrawer
         private FlowLayoutPanel drawerButtonTableLayoutPanel;
         private UIButton refreshDrawerButton;
         private UIButton closeDrawerButton;
-        private ListView drawerContentsListView;
+        private ScrollableListView drawerContentsListView;
+        private UIScrollBar drawerContentsScrollBar;
         private ImageList drawerImageList;
         private ToolTip drawerToolTip;
     }

@@ -1,26 +1,8 @@
 [startup]
+# 启动与主窗口设置
+# 配置登录启动、窗口位置、主题颜色和图标大小。
 start_with_windows = false
 window_locked = false
-icon_size = 96
-window_color_hsla = [194, 30, 21, 90]
-window_position = [2831, 1066]  # if out of screen, it should be some solution.
-
-[[drawers]]
-name = "Netch"
-path = "D:\\users\\Desktop\\Netch"
-size = [403, 324]
-
-[[drawers]]
-name = "mkvtoolnix"
-path = "D:\\users\\Desktop\\mkvtoolnix"
-size = [477, 460]
-
-[[drawers]]
-name = "DaVinci Resolve"
-path = "C:\\Users\\xdrea\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Blackmagic Design\\DaVinci Resolve"
-size = [407, 265]
-
-[[drawers]]
-name = "桌面文档"
-path = "D:\\users\\Documents\\桌面抽屉\\桌面文档"
-size = [327, 363]
+window_position = [109, 13]
+window_color_hsla = [234, 100, 10, 95]
+window_height = 200

@@ -4,6 +4,8 @@
 
 本文件定义 winDrawer 本地设置的 TOML 数据契约。配置文件是用户数据，不应被 UI 或平台实现细节随意改变。字段升级和不兼容修改都必须有迁移方案；当前版本暂不自动迁移旧位置的配置。
 
+> 本文字段表描述当前已实现版本的配置格式。后续计划将以 `startup.window_color = "#RRGGBB"` 和独立的 `startup.window_opacity` 替代 `window_color_hsla`；实施细节及一次性迁移要求见 [`NEXT_DEVELOPMENT_PLAN.md`](NEXT_DEVELOPMENT_PLAN.md)。在迁移实现完成前，不要把计划中的目标字段误认为当前程序已经支持的字段。
+
 ## 2. 基础格式
 
 配置使用 UTF-8 TOML。核心结构包含一个 `[startup]` 表与零个或多个 `[[drawers]]` 表。抽屉路径使用标准 TOML 双引号字符串；Windows 路径中的反斜杠按 TOML 规则写成 `\\`，解析后得到普通 Windows 路径。抽屉尺寸使用与 `name`、`path` 同级的 `[width, height]` 数组。
@@ -12,9 +14,9 @@
 [startup]
 start_with_windows = false
 window_locked = false
-icon_size = 96
+window_color = "#RRGGBB"
+window_opacity = 90
 window_height = 400
-window_color_hsla = [194, 100, 41, 60]
 window_position = [100, 100]
 
 [[drawers]]

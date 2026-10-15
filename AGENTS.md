@@ -4,7 +4,7 @@
 
 winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在程序内显示所选文件夹的直接内容；用户可预览常见图片类型，双击条目后将其交给 Windows Shell 按系统默认行为打开。首要目标是简单、可靠、容易继续维护，而不是复刻完整资源管理器。保留主题设置页面和预览，但简化控件实现。
 
-具体范围和分阶段验收条件见 [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md)。若该计划与用户最新明确要求不一致，以用户最新要求为准，并先更新计划。
+具体范围和分阶段验收条件见 [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) 与 [`docs/NEXT_DEVELOPMENT_PLAN.md`](docs/NEXT_DEVELOPMENT_PLAN.md)。若旧计划中的 HSLA 控件要求与后续计划或用户最新明确要求冲突，以用户最新要求为准，并先同步更新相关文档。
 
 ## 开始工作前：保护现有工作
 
@@ -19,10 +19,11 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 
 - 这是 Windows-only 的桌面项目；优先沿用单个 WinForms 应用项目和 BCL/WinForms 原生控件，不要仅为“现代架构”引入多项目分层、复杂 MVVM、依赖注入框架或微服务式结构。
 - 使用实施时 Microsoft 官方最新的 GA LTS .NET Windows 版本；当前计划目标是 `net10.0-windows`。实施前核实官方支持周期和 SDK，安装最新 servicing patch；不使用 preview 或 STS。
-- 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。保留当前主题设置页面和实时预览，继续使用 H/S/L 与 Alpha/透明度控件进行 HSLA 调色，不替换为其他颜色选择交互。不要重新实现每个文件一套自绘卡片布局。
+- 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。主题设置页只保留颜色预览和独立的透明度滑块；点击颜色预览打开 Windows/WinForms 系统颜色控件（优先 `ColorDialog`）。不要保留 H/S/L 或 HSLA 调色控件，也不要重新实现每个文件一套自绘卡片布局。
 - 文件和文件夹的 Shell 操作必须委托给 Windows：使用合适的 Shell 执行方式（例如 `ProcessStartInfo.UseShellExecute = true`），不要自行解析关联程序或拼接命令行。
 - 当前代码已有 `ShellIcon.cs`、`DrawerWindow.cs` 的文件枚举/启动逻辑、图片缩略图逻辑和 `Configuration/SettingsRepository.cs` 的 TOML 处理。优先精简、复用并添加测试；避免未经用户确认就换 UI 框架、配置格式或重写整个应用。
-- 保留主题设置页面和当前 HSLA 调色方式：使用现有 Hue、Saturation、Lightness 与 Alpha/窗口透明度控件调整颜色，实时预览并保存到 TOML 的 `window_color_hsla` 字段；不要改为其他颜色选择交互或移除 H/S/L 控件。主题色仍可应用到主窗口和抽屉。
+- 主题设置页仅显示当前颜色预览与独立透明度滑块（百分比 0–100）；点击颜色预览打开系统颜色对话框。颜色统一以 `#RRGGBB` 保存到 `startup.window_color`，透明度单独保存到 `startup.window_opacity`；不再持久化 HSLA。抽屉专属颜色沿用 `#RRGGBB`，蒙版强度仍固定为 70%。颜色选择、透明度和实时预览须遵循保存/取消语义。
+- 从当前 `window_color_hsla` 配置转到新颜色字段时，仅实现一次性、定向迁移：保留旧 HSLA 对应的可见 RGB 颜色及 Alpha/透明度值；已有新字段优先，不得被旧值覆盖，只从旧字段补齐缺失的新值。新字段安全写入成功后才能移除旧 HSLA 字段。不得因移除 HSLA 而重置现有用户主题；迁移必须可测试且不得破坏配置文件。
 - 保留常见图片的 Explorer 风格列表图标预览，至少支持 JPG/JPEG 和 PNG。图片缩略图显示在 `ListView` 图标视图中，不另开预览窗格；非图片项目使用 Windows Shell 图标。缩略图失败时回退为 Shell 图标，不得影响双击打开。
 - 使用 Windows Shell 图标及合适的系统图标尺寸；需要处理 DPI，但不要把图标大小暴露为设置项。
 - 保持改动直接、易读。类和方法只在职责确实独立时拆分；为小功能添加新抽象前，说明它解决的具体问题。
@@ -38,6 +39,6 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 ## 代码与验证
 
 - C# 类型、方法和变量沿用 .NET 命名约定；新增说明文档使用中文。代码注释只解释必要的非显然行为。
-- 每次改动后尽可能在 Windows/最新 LTS .NET SDK 环境构建项目；有配置解析、路径比较、RGB↔HSL 转换等纯逻辑时，优先增加小而有针对性的自动化测试，不引入 UI 自动化测试框架作为前置条件。
+- 每次改动后尽可能在 Windows/最新 LTS .NET SDK 环境构建项目；有配置解析、路径比较、颜色十六进制解析/格式化、主题颜色迁移或混色等纯逻辑时，优先增加小而有针对性的自动化测试，不引入 UI 自动化测试框架作为前置条件。
 - 检查 Nullable 警告、资源释放（特别是 `Icon`、图片缩略图 `Image`、`ImageList` 和窗体事件）及高 DPI 行为。缩略图生成不得锁住源文件，图片和图标资源在列表刷新或窗体关闭时应正确释放。
 - 完成后汇报：改了哪些文件、采用了哪些行为、执行了哪些构建/测试、尚未验证什么。不得声称运行过未实际执行的测试。

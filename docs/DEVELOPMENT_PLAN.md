@@ -2,7 +2,9 @@
 
 > 状态：阶段 0–2 已实施；阶段 3/4 的大部分功能与测试已完成。本轮收尾依赖、构建产物和文档清理。旧配置自动迁移暂缓，不属于当前实现。
 >
-> 目标：把 winDrawer 收敛为一个易懂、可维护的 Windows 文件夹快捷入口。保留常见图片缩略图和当前 HSLA 主题调色功能（Hue、Saturation、Lightness、Alpha）；停止投入任意图标尺寸调优。
+> 历史目标：把 winDrawer 收敛为一个易懂、可维护的 Windows 文件夹快捷入口，保留常见图片缩略图和当时的 HSLA 主题调色功能；停止投入任意图标尺寸调优。后续主题要求见下方更新说明。
+>
+> **后续主题要求更新：** 本文中保留 H/S/L、HSLA 控件及 `window_color_hsla` 的规定是阶段 0–4 的历史需求/验收记录，不代表后续功能要求；它们已被 [`NEXT_DEVELOPMENT_PLAN.md`](NEXT_DEVELOPMENT_PLAN.md) 中的新需求取代。后续实现以新计划为准：主题设置只保留可点击颜色预览和独立透明度滑块，颜色用 `#RRGGBB` 保存，透明度单独保存，并迁移现有 HSLA 用户设置。
 
 ## 1. 已确认的产品行为
 
@@ -11,13 +13,13 @@
 - 单击条目只选择；双击把条目交给 Windows Shell 执行默认打开行为：目录通常在文件资源管理器中打开，文件由 Windows 默认关联程序打开。
 - 采用 WinForms 内置 `ListView` 图标视图，使用系统 Shell 图标，不提供用户可调图标大小。
 - 保留类似资源管理器的图片图标预览：至少支持 JPG/JPEG 和 PNG 缩略图，缩略图显示为列表项图标；不另开图片预览窗格。
-- 保留当前主题设置页面的 HSLA 调色控件、窗口透明度、实时预览以及保存/取消流程；继续通过 Hue、Saturation、Lightness 和 Alpha 控件调整主题，不替换现有调色方式。
+- **历史实现范围（已被后续主题要求取代）：** 保留当前主题设置页面的 HSLA 调色控件、窗口透明度、实时预览以及保存/取消流程；继续通过 Hue、Saturation、Lightness 和 Alpha 控件调整主题。
 - 设置页提供可用的 Windows 登录启动选项；是否启用由用户设置控制。
 
 ## 2. 技术方向
 
 - 保持一个 Windows Forms 应用项目，不先拆多项目，不引入复杂的 Clean Architecture、MVVM 框架或其他 UI 框架。
-- 文件列表和图片缩略图使用 WinForms 原生控件。保留主题页现有 HSLA 调色控件与交互；主题设置继续持久化到现有 TOML 字段。其余现有控件按引用和简化收益逐项判断，不要把主题页或整个 UI 一次性重写。SunnyUI 只有在确认不再有引用后才可移除。
+- 文件列表和图片缩略图使用 WinForms 原生控件。**历史实现范围（已被后续主题要求取代）：** 主题页使用 HSLA 调色控件并写入当时的 TOML 字段。其余现有控件按引用和简化收益逐项判断，不要把主题页或整个 UI 一次性重写。SunnyUI 只有在确认不再有引用后才可移除。
 - 开发环境与目标框架使用 Microsoft 官方最新的 GA LTS .NET Windows 版本。按本计划编写时的决策，先以 `net10.0-windows` 为目标，并安装最新 .NET 10 servicing SDK；实际实施前再次核对 [.NET 官方支持周期](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)。若已有更新的 GA LTS，则评估兼容后使用更新 LTS；不使用 preview/STS。NuGet 依赖升级到兼容目标框架的受支持版本，避免不必要的大范围升级。
 - PowerToys / Command Palette 集成不纳入本阶段实现。等独立 MVP 使用体验明确后，再单独评估是否开发扩展。
 
@@ -32,7 +34,7 @@
 - 设置页中的开机启动选项应尝试实际绑定当前 Windows 用户的登录启动；启用失败时应明确提示，不得只保存一个未生效的勾选状态。
 - Shell 默认图标和 Windows 默认文件打开行为。
 - 友好处理缺失目录、访问拒绝和 Shell 打开失败。
-- 保留主题设置页当前的 Hue、Saturation、Lightness、Alpha/窗口透明度调节、实时预览、保存和取消；不得移除或替换现有 HSLA 调色控件。
+- **历史实现范围（已被后续主题要求取代）：** 主题设置页提供 Hue、Saturation、Lightness、Alpha/窗口透明度调节、实时预览、保存和取消。
 
 ### 删除或延后
 
@@ -103,8 +105,8 @@ TrayController.cs                  可选：托盘生命周期
 
 ### 阶段 2：精简主窗口并保留现有设置功能
 
-1. 保留 `SettingsForm` 当前已有的设置功能，以及 `Behavior`、`Visual` 两个区域中其他现有选项和行为；不得因布局调整删除或悄然改变这些设置。主题页继续使用当前 HSLA 调色方式，通过 Hue、Saturation、Lightness 和 Alpha/窗口透明度控件调整颜色，并保留调色板预览、实时预览及保存/取消行为。
-2. 保持现有 HSLA 控件的工作方式：调整 H/S/L/Alpha 时更新颜色预览及主题实时预览；取消设置窗体时恢复原设置；保存时将四项 HSLA 值写回现有 `window_color_hsla` TOML 数组，不增加 RGB 中间选择流程。
+1. 保留 `SettingsForm` 当前已有的设置功能，以及 `Behavior`、`Visual` 两个区域中其他现有选项和行为；不得因布局调整删除或悄然改变这些设置。**阶段 2 历史验收：** 当时主题页使用 HSLA 控件、调色板预览、实时预览及保存/取消；后续颜色交互与存储要求以 `NEXT_DEVELOPMENT_PLAN.md` 为准。
+2. **阶段 2 历史验收（已被后续主题要求取代）：** 当时调整 H/S/L/Alpha 会更新主题预览，取消会恢复原设置，保存会写入 `window_color_hsla`；后续实现不得据此保留 HSLA UI 或持久化字段。
 3. 在 `Behavior`、`Visual` 之外新增 `General` 区域；将现有 `Shutdown App` 和 `Default` 按钮移入其中，并添加 `Open Settings TOML` 按钮。此项调整只改变区域归属和布局，不擅自改变既有按钮逻辑；实施时须核实 `Default` 的真实行为，不能把仅记录日志当作已实现的默认设置操作，也不要在本阶段自行扩大其行为范围。
 4. 设置文件默认路径为 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`，不实现从程序目录迁移旧设置。`Open Settings TOML` 使用 Windows Notepad 打开当前活动的设置文件；文件不可访问或 Notepad 启动失败时给出可理解的提示，不得导致应用退出。不得把该按钮实现成另一套设置编辑/保存流程。
 5. 尝试让开机启动选项真正绑定当前 Windows 用户的登录启动：优先使用不需要管理员权限的用户级启动机制；启用/禁用时同步实际注册状态与 `start_with_windows` 设置，禁用时移除本应用的启动注册，并验证最终发布/运行路径在登录时可启动。注册失败时向用户说明且不得静默显示为已生效；不引入不必要的第三方依赖。若受部署或运行环境限制无法可靠实现，应记录具体限制并避免留下误导性成功状态。
@@ -112,7 +114,7 @@ TrayController.cs                  可选：托盘生命周期
 7. 保留并验证常用文件夹列表、添加和移除操作、现有 Behavior/Visual 设置以及简单托盘控制。
 8. 删除事件无效的控件、旧的自绘控件和不再使用的资产前，先搜索所有引用；SunnyUI 仅在没有剩余使用处时才移除。
 
-**验收：** 普通窗口可清楚完成“选一个常用目录、查看图标列表、双击打开”；图片缩略图显示在对应列表项图标位置；现有设置功能没有因调整布局而丢失；设置页有独立的 `Behavior`、`Visual`、`General` 区域，`Shutdown App`、`Default` 和 `Open Settings TOML` 均位于 `General`；当前 HSLA 控件、实时预览及保存/取消正常；TOML 按钮以 Notepad 打开 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` 并妥善处理失败；可验证开机启动启用、禁用及 Windows 用户重新登录后的行为，注册失败不会静默显示为成功；不存在看似有效却不工作的设置。
+**阶段 2 历史验收（主题部分已被后续要求取代）：** 普通窗口可清楚完成“选一个常用目录、查看图标列表、双击打开”；图片缩略图显示在对应列表项图标位置；现有非主题设置功能没有因调整布局而丢失；设置页有独立的 `Behavior`、`Visual`、`General` 区域，`Shutdown App`、`Default` 和 `Open Settings TOML` 均位于 `General`；当时的 HSLA 实时预览及保存/取消正常；TOML 按钮以 Notepad 打开 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` 并妥善处理失败；可验证开机启动启用、禁用及 Windows 用户重新登录后的行为，注册失败不会静默显示为成功；不存在看似有效却不工作的设置。后续主题验收见 `NEXT_DEVELOPMENT_PLAN.md`。
 
 ### 阶段 3：配置、日志和数据安全
 
@@ -120,7 +122,7 @@ TrayController.cs                  可选：托盘生命周期
 2. 验证缺字段、错误类型、损坏 TOML、无效/重复路径和目录不存在等情况。
 3. 暂缓旧配置自动迁移。当前设置文件使用 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；不自动读取、复制、移动或删除程序目录中的旧设置。
 4. 将新日志写入 `%USERPROFILE%\.config\winDrawer\Drawer.log`，与用户配置放在同一目录；暂不迁移程序目录中的旧日志。日志目录创建或写入失败均不得阻止应用启动。
-5. 同步修订 `docs/CONFIGURATION_FORMAT.md`，准确说明当前 HSLA 调色控件与 `window_color_hsla` 字段的对应关系、General 区域新增选项、开机启动设置和配置文件位置；不为暂缓的旧配置迁移编造实现规则。
+5. **阶段 3 历史文档要求（主题字段已被后续计划取代）：** 当时配置文档说明 HSLA 控件与 `window_color_hsla` 的对应关系。后续字段变更、迁移与设置 UI 以 `NEXT_DEVELOPMENT_PLAN.md` 为准。
 
 **验收：** 重启后抽屉列表和主题设置保持；不合法配置有可恢复处理；保存失败不会静默丢失旧文件；主题设置页与 TOML 字段有明确说明、配置文档与实现一致；日志位于用户配置目录，旧日志不被覆盖，日志失败不影响主功能。
 
@@ -139,7 +141,7 @@ TrayController.cs                  可选：托盘生命周期
 - 不开发 PowerToys 插件或新的系统级 Dock。
 - 不嵌入 `IExplorerBrowser`/完整资源管理器 Shell 视图。
 - 不切换到 WPF、WinUI 3 或跨平台 UI 技术。
-- 不做自绘颜色选择器、全目录缩略图缓存、实时文件监控、递归索引、多目录同时弹出或高级搜索；保留当前 HSLA 调色方式的主题设置页，以及列表中的常见图片缩略图。
+- 不做自绘颜色选择器、全目录缩略图缓存、实时文件监控、递归索引、多目录同时弹出或高级搜索；主题颜色控件以 `NEXT_DEVELOPMENT_PLAN.md` 为准，列表中的常见图片缩略图继续保留。
 - 不做无必要的全量重命名/格式化/架构重写。
 
 若 MVP 使用后确认这些能力有明确价值，再作为独立需求讨论。

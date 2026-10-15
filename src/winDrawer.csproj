@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>..\assets\drawer.icon.4.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <!-- <SelfContained>true</SelfContained> -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -19,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\assets\drawer.icon.4.ico">
+      <LogicalName>winDrawer.drawer.icon.4.ico</LogicalName>
+    </EmbeddedResource>
     <Content Include="..\assets\drawer.icon.4.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

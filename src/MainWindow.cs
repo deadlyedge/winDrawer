@@ -7,6 +7,7 @@ namespace winDrawer
 {
     public partial class MainWindow : Form
     {
+        private const string AppIconResourceName = "winDrawer.drawer.icon.4.ico";
         private readonly PrivateFontCollection _fontCollection = new();
         private Font? _logoFont;
         private bool _isDragging;
@@ -136,6 +137,22 @@ namespace winDrawer
 
         private void TryApplyIcon(string iconPath)
         {
+            try
+            {
+                using var iconStream = typeof(MainWindow).Assembly.GetManifestResourceStream(AppIconResourceName);
+                if (iconStream != null)
+                {
+                    using var embeddedIcon = new Icon(iconStream, AppConstants.Ui.WindowIconSize);
+                    Icon = (Icon)embeddedIcon.Clone();
+                    DrawerLogger.LogInformation("Applied window icon from embedded application resources.");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogWarning($"Failed to load embedded window icon. {ex}");
+            }
+
             if (File.Exists(iconPath))
             {
                 try

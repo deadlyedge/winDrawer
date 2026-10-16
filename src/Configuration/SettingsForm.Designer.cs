@@ -25,8 +25,6 @@ partial class SettingsForm
             {
                 font.Dispose();
             }
-
-            _fontCollection.Dispose();
         }
     }
 
@@ -136,8 +134,8 @@ partial class SettingsForm
         //
         windowHeightTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         windowHeightTableLayoutPanel.ColumnCount = 3;
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
         windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
         windowHeightTableLayoutPanel.Controls.Add(windowHeightLabel, 0, 0);
         windowHeightTableLayoutPanel.Controls.Add(windowHeightTrackBar, 1, 0);
@@ -157,6 +155,11 @@ partial class SettingsForm
         windowHeightLabel.Text = "Window height (100–1000 DIP)";
         windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
         //
+        windowHeightTrackBar.Dock = DockStyle.Fill;
+        windowHeightTrackBar.FillColor = Color.FromArgb(64, 64, 64);
+        windowHeightTrackBar.MinimumSize = new Size(1, 1);
+        windowHeightTrackBar.Name = "windowHeightTrackBar";
+        windowHeightTrackBar.Size = new Size(510, 60);
         windowHeightTrackBar.TabIndex = 1;
         //
         // windowHeightValueLabel

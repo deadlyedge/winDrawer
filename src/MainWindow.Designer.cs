@@ -82,7 +82,7 @@ namespace winDrawer
             // 
             logoLabel.Cursor = Cursors.SizeAll;
             logoLabel.Dock = DockStyle.Fill;
-            logoLabel.Font = new Font("Lobster", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            logoLabel.Font = SystemFonts.MessageBoxFont;
             logoLabel.ForeColor = SystemColors.ButtonFace;
             logoLabel.Location = new Point(3, 0);
             logoLabel.Name = "logoLabel";
@@ -100,7 +100,7 @@ namespace winDrawer
             settingsButton.FillHoverColor = Color.FromArgb(84, 84, 84);
             settingsButton.FillPressColor = Color.FromArgb(63, 63, 63);
             settingsButton.FillSelectedColor = Color.FromArgb(63, 63, 63);
-            settingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            settingsButton.Font = SystemFonts.MessageBoxFont;
             settingsButton.Location = new Point(287, 3);
             settingsButton.MinimumSize = new Size(1, 1);
             settingsButton.Name = "settingsButton";
@@ -149,7 +149,7 @@ namespace winDrawer
             addDrawerButton.FillHoverColor = Color.FromArgb(0, 94, 140);
             addDrawerButton.FillPressColor = Color.FromArgb(0, 94, 140);
             addDrawerButton.FillSelectedColor = Color.FromArgb(0, 94, 140);
-            addDrawerButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            addDrawerButton.Font = SystemFonts.MessageBoxFont;
             addDrawerButton.Location = new Point(121, 353);
             addDrawerButton.MinimumSize = new Size(1, 1);
             addDrawerButton.Name = "addDrawerButton";

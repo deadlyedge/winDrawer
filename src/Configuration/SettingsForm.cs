@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Drawing.Text;
 using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
@@ -13,10 +12,10 @@ public partial class SettingsForm : UIForm
 
     private SettingsSnapshot _originalSnapshot;
     private SettingsSnapshot _workingSnapshot;
-    private readonly PrivateFontCollection _fontCollection = new();
     private readonly List<Font> _ownedFonts = new();
     private Font? _buttonFont;
     private Font? _systemFont;
+    private Font? _titleFont;
     private bool _isDragging;
     private Point _dragOffset;
     private bool _allowClose;
@@ -35,6 +34,7 @@ public partial class SettingsForm : UIForm
         ApplySnapshotToUi();
         WireEvents();
         WireDragHandlers();
+        ApplyBrandFonts();
 
         ResultSettings = _originalSnapshot.Clone();
         UpdatePreview();
@@ -75,6 +75,12 @@ public partial class SettingsForm : UIForm
         base.OnFormClosing(e);
     }
 
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        ApplyBrandFonts();
+    }
+
     public void ApplyResetBaseline(SettingsSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -89,31 +95,18 @@ public partial class SettingsForm : UIForm
     private void ConfigureFonts()
     {
         _systemFont = CreateOwnedFont("Segoe UI", 9F);
-        var fontPath = Path.Combine(
-            AppContext.BaseDirectory,
-            AppConstants.Directories.Assets,
-            AppConstants.Directories.Fonts,
-            AppConstants.Files.LogoFontFileName);
-
-        if (File.Exists(fontPath))
-        {
-            try
-            {
-                _fontCollection.AddFontFile(fontPath);
-                var family = _fontCollection.Families.FirstOrDefault();
-                if (family != null)
-                {
-                    _buttonFont = CreateOwnedFont(family, 10.5F);
-                }
-            }
-            catch (Exception ex)
-            {
-                DrawerLogger.LogWarning($"Unable to load the settings brand font from '{fontPath}'. {ex.Message}");
-            }
-        }
-
-        _buttonFont ??= CreateOwnedFont("Segoe UI", 9F);
+        _buttonFont = BrandingFont.Create(10.5F);
+        _titleFont = BrandingFont.Create(13F);
+        _ownedFonts.Add(_buttonFont);
+        _ownedFonts.Add(_titleFont);
         ApplyFontToControls(this);
+    }
+
+    private void ApplyBrandFonts()
+    {
+        headerSettings.Font = _titleFont!;
+        cancelButton.Font = _buttonFont!;
+        saveButton.Font = _buttonFont!;
     }
 
     private void ApplyFontToControls(Control parent)
@@ -137,13 +130,6 @@ public partial class SettingsForm : UIForm
     private Font CreateOwnedFont(string familyName, float size)
     {
         var font = new Font(familyName, size, FontStyle.Regular, GraphicsUnit.Point);
-        _ownedFonts.Add(font);
-        return font;
-    }
-
-    private Font CreateOwnedFont(FontFamily family, float size)
-    {
-        var font = new Font(family, size, FontStyle.Regular, GraphicsUnit.Point);
         _ownedFonts.Add(font);
         return font;
     }
@@ -186,7 +172,7 @@ public partial class SettingsForm : UIForm
         previewPanel.TabStop = true;
         previewPanel.AccessibleRole = AccessibleRole.PushButton;
         previewPanel.AccessibleName = "Theme color preview. Activate to choose a color.";
-        previewPanel.AccessibleDescription = "Click to change the theme color. The RGB color code is shown in the preview.";
+        previewPanel.AccessibleDescription = "Click to change the color. The RGB color code is shown in the preview.";
         CancelButton = cancelButton;
     }
 
@@ -475,7 +461,7 @@ public partial class SettingsForm : UIForm
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = palette.Border;
         previewPanel.ForeColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
-        previewPanel.Text = $"点选更换颜色{Environment.NewLine}{ThemePalette.FormatHexColor(_workingSnapshot.WindowColor)}";
+        previewPanel.Text = $"Click to change color{Environment.NewLine}{ThemePalette.FormatHexColor(_workingSnapshot.WindowColor)}";
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(palette));
     }
 

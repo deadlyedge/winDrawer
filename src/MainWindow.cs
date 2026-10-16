@@ -1,4 +1,3 @@
-using System.Drawing.Text;
 using System.Diagnostics;
 using winDrawer.Configuration;
 using winDrawer.Theming;
@@ -8,8 +7,9 @@ namespace winDrawer
     public partial class MainWindow : Form
     {
         private const string AppIconResourceName = "winDrawer.drawer.icon.4.ico";
-        private readonly PrivateFontCollection _fontCollection = new();
         private Font? _logoFont;
+        private Font? _settingsButtonFont;
+        private Font? _addDrawerButtonFont;
         private bool _isDragging;
         private Point _dragOffset;
         private bool _drawerPointerDown;
@@ -85,7 +85,8 @@ namespace winDrawer
             FormClosed += (_, _) =>
             {
                 _logoFont?.Dispose();
-                // _headerGlyph?.Dispose();
+                _settingsButtonFont?.Dispose();
+                _addDrawerButtonFont?.Dispose();
 
                 try
                 {
@@ -106,34 +107,51 @@ namespace winDrawer
             var baseDir = AppContext.BaseDirectory;
 
             var assetsDirectory = Path.Combine(baseDir, AppConstants.Directories.Assets);
-            var fontPath = Path.Combine(assetsDirectory, AppConstants.Directories.Fonts, AppConstants.Files.LogoFontFileName);
             var iconPath = Path.Combine(assetsDirectory, AppConstants.Files.AppIconFileName);
 
             DrawerLogger.LogDebug($"Loading branding assets from '{assetsDirectory}'.");
 
-            TryLoadFont(fontPath);
+            ApplyEmbeddedBrandFonts();
             TryApplyIcon(iconPath);
         }
 
-        private void TryLoadFont(string fontPath)
+        private void ApplyEmbeddedBrandFonts()
         {
-            if (!File.Exists(fontPath))
+            Font? logoFont = null;
+            Font? settingsButtonFont = null;
+            Font? addDrawerButtonFont = null;
+            try
             {
-                DrawerLogger.LogWarning($"Logo font not found at '{fontPath}'.");
-                return;
+                logoFont = BrandingFont.Create(AppConstants.Defaults.LogoFontSize);
+                settingsButtonFont = BrandingFont.Create(10.5F);
+                addDrawerButtonFont = BrandingFont.Create(10.5F);
+                var loadedFamily = BrandingFont.LoadedFamilyName;
+                if (string.IsNullOrEmpty(loadedFamily))
+                {
+                    DrawerLogger.LogWarning("The embedded Lobster font was unavailable; using the system font for main-window branding.");
+                }
+                else
+                {
+                    DrawerLogger.LogInformation($"Loaded embedded branding font '{loadedFamily}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                logoFont?.Dispose();
+                settingsButtonFont?.Dispose();
+                addDrawerButtonFont?.Dispose();
+                DrawerLogger.LogWarning($"Unable to apply the embedded branding font. {ex.Message}");
+                logoFont = BrandingFont.CreateFallback(AppConstants.Defaults.LogoFontSize);
+                settingsButtonFont = BrandingFont.CreateFallback(10.5F);
+                addDrawerButtonFont = BrandingFont.CreateFallback(10.5F);
             }
 
-            _fontCollection.AddFontFile(fontPath);
-            if (_fontCollection.Families.Length == 0)
-            {
-                DrawerLogger.LogWarning($"No font families discovered in '{fontPath}'.");
-                return;
-            }
-
-            _logoFont = new Font(_fontCollection.Families[0], AppConstants.Defaults.LogoFontSize, FontStyle.Regular, GraphicsUnit.Point);
+            _logoFont = logoFont;
+            _settingsButtonFont = settingsButtonFont;
+            _addDrawerButtonFont = addDrawerButtonFont;
             logoLabel.Font = _logoFont;
-
-            DrawerLogger.LogInformation($"Loaded logo font '{_fontCollection.Families[0].Name}'.");
+            settingsButton.Font = _settingsButtonFont;
+            addDrawerButton.Font = _addDrawerButtonFont;
         }
 
         private void TryApplyIcon(string iconPath)

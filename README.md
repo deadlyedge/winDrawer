@@ -70,9 +70,9 @@ The main window launches without a border and can be dragged by its header. Sele
 ## Configuration
 
 - **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, window height and position, the `#RRGGBB` theme color, separate window opacity, and drawer data. The project is not yet released and does not migrate legacy HSLA settings. A missing user settings file is initialized from the embedded root `Drawer-settings.toml` template. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
-- **Assets** – Icons and fonts live under `assets\`. The application expects:
+- **Assets** – The window/tray icon and Lobster branding font are embedded in the application assembly from the `assets/` folder at build time:
   - `assets\drawer.icon.4.ico` for the window and tray icon.
-  - `assets\fonts\Lobster-Regular.ttf` for the logo.
+  - `assets/fonts/Lobster-Regular.ttf` for all branded headings and buttons. The application loads it from the embedded resource; it does not depend on the font being installed in Windows or on a loose font file beside the executable.
 - **Logging** – New diagnostic output is appended to `%USERPROFILE%\.config\winDrawer\Drawer.log`. Existing logs beside an older executable are not migrated or removed. Logging failures do not prevent the app from running.
 
 ### Managing folders and settings

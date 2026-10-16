@@ -1,7 +1,3 @@
 # todos
 
-- listview按日期从新到旧和lazyload
-- 设置添加always on top
-- 两个设置窗口的初始位置都设置为主窗口x,y（+100,+100）
-- 取消drawer设置窗口的关闭按钮，cancel/save已经足够
-- drawer设置中，路径和browse分行，路径不使用直接编辑，点击和browse功能一样。稍微加宽browse按钮。
+（阶段 7.1–7.5 的 5 项待办已完成，并在阶段 7.6 移除；详见 docs/DP_STAGE_7.md 的“实施状态”。新待办请继续追加到这里。）

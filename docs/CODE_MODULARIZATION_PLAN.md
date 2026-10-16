@@ -194,3 +194,5 @@ src/
 - 本次制定方案期间 `docs/TODOs.md` 已有用户未提交改动；代码拆分期间不得覆盖或格式化该文件。
 - `docs/DP_STAGE_7.md` 是阶段七计划来源；实施时应同步其中的排序契约，并消除“混排”和“目录分组”两种表述冲突。
 - 只在对应阶段验收完成后更新阶段状态；不要把文档计划或临时 harness 描述成已完成的 UI 手工测试。
+
+> **当前目录结构（阶段 7.6 整理后）：** `src/Program.cs`；`src/Forms/`（`MainWindow.*`、`DrawerWindow.*`、`SettingsForm.*`、`DrawerSettingsDialog.cs`）；`src/Controls/ScrollableListView.cs`；`src/Drawers/`（条目模型、枚举排序、图像加载）；`src/Configuration/`（设置仓储分部文件、`SettingsSnapshot`、`DrawerDefinition`、`AppConstants`）；`src/Theming/`（主题、品牌字体、Shell 图标）；`src/Infrastructure/`（`DrawerLogger`、`TrayController`、`StartupRegistration`）。文件移动不改文件名与命名空间，WinForms 窗体的 `.cs`/`.Designer.cs`/`.resx` 保持同名同目录，因此设计器资源名不变（构建后仍为 6 个嵌入资源）。

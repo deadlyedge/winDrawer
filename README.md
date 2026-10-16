@@ -6,6 +6,8 @@ winDrawer is a small Windows Forms utility for keeping frequently used folders c
 
 - **Folder shortcuts** – Open configured folders and browse direct child items in a Windows `ListView`.
 - **Image thumbnails** – JPG/JPEG and PNG thumbnails appear as list icons; other items use Windows Shell icons.
+- **Newest-first list with lazy icons** – Directories and files are mixed and sorted by last-modified time (`LastWriteTimeUtc`, descending; ties by name then full path, unreadable timestamps last). Icons and thumbnails load only for the visible area plus a one-screen margin, so large folders appear immediately.
+- **Always on top** – Optionally keep the main window and the current drawer window above other windows; the option never applies to the settings panels.
 - **Live theming** – Choose the theme color through the Windows color dialog, adjust window opacity separately, and preview changes before saving.
 - **Adjustable main window** – Set the main window height; the drawer list uses the remaining area and scrolls naturally.
 - **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
@@ -65,11 +67,11 @@ dotnet publish .\src\winDrawer.csproj `
 dotnet run --project .\src\winDrawer.csproj
 ```
 
-The main window launches without a border. When its position is unlocked, drag the branded header (shown with a move cursor) to reposition it; locking the position disables dragging and removes that cursor hint. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available.
+The main window launches without a border. When its position is unlocked, drag the branded header (shown with a move cursor) to reposition it; locking the position disables dragging and removes that cursor hint. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available. Items are ordered newest first by last write time (directories and files mixed), and list icons for the visible area are generated as you scroll.
 
 ## Configuration
 
-- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour, window height and position, the `#RRGGBB` theme color, separate window opacity, and drawer data. A missing user settings file is initialized from the embedded root `Drawer-settings.toml` template; an existing file is never replaced by the template. If settings cannot be read or initialized, the app reports an error and leaves the existing file untouched. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
+- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour (`start_with_windows`, `window_locked`, `always_on_top`), window height and position, the `#RRGGBB` theme color, separate window opacity, and drawer data. A missing user settings file is initialized from the embedded root `Drawer-settings.toml` template; an existing file is never replaced by the template. If settings cannot be read or initialized, the app reports an error and leaves the existing file untouched. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
 - **Current TOML format** – Theme color is `startup.window_color = "#RRGGBB"`; `startup.window_opacity` is a separate integer percentage (0–100). Drawer overlay colors use `drawers[].overlay_color = "#RRGGBB"` and are blended at a fixed 70%. Drawer sizes use `size = [width, height]` inside each `[[drawers]]` table. See [`docs/CONFIGURATION_FORMAT.md`](docs/CONFIGURATION_FORMAT.md) for validation rules and unsupported legacy forms.
 - **Existing legacy settings** – Back up an existing TOML file before manually converting it to the current format. The application does not migrate `window_color_hsla`, old `[drawers.size]` subtables, or other legacy representations; it does not search other directories for settings. The historical file under `reference/` is not a supported import template.
 - **Assets** – The window/tray icon and Lobster branding font are embedded in the application assembly from the `assets/` folder at build time:
@@ -83,22 +85,21 @@ The main window launches without a border. When its position is unlocked, drag t
 2. Click the theme-color preview to open the Windows color dialog. Adjust opacity independently; these visual changes preview live and can be saved or cancelled.
 3. Toggle **Lock position** to immediately enable/disable main-window dragging and its move-cursor hint. Cancel restores the setting that was active when Settings opened; Save persists the new state.
 4. Adjust **window height** to resize the main window. The drawer list scrolls to keep every configured folder available.
-5. Enable **Start with windows** to register startup for the current Windows user.
-6. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
+5. Toggle **Always on top** to keep the main window and the open drawer window above other windows; the preview applies immediately, Cancel restores the previous state, Save persists it, and Default restores the template value (`false`).
+6. Enable **Start with windows** to register startup for the current Windows user.
+7. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
 
 The main window and auxiliary windows normally do not appear as taskbar buttons; use the system-tray menu to show/hide the main window, open Settings, or exit. If tray initialization fails, the main window remains available from the taskbar.
 
-## Project Layout
+Drawer settings (right-click a drawer) edit the display name and the bound folder. The folder path is display-only: click it, or focus it and press Enter/Space, to open the same folder picker as **Browse**…, which sits on its own row below the path. **Save**, **Cancel** and **Delete** keep their previous behaviour; there is no separate close button — Escape or Alt+F4 cancels without submitting the draft. Both settings windows open at the main window position offset by (100, 100) and are clamped into the working area of the screen the main window is on; their own position is never saved.
 
 - `Program.cs` – Application entry point and global exception hooks.
-- `MainWindow.cs` – Primary UI, drawer list, tray integration via `TrayController`.
-- `DrawerWindow.cs` – Presentation of drawer contents, thumbnail generation, and theme application.
-- `SettingsForm.cs` – Modeless settings panel with live theme preview.
-- `Configuration/SettingsRepository.cs` – Handles reading/writing `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
-- `Theming/ThemePalette.cs` – Parses RGB hex colors and calculates the derived theme palette.
-- `AppConstants.cs` – Central store for shared constants (file names, UI dimensions, defaults).
-- `DrawerLogger.cs` – File-backed logger with debugger mirroring.
-- `TrayController.cs` – Encapsulates NotifyIcon setup and lifecycle.
+- `Forms/` – All windows and dialogs with their designer files: `MainWindow.*` (drawer list, tray integration via `TrayController`, settings preview), `DrawerWindow.*` (drawer contents, lazy thumbnails, theme), `SettingsForm.*` (modeless settings panel) and `DrawerSettingsDialog.cs`.
+- `Controls/ScrollableListView.cs` – Native `ListView` scrolling, vertical scroll bar synchronization and viewport notifications.
+- `Drawers/` – Drawer content model and services: `DrawerItemInfo` (item metadata), `DrawerItemEnumerator` (direct-child enumeration and newest-first sorting), `DrawerItemImageLoader` (Shell icon / thumbnail per item).
+- `Configuration/` – Settings data and persistence: `SettingsRepository.*` (in-memory TOML model, drawer operations, background writer, serialization), `SettingsSnapshot.cs` (settings snapshot and TOML parsing), `DrawerDefinition.cs`, `AppConstants.cs`.
+- `Theming/` – `ThemePalette.cs` (RGB hex parsing and derived palette), `BrandingFont.cs` (embedded Lobster font), `ShellIcon.cs` (Shell icon interop), `ThemePreviewEventArgs.cs`.
+- `Infrastructure/` – Cross-cutting support: `DrawerLogger.cs` (file logger), `TrayController.cs` (NotifyIcon lifecycle), `StartupRegistration.cs` (per-user login startup).
 
 ## Dependencies
 

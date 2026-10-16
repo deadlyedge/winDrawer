@@ -21,7 +21,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 - 使用实施时 Microsoft 官方最新的 GA LTS .NET Windows 版本；当前计划目标是 `net10.0-windows`。实施前核实官方支持周期和 SDK，安装最新 servicing patch；不使用 preview 或 STS。
 - 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。主题设置页只保留颜色预览和独立的透明度滑块；点击颜色预览打开 Windows/WinForms 系统颜色控件（优先 `ColorDialog`）。不要保留 H/S/L 或 HSLA 调色控件，也不要重新实现每个文件一套自绘卡片布局。
 - 文件和文件夹的 Shell 操作必须委托给 Windows：使用合适的 Shell 执行方式（例如 `ProcessStartInfo.UseShellExecute = true`），不要自行解析关联程序或拼接命令行。
-- 当前代码已有 `ShellIcon.cs`、`DrawerWindow.cs` 的文件枚举/启动逻辑、图片缩略图逻辑和 `Configuration/SettingsRepository.cs` 的 TOML 处理。优先精简、复用并添加测试；避免未经用户确认就换 UI 框架、配置格式或重写整个应用。
+- 当前代码已有 `Theming/ShellIcon.cs`、`Drawers/` 的直接子项枚举与排序、`Forms/DrawerWindow.cs` 与 `Forms/DrawerWindow.FileList.cs` 的列表/图像管线、`Forms/MainWindow.cs` 的抽屉列表与托盘协调，以及 `Configuration/SettingsRepository.*` 的 TOML 处理。优先精简、复用并添加测试；避免未经用户确认就换 UI 框架、配置格式或重写整个应用。
 - 主题设置页仅显示当前颜色预览与独立透明度滑块（百分比 0–100）；点击颜色预览打开系统颜色对话框。颜色统一以 `#RRGGBB` 保存到 `startup.window_color`，透明度单独保存到 `startup.window_opacity`；不再持久化 HSLA。抽屉专属颜色沿用 `#RRGGBB`，蒙版强度仍固定为 70%。颜色选择、透明度和实时预览须遵循保存/取消语义。
 - 程序尚未发布，不实现 `window_color_hsla` 运行时迁移。切换配置标准时，直接将开发者当前用户目录中的设置手动改为新字段，保留其颜色、透明度和其它设置；不得读取、转换或迁移旧 HSLA 字段。
 - 保留常见图片的 Explorer 风格列表图标预览，至少支持 JPG/JPEG 和 PNG。图片缩略图显示在 `ListView` 图标视图中，不另开预览窗格；非图片项目使用 Windows Shell 图标。缩略图失败时回退为 Shell 图标，不得影响双击打开。

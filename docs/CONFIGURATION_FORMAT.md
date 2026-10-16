@@ -37,7 +37,7 @@ path = "%USERPROFILE%\\Downloads"
 | 字段 | 类型 | 默认值 | 有效范围/语义 |
 |---|---|---:|---|
 | `startup.start_with_windows` | Boolean | `false` | 是否在 Windows 登录时启动。若 UI 提供该选项，必须真正生效；是否纳入首版见产品需求。 |
-| `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止通过拖动区域移动主窗口。 |
+| `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止通过拖动区域移动主窗口，并隐藏标题区的移动光标提示；解锁后立即恢复拖动与提示。 |
 | `startup.window_height` | Integer | `200` | 主窗口客户区高度，单位为 96 DPI 逻辑像素（DIP），支持范围 100–1000。屏幕空间不足时运行时高度会临时受工作区限制，但保存的期望值不变。缺失或类型无效时使用默认高度 200。 |
 | `startup.window_color` | `#RRGGBB` 字符串 | `#000533` | 主主题基础颜色；只接受 6 位 RGB 十六进制颜色。缺失或格式错误时使用默认颜色。 |
 | `startup.window_opacity` | Integer | `95` | 主窗口透明度百分比，支持 0–100；超范围值夹取，缺失或类型无效时使用默认值。 |

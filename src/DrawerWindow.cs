@@ -118,8 +118,8 @@ namespace winDrawer
             fullPathLabel.ForeColor = _theme.TextSecondary;
             fullPathLabel.BackColor = Color.Transparent;
 
-            ApplyThemeToButton(refreshDrawerButton);
-            ApplyThemeToButton(closeDrawerButton);
+            ApplyThemeToButton(refreshDrawerButton, isCloseButton: false);
+            ApplyThemeToButton(closeDrawerButton, isCloseButton: true);
         }
 
         public void ApplyDrawerDefinition(DrawerDefinition drawer)
@@ -597,23 +597,41 @@ namespace winDrawer
             _imageListImages.Clear();
         }
 
-        private void ApplyThemeToButton(UIButton button)
+        private void ApplyThemeToButton(UIButton button, bool isCloseButton)
         {
             if (button == null)
             {
                 return;
             }
 
-            button.FillColor = _theme.Accent;
-            button.FillHoverColor = _theme.AccentHover;
-            button.FillPressColor = _theme.AccentPressed;
-            button.FillSelectedColor = _theme.AccentPressed;
-            button.ForeColor = _theme.AccentText;
+            var fillColor = isCloseButton ? Color.FromArgb(180, 45, 45) : _theme.Accent;
+            var hoverColor = isCloseButton ? Color.FromArgb(146, 36, 36) : _theme.AccentHover;
+            var pressColor = isCloseButton ? Color.FromArgb(112, 25, 25) : _theme.AccentPressed;
+            var disabledFillColor = BlendButtonColor(fillColor, _theme.WindowBackground);
+
+            button.FillColor = fillColor;
+            button.FillHoverColor = hoverColor;
+            button.FillPressColor = pressColor;
+            button.FillSelectedColor = pressColor;
+            button.FillDisableColor = disabledFillColor;
+            button.ForeColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(fillColor);
+            button.ForeHoverColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(hoverColor);
+            button.ForePressColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(pressColor);
+            button.ForeSelectedColor = button.ForePressColor;
+            button.ForeDisableColor = ThemePalette.GetReadableTextColor(disabledFillColor);
             button.RectColor = _theme.Border;
             button.RectDisableColor = _theme.Border;
             button.RectHoverColor = _theme.Border;
             button.RectPressColor = _theme.Border;
             button.RectSelectedColor = _theme.Border;
+        }
+
+        private static Color BlendButtonColor(Color color, Color background)
+        {
+            return Color.FromArgb(
+                (color.R + background.R) / 2,
+                (color.G + background.G) / 2,
+                (color.B + background.B) / 2);
         }
 
         private void PersistWindowSize()

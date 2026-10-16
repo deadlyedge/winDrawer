@@ -10,13 +10,14 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
     private readonly Action _exitAction = exitAction ?? throw new ArgumentNullException(nameof(exitAction));
     private NotifyIcon? _trayIcon;
     private ContextMenuStrip? _trayMenu;
+    private Icon? _ownedIcon;
 
-    public void Initialize(string iconPath, Icon? fallbackIcon, string tooltipText)
+    public bool Initialize(string iconPath, Icon? fallbackIcon, string tooltipText)
     {
         if (_trayIcon != null)
         {
             DrawerLogger.LogDebug("TrayController already initialized; skipping duplicate initialization.");
-            return;
+            return _trayIcon.Visible && _trayIcon.Icon != null;
         }
 
         try
@@ -41,14 +42,6 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
             exitItem.Click += (_, _) =>
             {
                 DrawerLogger.LogInformation("Tray exit requested.");
-                try
-                {
-                    Dispose();
-                }
-                catch (Exception disposeEx)
-                {
-                    DrawerLogger.LogError("Failed to dispose tray resources during exit.", disposeEx);
-                }
                 _exitAction();
             };
 
@@ -63,19 +56,26 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
             _trayIcon = new NotifyIcon
             {
                 ContextMenuStrip = _trayMenu,
-                Text = tooltipText,
-                Visible = true
+                Text = tooltipText
             };
 
             ApplyIcon(iconPath, fallbackIcon);
+            if (_trayIcon.Icon == null)
+            {
+                throw new InvalidOperationException("No system tray icon or fallback icon could be loaded.");
+            }
+
             _trayIcon.DoubleClick += (_, _) => _toggleAction();
+            _trayIcon.Visible = true;
 
             DrawerLogger.LogInformation("System tray icon initialized.");
+            return _trayIcon.Visible;
         }
         catch (Exception ex)
         {
             DrawerLogger.LogError("Failed to initialize system tray icon.", ex);
             Dispose();
+            return false;
         }
     }
 
@@ -90,7 +90,7 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
         {
             try
             {
-                _trayIcon.Icon = new Icon(iconPath, AppConstants.Ui.TrayIconSize);
+                AssignOwnedIcon(new Icon(iconPath, AppConstants.Ui.TrayIconSize));
                 DrawerLogger.LogInformation($"Tray icon loaded from '{iconPath}'.");
                 return;
             }
@@ -116,7 +116,7 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
 
         try
         {
-            _trayIcon.Icon = (Icon)fallbackIcon.Clone();
+            AssignOwnedIcon((Icon)fallbackIcon.Clone());
             DrawerLogger.LogInformation("Fallback tray icon applied.");
         }
         catch (Exception ex)
@@ -125,20 +125,61 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
         }
     }
 
-    public void Dispose()
+    private void AssignOwnedIcon(Icon icon)
     {
+        if (_trayIcon == null)
+        {
+            icon.Dispose();
+            return;
+        }
+
         try
         {
-            if (_trayIcon != null)
+            var previousIcon = _ownedIcon;
+            _trayIcon.Icon = icon;
+            _ownedIcon = icon;
+            previousIcon?.Dispose();
+        }
+        catch
+        {
+            icon.Dispose();
+            throw;
+        }
+    }
+
+    public void Dispose()
+    {
+        var trayIcon = _trayIcon;
+        _trayIcon = null;
+        try
+        {
+            if (trayIcon != null)
             {
-                _trayIcon.Visible = false;
-                _trayIcon.Dispose();
-                _trayIcon = null;
+                trayIcon.Visible = false;
             }
         }
         catch (Exception ex)
         {
+            DrawerLogger.LogError("Error hiding tray icon during disposal.", ex);
+        }
+
+        try
+        {
+            trayIcon?.Dispose();
+        }
+        catch (Exception ex)
+        {
             DrawerLogger.LogError("Error disposing tray icon.", ex);
+        }
+
+        try
+        {
+            _ownedIcon?.Dispose();
+            _ownedIcon = null;
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError("Error disposing the tray icon image.", ex);
         }
 
         try

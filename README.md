@@ -10,7 +10,7 @@ winDrawer is a small Windows Forms utility for keeping frequently used folders c
 - **Adjustable main window** – Set the main window height; the drawer list uses the remaining area and scrolls naturally.
 - **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
 - **Windows login startup** – Optionally register the app to start for the current user.
-- **System tray control** – Toggle visibility, jump into settings, or exit the app from the tray icon handled by `TrayController`.
+- **System tray control** – The main window and auxiliary windows do not create taskbar buttons during normal operation. Use the tray icon to show/hide the main window, open settings, or exit; if tray initialization fails, the main window remains available from the taskbar.
 - **Structured diagnostics** – Execution flow and errors are written to `%USERPROFILE%\.config\winDrawer\Drawer.log` for easier troubleshooting.
 
 ## Getting Started
@@ -65,7 +65,7 @@ dotnet publish .\winDrawer.csproj `
 dotnet run
 ```
 
-The main window launches without a border and can be dragged by its header. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available.
+The main window launches without a border. When its position is unlocked, drag the branded header (shown with a move cursor) to reposition it; locking the position disables dragging and removes that cursor hint. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available.
 
 ## Configuration
 

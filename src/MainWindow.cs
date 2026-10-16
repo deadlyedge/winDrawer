@@ -32,6 +32,7 @@ namespace winDrawer
         private DrawerWindow? _currentDrawerWindow;
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;
+        private bool? _windowLockedPreview;
         private TrayController? _trayController;
         private SettingsForm? _settingsForm;
 
@@ -203,14 +204,32 @@ namespace winDrawer
 
             _trayController = new TrayController(
                 ToggleVisibility,
-                () => SettingsButton_Click(this, EventArgs.Empty),
+                () =>
+                {
+                    if (!Visible)
+                    {
+                        Show();
+                    }
+
+                    if (WindowState == FormWindowState.Minimized)
+                    {
+                        WindowState = FormWindowState.Normal;
+                    }
+
+                    Activate();
+                    SettingsButton_Click(this, EventArgs.Empty);
+                },
                 () =>
                 {
                     DrawerLogger.LogInformation("Application exit initiated from tray.");
                     Application.Exit();
                 });
 
-            _trayController.Initialize(iconPath, Icon, AppConstants.Branding.ApplicationDisplayName);
+            if (!_trayController.Initialize(iconPath, Icon, AppConstants.Branding.ApplicationDisplayName))
+            {
+                DrawerLogger.LogWarning("System tray initialization failed; showing the main window in the taskbar as a fallback.");
+                ShowInTaskbar = true;
+            }
         }
 
         private void ToggleVisibility()
@@ -725,22 +744,14 @@ namespace winDrawer
 
         private void WireDragHandlers()
         {
-            // headerPanel.MouseDown += HeaderDragBegin;
-            // headerPanel.MouseMove += HeaderDragMove;
-            // headerPanel.MouseUp += HeaderDragEnd;
-
             logoLabel.MouseDown += HeaderDragBegin;
             logoLabel.MouseMove += HeaderDragMove;
             logoLabel.MouseUp += HeaderDragEnd;
-
-            // headerIcon.MouseDown += HeaderDragBegin;
-            // headerIcon.MouseMove += HeaderDragMove;
-            // headerIcon.MouseUp += HeaderDragEnd;
         }
 
         private void HeaderDragBegin(object? sender, MouseEventArgs args)
         {
-            if (_settingsSnapshot.WindowLocked)
+            if (IsWindowLocked)
             {
                 return;
             }
@@ -756,6 +767,12 @@ namespace winDrawer
 
         private void HeaderDragMove(object? sender, MouseEventArgs args)
         {
+            if (IsWindowLocked)
+            {
+                _isDragging = false;
+                return;
+            }
+
             if (!_isDragging)
             {
                 return;
@@ -764,6 +781,8 @@ namespace winDrawer
             var screenPoint = PointToScreen(args.Location);
             Location = new Point(screenPoint.X - _dragOffset.X, screenPoint.Y - _dragOffset.Y);
         }
+
+        private bool IsWindowLocked => _windowLockedPreview ?? _settingsSnapshot.WindowLocked;
 
         private void HeaderDragEnd(object? sender, MouseEventArgs args)
         {
@@ -785,11 +804,16 @@ namespace winDrawer
 
             if (_settingsForm is { IsDisposed: false } existingSettings)
             {
+                if (!existingSettings.Visible)
+                {
+                    existingSettings.Show(this);
+                }
+
                 existingSettings.Activate();
                 return;
             }
 
-            // Show Settings as a modeless window that closes when the user *clicks outside* the window.
+            // Show settings as a modeless window; it stays open until saved, cancelled, or the app exits.
             var settings = new SettingsForm(_settingsSnapshot);
             _settingsForm = settings;
             void previewHandler(object? _, ThemePreviewEventArgs args) => ApplyTheme(args.Palette);
@@ -801,6 +825,16 @@ namespace winDrawer
                 ApplyMainWindowBounds(previewSnapshot);
             }
             settings.WindowHeightPreviewChanged += (EventHandler?)windowHeightPreviewHandler;
+            void windowLockPreviewHandler(bool windowLocked)
+            {
+                _windowLockedPreview = windowLocked;
+                logoLabel.Cursor = windowLocked ? Cursors.Default : Cursors.SizeAll;
+                if (windowLocked)
+                {
+                    _isDragging = false;
+                }
+            }
+            settings.WindowLockPreviewChanged += windowLockPreviewHandler;
             void resetDefaultsHandler(object? _, EventArgs _2)
             {
                 var confirmation = MessageBox.Show(
@@ -879,6 +913,7 @@ namespace winDrawer
 
             settings.FormClosed += (_, _) =>
             {
+                _windowLockedPreview = null;
                 if (ReferenceEquals(_settingsForm, settings))
                 {
                     _settingsForm = null;
@@ -1056,6 +1091,12 @@ namespace winDrawer
         private void ApplySettings(SettingsSnapshot snapshot)
         {
             StartPosition = FormStartPosition.Manual;
+            logoLabel.Cursor = snapshot.WindowLocked ? Cursors.Default : Cursors.SizeAll;
+            if (snapshot.WindowLocked)
+            {
+                _isDragging = false;
+            }
+
             ApplyMainWindowBounds(snapshot);
             ApplyTheme(snapshot.BuildThemePalette());
             PopulateDrawerList(snapshot.Drawers);

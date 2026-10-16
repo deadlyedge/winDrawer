@@ -27,6 +27,7 @@ public partial class SettingsForm : UIForm
 
         InitializeComponent();
         DoubleBuffered = true;
+        ShowInTaskbar = false;
 
         ConfigureFonts();
         ConfigureControls();
@@ -43,6 +44,8 @@ public partial class SettingsForm : UIForm
     public event EventHandler<ThemePreviewEventArgs>? ThemePreviewChanged;
 
     public event EventHandler? WindowHeightPreviewChanged;
+
+    public event Action<bool>? WindowLockPreviewChanged;
 
     public event EventHandler? StartupDefaultsResetRequested;
 
@@ -182,6 +185,7 @@ public partial class SettingsForm : UIForm
         previewPanel.KeyDown += OnThemeColorPreviewKeyDown;
         opacityTrackBar.ValueChanged += OnOpacityValueChanged;
         windowHeightTrackBar.ValueChanged += OnWindowHeightValueChanged;
+        behaviorCheckBoxGroup.ValueChanged += OnBehaviorValueChanged;
 
         saveButton.Click += SaveButton_Click;
         cancelButton.Click += CancelButton_Click;
@@ -338,6 +342,7 @@ public partial class SettingsForm : UIForm
         ResultSettings = _originalSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
+        WindowLockPreviewChanged?.Invoke(_originalSnapshot.WindowLocked);
         DialogResult = DialogResult.Cancel;
         _allowClose = true;
         Close();
@@ -472,6 +477,18 @@ public partial class SettingsForm : UIForm
         _workingSnapshot.StartWithWindows = selected.Contains(StartWithWindowsIndex);
         _workingSnapshot.WindowLocked = selected.Contains(LockPositionIndex);
         _workingSnapshot.WindowHeight = windowHeightTrackBar.Value;
+    }
+
+    private void OnBehaviorValueChanged(object? sender, EventArgs e)
+    {
+        var windowLocked = IsBehaviorChecked(LockPositionIndex);
+        if (_workingSnapshot.WindowLocked == windowLocked)
+        {
+            return;
+        }
+
+        _workingSnapshot.WindowLocked = windowLocked;
+        WindowLockPreviewChanged?.Invoke(windowLocked);
     }
 
     private bool IsBehaviorChecked(int index)

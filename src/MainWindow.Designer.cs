@@ -80,7 +80,7 @@ namespace winDrawer
             // 
             // logoLabel
             // 
-            logoLabel.Cursor = Cursors.SizeAll;
+            logoLabel.Cursor = Cursors.Default;
             logoLabel.Dock = DockStyle.Fill;
             logoLabel.Font = SystemFonts.MessageBoxFont;
             logoLabel.ForeColor = SystemColors.ButtonFace;
@@ -173,6 +173,7 @@ namespace winDrawer
             ClientSize = new Size(AppConstants.Defaults.MainWindowWidth, AppConstants.Defaults.MainWindowHeightDefault);
             Controls.Add(mainTableLayoutPanel);
             Name = "MainWindow";
+            ShowInTaskbar = false;
             Text = "winDrawerMainWindow";
             mainTableLayoutPanel.ResumeLayout(false);
             headerTableLayoutPanel.ResumeLayout(false);

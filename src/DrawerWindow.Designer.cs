@@ -55,6 +55,8 @@ namespace winDrawer
             mainTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
             mainTableLayoutPanel.ColumnCount = 1;
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            mainTableLayoutPanel.Margin = new Padding(0);
+            mainTableLayoutPanel.Padding = new Padding(0);
             mainTableLayoutPanel.Controls.Add(drawerContentsHostPanel, 0, 0);
             mainTableLayoutPanel.Controls.Add(drawerHeaderTableLayoutPanel, 0, 1);
             mainTableLayoutPanel.Dock = DockStyle.Fill;
@@ -74,8 +76,8 @@ namespace winDrawer
             drawerContentsHostPanel.Controls.Add(drawerContentsListView);
             drawerContentsHostPanel.Controls.Add(drawerContentsScrollBar);
             drawerContentsHostPanel.Dock = DockStyle.Fill;
-            drawerContentsHostPanel.Location = new Point(0, 0);
             drawerContentsHostPanel.Margin = new Padding(0);
+            drawerContentsHostPanel.Location = new Point(0, 0);
             drawerContentsHostPanel.Name = "drawerContentsHostPanel";
             drawerContentsHostPanel.Size = new Size(762, 533);
             drawerContentsHostPanel.TabIndex = 0;
@@ -112,6 +114,7 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.Controls.Add(drawerButtonTableLayoutPanel, 1, 0);
             drawerHeaderTableLayoutPanel.Dock = DockStyle.Fill;
             drawerHeaderTableLayoutPanel.Location = new Point(3, 536);
+            drawerHeaderTableLayoutPanel.Margin = new Padding(0);
             drawerHeaderTableLayoutPanel.Name = "drawerHeaderTableLayoutPanel";
             drawerHeaderTableLayoutPanel.RowCount = 1;
             drawerHeaderTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));

@@ -6,6 +6,8 @@
 
 > 本文件描述当前配置格式：主题颜色使用 `startup.window_color = "#RRGGBB"`，透明度使用独立整数 `startup.window_opacity`（0–100）。程序尚未发布，不提供旧 `window_color_hsla` 的自动迁移；开发用用户配置在阶段 6.1 中直接改为新格式。其它旧字段/表示不属于当前 schema。
 
+设置页的 **Default** 按钮会在用户确认后立即把内嵌默认模板中受支持的 `[startup]` 项写入活动配置，保留 `drawers` 和未知键，并删除已废弃的 `startup.icon_size`。这一步会同步 Windows 当前用户登录启动状态，之后的 Save/Cancel 只控制 Default 之后的改动。
+
 ## 2. 基础格式
 
 配置使用 UTF-8 TOML。核心结构包含一个 `[startup]` 表与零个或多个 `[[drawers]]` 表。抽屉路径使用标准 TOML 双引号字符串；Windows 路径中的反斜杠按 TOML 规则写成 `\\`，解析后得到普通 Windows 路径。抽屉尺寸使用与 `name`、`path` 同级的 `[width, height]` 数组。
@@ -36,7 +38,6 @@ path = "%USERPROFILE%\\Downloads"
 |---|---|---:|---|
 | `startup.start_with_windows` | Boolean | `false` | 是否在 Windows 登录时启动。若 UI 提供该选项，必须真正生效；是否纳入首版见产品需求。 |
 | `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止通过拖动区域移动主窗口。 |
-| `startup.icon_size` | Integer | `96` | 图标正方形边长，支持范围 32–512。超范围值夹取到范围内。 |
 | `startup.window_height` | Integer | `200` | 主窗口客户区高度，单位为 96 DPI 逻辑像素（DIP），支持范围 100–1000。屏幕空间不足时运行时高度会临时受工作区限制，但保存的期望值不变。缺失或类型无效时使用默认高度 200。 |
 | `startup.window_color` | `#RRGGBB` 字符串 | `#000533` | 主主题基础颜色；只接受 6 位 RGB 十六进制颜色。缺失或格式错误时使用默认颜色。 |
 | `startup.window_opacity` | Integer | `95` | 主窗口透明度百分比，支持 0–100；超范围值夹取，缺失或类型无效时使用默认值。 |
@@ -77,6 +78,7 @@ path = "%USERPROFILE%\\Downloads"
 ## 6. 迁移与演进
 
 - 当前版本应使用本文件第 2 节给出的字段格式。
+- `startup.icon_size` 已从当前设置模型移除；应用不再读取或写入该键。普通保存按未知键保护规则保留已有 `icon_size`，在设置页确认 **Default** 时删除该废弃键。
 - 当前抽屉 schema 使用标准 TOML 字符串，并要求尺寸使用同级 `size = [width, height]` 数组；不兼容旧的 `[drawers.size]` 子表。升级前需将旧尺寸子表转换为本节新格式。
 - 当前格式没有 schema version。首次引入 `schema_version` 或改用其他格式前，先定义默认版本、旧版本升级、未知未来版本处理和回滚策略。
 - 程序尚未发布，不实现旧配置运行时迁移或 HSLA 兼容读取。阶段 6.1 中开发者当前用户目录配置由开发任务直接改写为新字段；应用首次启动时若活动文件不存在，则用随程序部署的根目录 `Drawer-settings.toml` 模板初始化。应用不会搜索、读取或迁移其它路径中的配置。
@@ -89,6 +91,7 @@ path = "%USERPROFILE%\\Downloads"
 - [ ] 空文件、缺少 startup、缺少 drawers 均使用定义的默认值。
 - [ ] 示例配置可读取并写回，抽屉顺序、名称、路径、尺寸和主题值不丢失。
 - [ ] `window_color` 的合法/非法十六进制值和 `window_opacity` 的缺失/越界值符合规则。
+- [ ] Settings Default 取消确认时不改设置；确认后仅重置模板中支持的 startup 项、删除 `icon_size`、保留 drawers/未知键，并与 Windows 登录启动注册一致；失败时恢复原值并提示。
 - [ ] 窗口坐标正常、数组过短、类型错误均不 panic。
 - [ ] 抽屉 name/path/size 缺失、尺寸数组长度/类型错误、尺寸越界与无效 path 符合规则。
 - [ ] 环境变量展开后重复路径判断符合 Windows 大小写规则。

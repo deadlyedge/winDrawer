@@ -40,12 +40,9 @@ internal static class AppConstants
     internal static class Defaults
     {
         public static readonly Point WindowPosition = new(100, 100);
-        public const int IconSizeMin = 32;
-        public const int IconSizeMax = 512;
-        public const int IconSizeDefault = 96;
         public const int MainWindowHeightMin = 100;
-        public const int MainWindowHeightMax = 1000;
         public const int MainWindowHeightDefault = 200;
+        public const int MainWindowHeightMax = 1000;
         public const int MainWindowWidth = 200;
         public static readonly Color ThemeColor = Color.FromArgb(0, 5, 51);
         public const int ThemeOpacity = 95;
@@ -54,12 +51,6 @@ internal static class AppConstants
 
     internal static class Theme
     {
-        public const int HueMin = 0;
-        public const int HueMax = 360;
-        public const int SaturationMin = 0;
-        public const int SaturationMax = 100;
-        public const int LightnessMin = 0;
-        public const int LightnessMax = 100;
         public const int OpacityMin = 0;
         public const int OpacityMax = 100;
     }

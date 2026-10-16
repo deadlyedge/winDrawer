@@ -10,17 +10,18 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly TextBox _nameTextBox = new();
     private readonly TextBox _pathTextBox = new();
     private readonly Panel _colorPreview = new();
+    private readonly Label _colorCodeLabel = new();
+    private readonly Label _colorHintLabel = new();
     private readonly ColorDialog _colorDialog = new();
     private readonly PrivateFontCollection _fontCollection = new();
     private readonly List<Font> _ownedFonts = new();
-    private readonly Font _inputFont = new("Microsoft Sans Serif", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
+    private readonly Font _inputFont = new("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
     private readonly TableLayoutPanel _layoutPanel = new();
     private readonly TableLayoutPanel _headerPanel = new();
     private readonly UILabel _titleLabel = new();
     private readonly UIButton _closeButton = new();
     private readonly UIGroupBox _detailsGroup = new();
     private readonly UIButton _browseButton = new();
-    private readonly UIButton _chooseColorButton = new();
     private readonly UIButton _clearColorButton = new();
     private readonly UIButton _saveButton = new();
     private readonly UIButton _deleteButton = new();
@@ -37,7 +38,7 @@ internal sealed class DrawerSettingsDialog : Form
     {
         ArgumentNullException.ThrowIfNull(drawer);
 
-        Text = "Drawer settings";
+        Text = $"抽屉设置：{drawer.Name}";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.None;
         MinimizeBox = false;
@@ -102,7 +103,7 @@ internal sealed class DrawerSettingsDialog : Form
             AppConstants.Directories.Assets,
             AppConstants.Directories.Fonts,
             AppConstants.Files.LogoFontFileName);
-        _titleLabel.Font = CreateOwnedFont("Segoe UI Semibold", 14F);
+        _titleLabel.Font = _inputFont;
         foreach (var button in GetButtons())
         {
             if (ReferenceEquals(button, _closeButton))
@@ -110,7 +111,7 @@ internal sealed class DrawerSettingsDialog : Form
                 continue;
             }
 
-            button.Font = CreateOwnedFont("Segoe UI", 10F);
+            button.Font = CreateOwnedFont("Segoe UI", 9F);
         }
 
         if (!File.Exists(fontPath))
@@ -124,7 +125,6 @@ internal sealed class DrawerSettingsDialog : Form
             if (_fontCollection.Families.Length > 0)
             {
                 var brandFont = _fontCollection.Families[0];
-                _titleLabel.Font = CreateBrandFont(brandFont, 14F);
                 foreach (var button in GetButtons())
                 {
                     if (ReferenceEquals(button, _closeButton))
@@ -169,7 +169,7 @@ internal sealed class DrawerSettingsDialog : Form
         _headerPanel.Controls.Add(_titleLabel, 0, 0);
         _headerPanel.Controls.Add(_closeButton, 1, 0);
 
-        _titleLabel.Text = "winDrawer settings";
+        _titleLabel.Text = $"抽屉设置：{_nameTextBox.Text}";
         _titleLabel.Dock = DockStyle.Fill;
         _titleLabel.TextAlign = ContentAlignment.MiddleLeft;
         _titleLabel.Cursor = Cursors.SizeAll;
@@ -189,8 +189,8 @@ internal sealed class DrawerSettingsDialog : Form
         _closeButton.AccessibleName = "Close drawer settings";
         _closeButton.Click += (_, _) => DialogResult = DialogResult.Cancel;
 
-        _detailsGroup.Text = "drawer";
-        _detailsGroup.Font = CreateLogoFont(9F);
+        _detailsGroup.Text = $"抽屉：{drawer.Name}";
+        _detailsGroup.Font = _inputFont;
         _detailsGroup.Dock = DockStyle.Fill;
         _detailsGroup.Margin = new Padding(18, 5, 18, 6);
         _detailsGroup.Padding = new Padding(18, 38, 18, 12);
@@ -219,33 +219,71 @@ internal sealed class DrawerSettingsDialog : Form
         _pathTextBox.BorderStyle = BorderStyle.FixedSingle;
         _fieldsPanel.Controls.Add(_pathTextBox, 1, 1);
         _fieldsPanel.Controls.Add(_browseButton, 2, 1);
-        _fieldsPanel.Controls.Add(CreateLabel("Overlay"), 0, 2);
+        _fieldsPanel.Controls.Add(CreateLabel("蒙版颜色"), 0, 2);
 
         _colorPanel.Dock = DockStyle.Fill;
         _colorPanel.FlowDirection = FlowDirection.LeftToRight;
         _colorPanel.WrapContents = false;
         _colorPanel.Padding = new Padding(0);
         _colorPreview.Size = new Size(42, 30);
-        _colorPreview.Margin = new Padding(0, 2, 10, 0);
+        _colorPreview.Margin = new Padding(0, 0, 0, 2);
         _colorPreview.BorderStyle = BorderStyle.FixedSingle;
         _colorPreview.AccessibleName = "Drawer overlay color preview";
+        _colorPreview.BackColor = Color.FromArgb(64, 64, 64);
+        _colorCodeLabel.Text = _selectedColor is { } initialColor
+            ? ThemePalette.FormatHexColor(initialColor)
+            : "无蒙版";
         UpdateColorPreview();
 
-        _chooseColorButton.Text = "choose color";
-        _chooseColorButton.Size = new Size(128, 34);
-        _chooseColorButton.Margin = new Padding(0, 0, 8, 0);
-        _chooseColorButton.Click += ChooseColorButton_Click;
+        _colorHintLabel.Text = "点选更换颜色";
+        _colorHintLabel.AutoSize = true;
+        _colorHintLabel.Margin = new Padding(0, 0, 0, 2);
+        _colorCodeLabel.AutoSize = true;
+        _colorCodeLabel.Margin = new Padding(0, 0, 0, 2);
 
-        _clearColorButton.Text = "no overlay";
+        var colorPreviewPanel = new Panel
+        {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0, 2, 10, 0),
+            Padding = new Padding(0)
+        };
+        var colorPreviewLayout = new TableLayoutPanel
+        {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1,
+            RowCount = 3,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        colorPreviewLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        colorPreviewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        colorPreviewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        colorPreviewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        colorPreviewLayout.Controls.Add(_colorHintLabel, 0, 0);
+        colorPreviewLayout.Controls.Add(_colorPreview, 0, 1);
+        colorPreviewLayout.Controls.Add(_colorCodeLabel, 0, 2);
+        colorPreviewPanel.Controls.Add(colorPreviewLayout);
+
+        _colorPreview.Cursor = Cursors.Hand;
+        _colorPreview.TabStop = true;
+        _colorPreview.Click += ChooseColorButton_Click;
+        _colorPreview.KeyDown += ColorPreview_KeyDown;
+        _colorHintLabel.Click += ChooseColorButton_Click;
+        _colorCodeLabel.Click += ChooseColorButton_Click;
+        _colorHintLabel.Cursor = Cursors.Hand;
+        _colorCodeLabel.Cursor = Cursors.Hand;
+
+        _clearColorButton.Text = "无蒙版";
         _clearColorButton.Size = new Size(112, 34);
         _clearColorButton.Click += (_, _) => SetSelectedColor(null);
-        _colorPanel.Controls.Add(_colorPreview);
-        _colorPanel.Controls.Add(_chooseColorButton);
+        _colorPanel.Controls.Add(colorPreviewPanel);
         _colorPanel.Controls.Add(_clearColorButton);
         _fieldsPanel.Controls.Add(_colorPanel, 1, 2);
         _fieldsPanel.SetColumnSpan(_colorPanel, 2);
-        _overlayInfoLabel.Text = "Overlay uses a fixed 70% blend.";
-        _overlayInfoLabel.Font = CreateLogoFont(9F);
+        _overlayInfoLabel.Text = "蒙版固定以 70% 混合；颜色只影响此抽屉。";
+        _overlayInfoLabel.Font = _inputFont;
         _overlayInfoLabel.Dock = DockStyle.Fill;
         _overlayInfoLabel.TextAlign = ContentAlignment.MiddleLeft;
         _overlayInfoLabel.Padding = new Padding(22, 0, 0, 0);
@@ -314,16 +352,15 @@ internal sealed class DrawerSettingsDialog : Form
 
             label.ForeColor = Color.FromArgb(224, 224, 224);
             label.BackColor = Color.Transparent;
-            label.Font = CreateLogoFont(9F);
+            label.Font = _inputFont;
         }
 
-        ConfigureButtonStyle(_closeButton, Color.FromArgb(64, 64, 64), Color.FromArgb(96, 96, 96), Color.FromArgb(48, 48, 48));
-        ConfigureButtonStyle(_browseButton, Color.FromArgb(9, 140, 210), Color.FromArgb(0, 94, 140), Color.FromArgb(0, 74, 112));
-        ConfigureButtonStyle(_chooseColorButton, Color.FromArgb(9, 140, 210), Color.FromArgb(0, 94, 140), Color.FromArgb(0, 74, 112));
-        ConfigureButtonStyle(_clearColorButton, Color.FromArgb(96, 96, 96), Color.FromArgb(120, 120, 120), Color.FromArgb(72, 72, 72));
-        ConfigureButtonStyle(_saveButton, Color.FromArgb(9, 140, 210), Color.FromArgb(0, 94, 140), Color.FromArgb(0, 74, 112));
-        ConfigureButtonStyle(_deleteButton, Color.DarkRed, Color.LightCoral, Color.FromArgb(112, 0, 0));
-        ConfigureButtonStyle(_cancelButton, Color.Red, Color.LightCoral, Color.DarkRed);
+        ConfigureButtonStyle(_closeButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
+        ConfigureButtonStyle(_browseButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
+        ConfigureButtonStyle(_clearColorButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
+        ConfigureButtonStyle(_saveButton, Color.SeaGreen, Color.MediumSeaGreen, Color.DarkGreen);
+        ConfigureButtonStyle(_deleteButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
+        ConfigureButtonStyle(_cancelButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
         UpdateColorPreview();
     }
 
@@ -346,7 +383,6 @@ internal sealed class DrawerSettingsDialog : Form
     {
         yield return _closeButton;
         yield return _browseButton;
-        yield return _chooseColorButton;
         yield return _clearColorButton;
         yield return _saveButton;
         yield return _deleteButton;
@@ -365,14 +401,6 @@ internal sealed class DrawerSettingsDialog : Form
         var font = new Font(familyName, size, FontStyle.Regular, GraphicsUnit.Point);
         _ownedFonts.Add(font);
         return font;
-    }
-
-    private Font CreateLogoFont(float size)
-    {
-        var family = _fontCollection.Families.FirstOrDefault();
-        return family is null
-            ? CreateOwnedFont("Segoe UI", size)
-            : CreateBrandFont(family, size);
     }
 
     private static void ConfigureButton(UIButton button, string text, Size size)
@@ -487,6 +515,18 @@ internal sealed class DrawerSettingsDialog : Form
         }
     }
 
+    private void ColorPreview_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode is not Keys.Enter and not Keys.Space)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+        ChooseColorButton_Click(sender, EventArgs.Empty);
+    }
+
     private void SetSelectedColor(Color? color)
     {
         _selectedColor = color;
@@ -498,10 +538,14 @@ internal sealed class DrawerSettingsDialog : Form
         if (_selectedColor is not { } color)
         {
             _colorPreview.BackColor = Color.FromArgb(64, 64, 64);
+            _colorPreview.AccessibleDescription = "No overlay. Click to choose an overlay color.";
+            _colorCodeLabel.Text = "无蒙版";
             return;
         }
 
         _colorPreview.BackColor = ThemePalette.BlendOverlayColor(Color.FromArgb(64, 64, 64), color);
+        _colorPreview.AccessibleDescription = $"Overlay color {ThemePalette.FormatHexColor(color)}. Click to change color.";
+        _colorCodeLabel.Text = ThemePalette.FormatHexColor(color);
     }
 
     private static void ConfigureColorDialog(ColorDialog dialog)

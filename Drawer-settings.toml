@@ -1,6 +1,6 @@
 [startup]
 # 启动与主窗口设置
-# 配置登录启动、窗口位置、主题颜色和图标大小。
+# 配置登录启动、窗口行为、主题颜色和主窗口高度。
 start_with_windows = false
 window_locked = false
 window_position = [109, 13]

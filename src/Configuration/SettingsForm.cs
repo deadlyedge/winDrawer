@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing.Text;
 using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
@@ -10,10 +11,15 @@ public partial class SettingsForm : UIForm
     private const int StartWithWindowsIndex = 0;
     private const int LockPositionIndex = 1;
 
-    private readonly SettingsSnapshot _originalSnapshot;
-    private readonly SettingsSnapshot _workingSnapshot;
+    private SettingsSnapshot _originalSnapshot;
+    private SettingsSnapshot _workingSnapshot;
+    private readonly PrivateFontCollection _fontCollection = new();
+    private readonly List<Font> _ownedFonts = new();
+    private Font? _buttonFont;
+    private Font? _systemFont;
     private bool _isDragging;
     private Point _dragOffset;
+    private bool _allowClose;
 
     public SettingsForm(SettingsSnapshot snapshot)
     {
@@ -23,7 +29,9 @@ public partial class SettingsForm : UIForm
         InitializeComponent();
         DoubleBuffered = true;
 
+        ConfigureFonts();
         ConfigureControls();
+        ConfigureButtonPalette();
         ApplySnapshotToUi();
         WireEvents();
         WireDragHandlers();
@@ -35,6 +43,8 @@ public partial class SettingsForm : UIForm
     public event EventHandler<ThemePreviewEventArgs>? ThemePreviewChanged;
 
     public event EventHandler? WindowHeightPreviewChanged;
+
+    public event EventHandler? StartupDefaultsResetRequested;
 
     public int WindowHeightPreview => _workingSnapshot.WindowHeight;
 
@@ -54,6 +64,112 @@ public partial class SettingsForm : UIForm
 
     public SettingsSnapshot ResultSettings { get; private set; }
 
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (!_allowClose && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        base.OnFormClosing(e);
+    }
+
+    public void ApplyResetBaseline(SettingsSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        _originalSnapshot = snapshot.Clone();
+        _workingSnapshot = snapshot.Clone();
+        ResultSettings = snapshot.Clone();
+        ApplySnapshotToUi();
+        UpdatePreview();
+        WindowHeightPreviewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ConfigureFonts()
+    {
+        _systemFont = CreateOwnedFont("Segoe UI", 9F);
+        var fontPath = Path.Combine(
+            AppContext.BaseDirectory,
+            AppConstants.Directories.Assets,
+            AppConstants.Directories.Fonts,
+            AppConstants.Files.LogoFontFileName);
+
+        if (File.Exists(fontPath))
+        {
+            try
+            {
+                _fontCollection.AddFontFile(fontPath);
+                var family = _fontCollection.Families.FirstOrDefault();
+                if (family != null)
+                {
+                    _buttonFont = CreateOwnedFont(family, 10.5F);
+                }
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogWarning($"Unable to load the settings brand font from '{fontPath}'. {ex.Message}");
+            }
+        }
+
+        _buttonFont ??= CreateOwnedFont("Segoe UI", 9F);
+        ApplyFontToControls(this);
+    }
+
+    private void ApplyFontToControls(Control parent)
+    {
+        foreach (Control control in parent.Controls)
+        {
+            if (control is UIButton button)
+            {
+                button.Font = _buttonFont!;
+                button.TipsFont = _systemFont!;
+            }
+            else
+            {
+                control.Font = _systemFont!;
+            }
+
+            ApplyFontToControls(control);
+        }
+    }
+
+    private Font CreateOwnedFont(string familyName, float size)
+    {
+        var font = new Font(familyName, size, FontStyle.Regular, GraphicsUnit.Point);
+        _ownedFonts.Add(font);
+        return font;
+    }
+
+    private Font CreateOwnedFont(FontFamily family, float size)
+    {
+        var font = new Font(family, size, FontStyle.Regular, GraphicsUnit.Point);
+        _ownedFonts.Add(font);
+        return font;
+    }
+
+    private void ConfigureButtonPalette()
+    {
+        ConfigureButton(saveButton, Color.SeaGreen, Color.MediumSeaGreen, Color.DarkGreen);
+        ConfigureButton(cancelButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
+        ConfigureButton(shutDownButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
+        ConfigureButton(defaultSettingsButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
+        ConfigureButton(openSettingsTomlButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
+    }
+
+    private static void ConfigureButton(UIButton button, Color fill, Color hover, Color pressed)
+    {
+        button.FillColor = fill;
+        button.FillHoverColor = hover;
+        button.FillPressColor = pressed;
+        button.FillSelectedColor = pressed;
+        button.RectColor = fill;
+        button.RectHoverColor = hover;
+        button.RectPressColor = pressed;
+        button.RectSelectedColor = pressed;
+        button.ForeColor = Color.White;
+    }
+
     private void ConfigureControls()
     {
         opacityTrackBar.Minimum = AppConstants.Theme.OpacityMin;
@@ -63,11 +179,15 @@ public partial class SettingsForm : UIForm
 
         behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
 
+        previewPanel.FillColor = _workingSnapshot.WindowColor;
+        previewPanel.RectColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
+
         previewPanel.Cursor = Cursors.Hand;
         previewPanel.TabStop = true;
         previewPanel.AccessibleRole = AccessibleRole.PushButton;
         previewPanel.AccessibleName = "Theme color preview. Activate to choose a color.";
-        previewPanel.AccessibleDescription = "Opens the Windows color selection dialog.";
+        previewPanel.AccessibleDescription = "Click to change the theme color. The RGB color code is shown in the preview.";
+        CancelButton = cancelButton;
     }
 
     private void WireEvents()
@@ -221,6 +341,7 @@ public partial class SettingsForm : UIForm
         ResultSettings = _workingSnapshot.Clone();
         SelectedAccentColor = ResultSettings.GetAccentColor();
         DialogResult = DialogResult.OK;
+        _allowClose = true;
         Close();
     }
 
@@ -232,6 +353,7 @@ public partial class SettingsForm : UIForm
         SelectedAccentColor = ResultSettings.GetAccentColor();
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
         DialogResult = DialogResult.Cancel;
+        _allowClose = true;
         Close();
     }
 
@@ -240,12 +362,14 @@ public partial class SettingsForm : UIForm
         DrawerLogger.LogWarning("SettingsForm: shutdown requested.");
         ShutdownRequested = true;
         DialogResult = DialogResult.Abort;
+        _allowClose = true;
         Close();
     }
 
     private void DefaultSettingsButton_Click(object? sender, EventArgs e)
     {
-        DrawerLogger.LogDebug("SettingsForm: default settings button clicked.");
+        DrawerLogger.LogInformation("SettingsForm: startup defaults reset requested.");
+        StartupDefaultsResetRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void OpenSettingsTomlButton_Click(object? sender, EventArgs e)
@@ -281,6 +405,23 @@ public partial class SettingsForm : UIForm
     private bool TrySynchronizeStartupRegistration()
     {
         var requestedState = IsBehaviorChecked(StartWithWindowsIndex);
+        bool previousState;
+        try
+        {
+            previousState = StartupRegistration.IsEnabled();
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError("Unable to read the current user's Windows startup registration.", ex);
+            MessageBox.Show(
+                this,
+                $"Unable to verify Windows login startup. No settings were saved.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                "Windows Startup",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return false;
+        }
+
         try
         {
             StartupRegistration.SetEnabled(requestedState);
@@ -290,41 +431,41 @@ public partial class SettingsForm : UIForm
         catch (Exception ex)
         {
             DrawerLogger.LogError("Unable to update the current user's Windows startup registration.", ex);
-
-            bool actualState;
+            var rollbackSucceeded = true;
             try
             {
-                actualState = StartupRegistration.IsEnabled();
+                if (StartupRegistration.IsEnabled() != previousState)
+                {
+                    StartupRegistration.SetEnabled(previousState);
+                }
             }
-            catch (Exception statusException)
+            catch (Exception rollbackException)
             {
-                DrawerLogger.LogError("Unable to determine the current Windows startup registration state.", statusException);
-                MessageBox.Show(
-                    this,
-                    $"Unable to update or verify Windows login startup. No settings were saved.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
-                    "Windows Startup",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                return false;
+                rollbackSucceeded = false;
+                DrawerLogger.LogError("Unable to restore the previous Windows login startup state.", rollbackException);
             }
 
-            _workingSnapshot.StartWithWindows = actualState;
-            var selected = behaviorCheckBoxGroup.SelectedIndexes ?? new List<int>();
-            selected.Remove(StartWithWindowsIndex);
-            if (actualState)
-            {
-                selected.Add(StartWithWindowsIndex);
-            }
-
-            behaviorCheckBoxGroup.SelectedIndexes = selected;
+            _workingSnapshot.StartWithWindows = previousState;
+            SetStartWithWindowsCheckBox(previousState);
             MessageBox.Show(
                 this,
-                $"Unable to {(requestedState ? "enable" : "disable")} Windows login startup. The checkbox and saved setting have been restored to the actual registration state ({(actualState ? "enabled" : "disabled")}).{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                $"Unable to {(requestedState ? "enable" : "disable")} Windows login startup. The previous registration state was restored to {(previousState ? "enabled" : "disabled")}.{(rollbackSucceeded ? string.Empty : " Windows may still have a different registration state.")}{Environment.NewLine}{Environment.NewLine}{ex.Message}",
                 "Windows Startup",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
-            return true;
+            return false;
         }
+    }
+    private void SetStartWithWindowsCheckBox(bool enabled)
+    {
+        var selected = behaviorCheckBoxGroup.SelectedIndexes ?? new List<int>();
+        selected.Remove(StartWithWindowsIndex);
+        if (enabled)
+        {
+            selected.Add(StartWithWindowsIndex);
+        }
+
+        behaviorCheckBoxGroup.SelectedIndexes = selected;
     }
 
     private void UpdatePreview()
@@ -334,7 +475,7 @@ public partial class SettingsForm : UIForm
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = palette.Border;
         previewPanel.ForeColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
-        previewPanel.Text = ThemePalette.FormatHexColor(_workingSnapshot.WindowColor);
+        previewPanel.Text = $"点选更换颜色{Environment.NewLine}{ThemePalette.FormatHexColor(_workingSnapshot.WindowColor)}";
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(palette));
     }
 

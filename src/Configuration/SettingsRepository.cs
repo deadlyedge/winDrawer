@@ -55,7 +55,6 @@ internal sealed class SettingsRepository : IDisposable
             var startup = EnsureTable(_root, "startup");
             startup["start_with_windows"] = snapshot.StartWithWindows;
             startup["window_locked"] = snapshot.WindowLocked;
-            startup["icon_size"] = snapshot.IconSize;
             startup["window_height"] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
             startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
             startup["window_color"] = ThemePalette.FormatHexColor(snapshot.WindowColor);
@@ -66,6 +65,98 @@ internal sealed class SettingsRepository : IDisposable
 
         DrawerLogger.LogInformation("Settings snapshot updated; background write scheduled.");
         _writeSignal.Release();
+    }
+
+    public SettingsSnapshot GetEmbeddedStartupDefaults()
+    {
+        var defaults = SettingsSnapshot.FromModel(LoadEmbeddedDefaultTable());
+        var current = GetSnapshot();
+        return new SettingsSnapshot(
+            defaults.StartWithWindows,
+            defaults.WindowLocked,
+            defaults.WindowColor,
+            defaults.WindowOpacity,
+            defaults.WindowPosition,
+            current.Drawers,
+            defaults.WindowHeight);
+    }
+
+    public bool ResetStartupToEmbeddedDefaults(TimeSpan timeout, out SettingsSnapshot? resetSnapshot, out string error)
+    {
+        resetSnapshot = null;
+        error = string.Empty;
+        if (timeout <= TimeSpan.Zero)
+        {
+            error = "The settings reset could not be saved because the write timeout is invalid.";
+            return false;
+        }
+
+        if (!SavePendingChanges(timeout))
+        {
+            error = "Pending settings could not be saved before resetting startup options.";
+            return false;
+        }
+
+        lock (_writeLock)
+        {
+            if (_writeInProgress || _dirty)
+            {
+                error = "Pending settings changed while preparing the reset. Retry the reset after the current write completes.";
+                return false;
+            }
+
+            TomlTable defaults;
+            try
+            {
+                defaults = LoadEmbeddedDefaultTable();
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Unable to load embedded startup defaults.", ex);
+                error = $"The embedded default settings could not be loaded.{Environment.NewLine}{ex.Message}";
+                return false;
+            }
+
+            if (!defaults.TryGetValue("startup", out var defaultsValue) || defaultsValue is not TomlTable defaultsStartup)
+            {
+                error = "The embedded default settings do not contain a valid startup section.";
+                return false;
+            }
+
+            if (!TryGetStartupTable(_root, out var currentStartup))
+            {
+                error = "The current startup settings are not a valid TOML table.";
+                return false;
+            }
+
+            var previousStartup = CloneTable(currentStartup);
+            var previousRoot = _root;
+            foreach (var key in defaultsStartup.Keys)
+            {
+                currentStartup[key] = defaultsStartup[key];
+            }
+
+            currentStartup.Remove("icon_size");
+            _root["startup"] = currentStartup;
+            var snapshot = SettingsSnapshot.FromModel(_root);
+
+            try
+            {
+                WriteTable(_settingsPath, _root);
+                _dirty = false;
+                resetSnapshot = snapshot;
+                DrawerLogger.LogInformation("Startup settings reset to embedded defaults and saved immediately.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Failed to persist startup defaults; restoring the previous in-memory settings.", ex);
+                previousRoot["startup"] = previousStartup;
+                _root = previousRoot;
+                error = $"The default startup options could not be saved. Existing settings were retained.{Environment.NewLine}{ex.Message}";
+                return false;
+            }
+        }
     }
 
     public bool UpdateDrawerSize(string drawerPath, Size size)
@@ -822,6 +913,35 @@ internal sealed class SettingsRepository : IDisposable
         return created;
     }
 
+    private static bool TryGetStartupTable(TomlTable root, out TomlTable startup)
+    {
+        if (!root.TryGetValue("startup", out var value))
+        {
+            startup = new TomlTable();
+            return true;
+        }
+
+        if (value is TomlTable table)
+        {
+            startup = table;
+            return true;
+        }
+
+        startup = null!;
+        return false;
+    }
+
+    private static TomlTable CloneTable(TomlTable source)
+    {
+        var clone = new TomlTable();
+        foreach (var key in source.Keys)
+        {
+            clone[key] = source[key];
+        }
+
+        return clone;
+    }
+
     private static List<TomlTable> EnsureDrawersArray(TomlTable root)
     {
         if (TryGetDrawers(root, out var drawers))
@@ -893,7 +1013,6 @@ public sealed class SettingsSnapshot(
     Color windowColor,
     int windowOpacity,
     Point windowPosition,
-    int iconSize,
     IEnumerable<DrawerDefinition>? drawers = null,
     int windowHeight = winDrawer.AppConstants.Defaults.MainWindowHeightDefault)
 {
@@ -906,7 +1025,6 @@ public sealed class SettingsSnapshot(
     public Color WindowColor { get; set; } = Color.FromArgb(windowColor.R, windowColor.G, windowColor.B);
     public int WindowOpacity { get; set; } = Math.Clamp(windowOpacity, 0, 100);
     public Point WindowPosition { get; set; } = windowPosition;
-    public int IconSize { get; set; } = iconSize;
     public int WindowHeight { get; set; } = Math.Clamp(windowHeight, winDrawer.AppConstants.Defaults.MainWindowHeightMin, winDrawer.AppConstants.Defaults.MainWindowHeightMax);
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
@@ -922,7 +1040,7 @@ public sealed class SettingsSnapshot(
 
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, WindowColor, WindowOpacity, WindowPosition, IconSize, _drawers, WindowHeight);
+        return new SettingsSnapshot(StartWithWindows, WindowLocked, WindowColor, WindowOpacity, WindowPosition, _drawers, WindowHeight);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -953,7 +1071,6 @@ public sealed class SettingsSnapshot(
             ? ParseDrawers(drawerArray)
             : [];
 
-        var iconSize = GetInt(startup, "icon_size", AppConstants.Defaults.IconSizeMin, AppConstants.Defaults.IconSizeMax, AppConstants.Defaults.IconSizeDefault);
         var windowHeight = GetInt(startup, "window_height", AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);
         var windowPositionArray = GetIntArray(startup, "window_position", new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
         var windowColor = ThemePalette.TryParseHexColor(GetString(startup, "window_color"), out var parsedColor)
@@ -966,7 +1083,6 @@ public sealed class SettingsSnapshot(
             windowColor: windowColor,
             windowOpacity: GetInt(startup, "window_opacity", AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax, AppConstants.Defaults.ThemeOpacity),
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
-            iconSize: iconSize,
             drawers: drawers,
             windowHeight: windowHeight);
     }

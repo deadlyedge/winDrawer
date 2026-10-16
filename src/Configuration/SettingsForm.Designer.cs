@@ -19,6 +19,15 @@ partial class SettingsForm
             components.Dispose();
         }
         base.Dispose(disposing);
+        if (disposing)
+        {
+            foreach (var font in _ownedFonts)
+            {
+                font.Dispose();
+            }
+
+            _fontCollection.Dispose();
+        }
     }
 
     #region Windows Form Designer generated code
@@ -95,7 +104,6 @@ partial class SettingsForm
         // 
         headerSettings.Cursor = Cursors.SizeAll;
         headerSettings.Dock = DockStyle.Left;
-        headerSettings.Font = new Font("Lobster", 13.875F, FontStyle.Regular, GraphicsUnit.Point, 0);
         headerSettings.ForeColor = Color.White;
         headerSettings.Location = new Point(3, 0);
         headerSettings.Name = "headerSettings";
@@ -128,8 +136,8 @@ partial class SettingsForm
         //
         windowHeightTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         windowHeightTableLayoutPanel.ColumnCount = 3;
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
         windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
         windowHeightTableLayoutPanel.Controls.Add(windowHeightLabel, 0, 0);
         windowHeightTableLayoutPanel.Controls.Add(windowHeightTrackBar, 1, 0);
@@ -142,13 +150,18 @@ partial class SettingsForm
         windowHeightTableLayoutPanel.Size = new Size(777, 60);
         windowHeightTableLayoutPanel.TabIndex = 3;
         windowHeightTableLayoutPanel.TagString = null;
+        windowHeightLabel.Dock = DockStyle.Fill;
+        windowHeightLabel.ForeColor = Color.FromArgb(224, 224, 224);
+        windowHeightLabel.Name = "windowHeightLabel";
+        windowHeightLabel.TabIndex = 0;
+        windowHeightLabel.Text = "Window height (100–1000 DIP)";
+        windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
         //
         windowHeightTrackBar.TabIndex = 1;
         //
         // windowHeightValueLabel
         //
         windowHeightValueLabel.Dock = DockStyle.Fill;
-        windowHeightValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         windowHeightValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
         windowHeightValueLabel.Location = new Point(701, 0);
         windowHeightValueLabel.Name = "windowHeightValueLabel";
@@ -164,11 +177,9 @@ partial class SettingsForm
         behaviorCheckBoxGroup.ColumnInterval = 200;
         behaviorCheckBoxGroup.Dock = DockStyle.Fill;
         behaviorCheckBoxGroup.FillColor = Color.FromArgb(64, 64, 64);
-        behaviorCheckBoxGroup.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         behaviorCheckBoxGroup.ForeColor = Color.FromArgb(224, 224, 224);
         behaviorCheckBoxGroup.HoverColor = Color.Gray;
-        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with windows", "Lock position" });
-        opacityTrackBar.Location = new Point(141, 123);
+        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with Windows", "Lock position" });
         behaviorCheckBoxGroup.Margin = new Padding(10);
         behaviorCheckBoxGroup.MinimumSize = new Size(1, 1);
         behaviorCheckBoxGroup.Name = "behaviorCheckBoxGroup";
@@ -177,7 +188,7 @@ partial class SettingsForm
         behaviorCheckBoxGroup.Size = new Size(757, 106);
         behaviorCheckBoxGroup.StartPos = new Point(12, 40);
         behaviorCheckBoxGroup.TabIndex = 0;
-        behaviorCheckBoxGroup.Text = "behavior";
+        behaviorCheckBoxGroup.Text = "Behavior";
         behaviorCheckBoxGroup.TextAlignment = ContentAlignment.MiddleLeft;
         // 
         // visualGroupBox
@@ -185,7 +196,6 @@ partial class SettingsForm
         visualGroupBox.Controls.Add(visualTableLayoutPanel);
         visualGroupBox.Dock = DockStyle.Fill;
         visualGroupBox.FillColor = Color.FromArgb(64, 64, 64);
-        visualGroupBox.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         visualGroupBox.ForeColor = Color.FromArgb(224, 224, 224);
         visualGroupBox.Location = new Point(10, 136);
         visualGroupBox.Margin = new Padding(10);
@@ -194,7 +204,7 @@ partial class SettingsForm
         visualGroupBox.Padding = new Padding(32, 64, 32, 32);
         visualGroupBox.Size = new Size(757, 296);
         visualGroupBox.TabIndex = 1;
-        visualGroupBox.Text = "visual";
+        visualGroupBox.Text = "Appearance";
         visualGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         //
         // generalGroupBox
@@ -202,7 +212,6 @@ partial class SettingsForm
         generalGroupBox.Controls.Add(generalFlowPanel);
         generalGroupBox.Dock = DockStyle.Fill;
         generalGroupBox.FillColor = Color.FromArgb(64, 64, 64);
-        generalGroupBox.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         generalGroupBox.ForeColor = Color.FromArgb(224, 224, 224);
         generalGroupBox.Location = new Point(10, 350);
         generalGroupBox.Margin = new Padding(10);
@@ -211,7 +220,7 @@ partial class SettingsForm
         generalGroupBox.Padding = new Padding(24, 40, 24, 12);
         generalGroupBox.Size = new Size(757, 112);
         generalGroupBox.TabIndex = 2;
-        generalGroupBox.Text = "general";
+        generalGroupBox.Text = "General";
         generalGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         //
         // generalFlowPanel
@@ -253,7 +262,6 @@ partial class SettingsForm
         // opacityValueLabel
         //
         opacityValueLabel.Dock = DockStyle.Fill;
-        opacityValueLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         opacityValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
         opacityValueLabel.Name = "opacityValueLabel";
         opacityValueLabel.TabIndex = 11;
@@ -264,7 +272,6 @@ partial class SettingsForm
         //
         opacityTrackBar.Dock = DockStyle.Fill;
         opacityTrackBar.FillColor = Color.FromArgb(64, 64, 64);
-        opacityTrackBar.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
         opacityTrackBar.MinimumSize = new Size(1, 1);
         opacityTrackBar.Name = "opacityTrackBar";
         opacityTrackBar.Size = new Size(510, 60);
@@ -273,17 +280,15 @@ partial class SettingsForm
         // opacityLabel
         //
         opacityLabel.Dock = DockStyle.Fill;
-        opacityLabel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         opacityLabel.ForeColor = Color.FromArgb(224, 224, 224);
         opacityLabel.Name = "opacityLabel";
         opacityLabel.TabIndex = 3;
-        opacityLabel.Text = "Opacity";
+        opacityLabel.Text = "Window opacity";
         opacityLabel.TextAlign = ContentAlignment.MiddleLeft;
         //
         // previewPanel
         //
         previewPanel.Dock = DockStyle.Fill;
-        previewPanel.Font = new Font("Lobster", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
         previewPanel.ForeColor = Color.Gray;
         previewPanel.Margin = new Padding(4, 5, 4, 10);
         previewPanel.MinimumSize = new Size(1, 1);
@@ -299,7 +304,6 @@ partial class SettingsForm
         footerGroupBox.Controls.Add(saveButton);
         footerGroupBox.Dock = DockStyle.Fill;
         footerGroupBox.FillColor = Color.FromArgb(64, 64, 64);
-        footerGroupBox.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 134);
         footerGroupBox.Location = new Point(4, 503);
         footerGroupBox.Margin = new Padding(0);
         footerGroupBox.MinimumSize = new Size(1, 1);
@@ -312,12 +316,6 @@ partial class SettingsForm
         // 
         // shutDownButton
         // 
-        shutDownButton.FillColor = Color.DarkRed;
-        shutDownButton.FillDisableColor = Color.DarkGray;
-        shutDownButton.FillHoverColor = Color.LightCoral;
-        shutDownButton.FillPressColor = Color.DarkRed;
-        shutDownButton.FillSelectedColor = Color.Brown;
-        shutDownButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
         shutDownButton.Location = new Point(3, 4);
         shutDownButton.Margin = new Padding(3, 4, 12, 4);
         shutDownButton.MinimumSize = new Size(1, 1);
@@ -325,17 +323,10 @@ partial class SettingsForm
         shutDownButton.Radius = 20;
         shutDownButton.Size = new Size(215, 40);
         shutDownButton.TabIndex = 4;
-        shutDownButton.Text = "shut down app";
-        shutDownButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        shutDownButton.Text = "Close app";
         //
         // defaultSettingsButton
         //
-        defaultSettingsButton.FillColor = Color.YellowGreen;
-        defaultSettingsButton.FillDisableColor = Color.DarkGray;
-        defaultSettingsButton.FillHoverColor = Color.LightCoral;
-        defaultSettingsButton.FillPressColor = Color.DarkRed;
-        defaultSettingsButton.FillSelectedColor = Color.Brown;
-        defaultSettingsButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
         defaultSettingsButton.Location = new Point(233, 4);
         defaultSettingsButton.Margin = new Padding(3, 4, 12, 4);
         defaultSettingsButton.MinimumSize = new Size(1, 1);
@@ -343,17 +334,10 @@ partial class SettingsForm
         defaultSettingsButton.Radius = 20;
         defaultSettingsButton.Size = new Size(120, 40);
         defaultSettingsButton.TabIndex = 3;
-        defaultSettingsButton.Text = "default";
-        defaultSettingsButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        defaultSettingsButton.Text = "Default";
         //
         // openSettingsTomlButton
         //
-        openSettingsTomlButton.FillColor = Color.SteelBlue;
-        openSettingsTomlButton.FillDisableColor = Color.DarkGray;
-        openSettingsTomlButton.FillHoverColor = Color.LightCoral;
-        openSettingsTomlButton.FillPressColor = Color.DarkRed;
-        openSettingsTomlButton.FillSelectedColor = Color.Brown;
-        openSettingsTomlButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
         openSettingsTomlButton.Location = new Point(368, 4);
         openSettingsTomlButton.Margin = new Padding(3, 4, 3, 4);
         openSettingsTomlButton.MinimumSize = new Size(1, 1);
@@ -361,41 +345,31 @@ partial class SettingsForm
         openSettingsTomlButton.Radius = 20;
         openSettingsTomlButton.Size = new Size(240, 40);
         openSettingsTomlButton.TabIndex = 5;
-        openSettingsTomlButton.Text = "open settings TOML";
-        openSettingsTomlButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        openSettingsTomlButton.Text = "Open settings TOML";
         // 
         // cancelButton
         // 
-        cancelButton.FillColor = Color.Red;
-        cancelButton.FillDisableColor = Color.DarkGray;
-        cancelButton.FillHoverColor = Color.LightCoral;
-        cancelButton.FillPressColor = Color.DarkRed;
-        cancelButton.FillSelectedColor = Color.Brown;
-        cancelButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
         cancelButton.Location = new Point(509, 8);
         cancelButton.MinimumSize = new Size(1, 1);
         cancelButton.Name = "cancelButton";
         cancelButton.Radius = 20;
         cancelButton.Size = new Size(120, 40);
         cancelButton.TabIndex = 2;
-        cancelButton.Text = "cancel";
-        cancelButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        cancelButton.Text = "Cancel";
         // 
         // saveButton
         // 
-        saveButton.Font = new Font("Lobster", 10.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
         saveButton.Location = new Point(643, 8);
         saveButton.MinimumSize = new Size(1, 1);
         saveButton.Name = "saveButton";
         saveButton.Radius = 20;
         saveButton.Size = new Size(120, 40);
         saveButton.TabIndex = 1;
-        saveButton.Text = "save";
-        saveButton.TipsFont = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
+        saveButton.Text = "Save";
         // 
         // SettingsForm
         // 
-        AutoScaleMode = AutoScaleMode.None;
+        AutoScaleMode = AutoScaleMode.Dpi;
         BackColor = Color.DimGray;
         ClientSize = new Size(783, 826);
         Controls.Add(mainTableLayoutPanel);

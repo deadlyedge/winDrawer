@@ -33,6 +33,7 @@ namespace winDrawer
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;
         private TrayController? _trayController;
+        private SettingsForm? _settingsForm;
 
         public MainWindow()
         {
@@ -192,53 +193,6 @@ namespace winDrawer
                 });
 
             _trayController.Initialize(iconPath, Icon, AppConstants.Branding.ApplicationDisplayName);
-        }
-
-        // Message filter used to detect clicks outside the settings window so we can close it.
-        // It will only act after the settings window has been activated (to avoid closing
-        // when the mouse merely moves over/near the window).
-        private class ClickOutsideFilter(Form target) : IMessageFilter
-        {
-            private readonly Form _target = target;
-      public bool WasActivated { get; set; } = false;
-
-      public bool PreFilterMessage(ref Message m)
-            {
-                const int WM_LBUTTONDOWN = 0x0201;
-                const int WM_RBUTTONDOWN = 0x0204;
-                const int WM_MBUTTONDOWN = 0x0207;
-
-                // Only close on an actual mouse button down and only after the settings window
-                // received focus/activation. This prevents spurious closes when the mouse moves.
-                if (!WasActivated) return false;
-
-                if (m.Msg == WM_LBUTTONDOWN || m.Msg == WM_RBUTTONDOWN || m.Msg == WM_MBUTTONDOWN)
-                {
-                    try
-                    {
-                        var pt = Control.MousePosition;
-                        if (_target == null || _target.IsDisposed) return false;
-                        // Use Bounds which is in screen coordinates.
-                        if (!_target.Bounds.Contains(pt))
-                        {
-                            // Close on UI thread
-                            _target.BeginInvoke(new Action(() =>
-                            {
-                                try
-                                {
-                                    if (!_target.IsDisposed) _target.Close();
-                                }
-                                catch { }
-                            }));
-                            // We don't need to consume the message; return false to allow normal processing.
-                            return false;
-                        }
-                    }
-                    catch { }
-                }
-
-                return false;
-            }
         }
 
         private void ToggleVisibility()
@@ -811,8 +765,15 @@ namespace winDrawer
         {
             DrawerLogger.LogInformation("Opening settings window.");
 
+            if (_settingsForm is { IsDisposed: false } existingSettings)
+            {
+                existingSettings.Activate();
+                return;
+            }
+
             // Show Settings as a modeless window that closes when the user *clicks outside* the window.
             var settings = new SettingsForm(_settingsSnapshot);
+            _settingsForm = settings;
             void previewHandler(object? _, ThemePreviewEventArgs args) => ApplyTheme(args.Palette);
             settings.ThemePreviewChanged += (EventHandler<ThemePreviewEventArgs>?)previewHandler;
             void windowHeightPreviewHandler(object? _1, EventArgs _2)
@@ -822,32 +783,95 @@ namespace winDrawer
                 ApplyMainWindowBounds(previewSnapshot);
             }
             settings.WindowHeightPreviewChanged += (EventHandler?)windowHeightPreviewHandler;
+            void resetDefaultsHandler(object? _, EventArgs _2)
+            {
+                var confirmation = MessageBox.Show(
+                    this,
+                    "Reset all supported startup and main-window options to the application defaults? This takes effect immediately, removes the obsolete icon size option, and keeps drawers and unknown settings.",
+                    "Reset Startup Settings",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+                if (confirmation != DialogResult.Yes)
+                {
+                    return;
+                }
 
-            // Use a message filter to detect actual mouse-downs outside the settings window.
-            var filter = new ClickOutsideFilter(settings);
-            void activatedHandler(object? _1, EventArgs _2) { filter.WasActivated = true; }
-            settings.Activated += (EventHandler?)activatedHandler;
-            Application.AddMessageFilter(filter);
+                bool previousStartupState;
+                SettingsSnapshot defaults;
+                try
+                {
+                    previousStartupState = StartupRegistration.IsEnabled();
+                    defaults = _settingsRepository.GetEmbeddedStartupDefaults();
+                }
+                catch (Exception ex)
+                {
+                    DrawerLogger.LogError("Unable to prepare the startup settings reset.", ex);
+                    MessageBox.Show(this, $"Unable to reset startup settings:{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                        "Reset Startup Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                try
+                {
+                    StartupRegistration.SetEnabled(defaults.StartWithWindows);
+                }
+                catch (Exception ex)
+                {
+                    DrawerLogger.LogError("Unable to synchronize Windows login startup for the settings reset.", ex);
+                    try
+                    {
+                        if (StartupRegistration.IsEnabled() != previousStartupState)
+                        {
+                            StartupRegistration.SetEnabled(previousStartupState);
+                        }
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        DrawerLogger.LogError("Unable to roll back Windows login startup after the reset registration failed.", rollbackException);
+                    }
+
+                    MessageBox.Show(this, $"Windows login startup could not be reset. No settings were changed.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                        "Reset Startup Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                if (!_settingsRepository.ResetStartupToEmbeddedDefaults(TimeSpan.FromSeconds(3), out var resetSnapshot, out var error))
+                {
+                    try
+                    {
+                        if (StartupRegistration.IsEnabled() != previousStartupState)
+                        {
+                            StartupRegistration.SetEnabled(previousStartupState);
+                        }
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        DrawerLogger.LogError("Unable to restore Windows login startup after a failed settings reset.", rollbackException);
+                    }
+
+                    MessageBox.Show(this, error, "Reset Startup Settings", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                _settingsSnapshot = resetSnapshot!;
+                settings.ApplyResetBaseline(_settingsSnapshot);
+                ApplySettings(_settingsSnapshot);
+            }
+            settings.StartupDefaultsResetRequested += resetDefaultsHandler;
 
             settings.FormClosed += (_, _) =>
             {
+                if (ReferenceEquals(_settingsForm, settings))
+                {
+                    _settingsForm = null;
+                }
+
                 DrawerLogger.LogInformation($"Settings window closed with result {settings.DialogResult}, shutdown={settings.ShutdownRequested}.");
                 try
                 {
                     settings.ThemePreviewChanged -= (global::System.EventHandler<ThemePreviewEventArgs>?)previewHandler;
                     settings.WindowHeightPreviewChanged -= (global::System.EventHandler?)windowHeightPreviewHandler;
-                }
-                catch { }
-
-                // Remove the message filter we added and the activation handler.
-                try
-                {
-                    settings.Activated -= (global::System.EventHandler?)activatedHandler;
-                }
-                catch { }
-                try
-                {
-                    Application.RemoveMessageFilter(filter);
+                    settings.StartupDefaultsResetRequested -= (global::System.EventHandler?)resetDefaultsHandler;
                 }
                 catch { }
 
@@ -902,9 +926,18 @@ namespace winDrawer
                 if (settings.DialogResult == DialogResult.OK)
                 {
                     DrawerLogger.LogInformation("Applying settings changes from dialog.");
-                    _settingsSnapshot = settings.ResultSettings;
+                    var resultSettings = settings.ResultSettings;
+                    _settingsSnapshot = new SettingsSnapshot(
+                        resultSettings.StartWithWindows,
+                        resultSettings.WindowLocked,
+                        resultSettings.WindowColor,
+                        resultSettings.WindowOpacity,
+                        _settingsSnapshot.WindowPosition,
+                        _settingsSnapshot.Drawers,
+                        resultSettings.WindowHeight);
                     _settingsRepository.Update(_settingsSnapshot);
                     // Save enqueued by repository's background writer.
+                    ApplyMainWindowBounds(_settingsSnapshot);
                     ApplySettings(_settingsSnapshot);
                 }
                 else

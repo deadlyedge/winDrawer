@@ -728,7 +728,7 @@ internal sealed class SettingsRepository : IDisposable
     private static TomlTable LoadEmbeddedDefaultTable()
     {
         using var stream = typeof(SettingsRepository).Assembly.GetManifestResourceStream("winDrawer.DefaultSettings.toml")
-            ?? throw new InvalidOperationException("The embedded default settings template is missing.");
+            ?? throw new InvalidDataException("The embedded default settings template is missing.");
         using var reader = new StreamReader(stream);
         var settings = TomlSerializer.Deserialize<TomlTable>(reader.ReadToEnd());
         return settings ?? throw new InvalidDataException("The embedded default settings template is empty.");

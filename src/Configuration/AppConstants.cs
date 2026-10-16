@@ -30,6 +30,18 @@ internal static class AppConstants
     internal static class Logging
     {
         public const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff";
+
+        /// <summary>
+        /// Optional environment variable that overrides the minimum logged level
+        /// (<c>Debug</c>, <c>Information</c>, <c>Warning</c>, <c>Error</c> or <c>Off</c>).
+        /// </summary>
+        public const string LevelEnvironmentVariable = "WINDRAWER_LOG_LEVEL";
+
+        /// <summary>Size the active log file may reach before it is rotated to <c>Drawer.log.1</c>.</summary>
+        public const long MaxLogFileBytes = 1024 * 1024;
+
+        /// <summary>Suffix of the rotated (previous) log file.</summary>
+        public const string RotatedLogFileSuffix = ".1";
     }
 
     internal static class Branding

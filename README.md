@@ -12,8 +12,8 @@ winDrawer is a small Windows Forms utility for keeping frequently used folders c
 - **Adjustable main window** – Set the main window height; the drawer list uses the remaining area and scrolls naturally.
 - **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
 - **Windows login startup** – Optionally register the app to start for the current user.
-- **System tray control** – The main window and auxiliary windows do not create taskbar buttons during normal operation. Use the tray icon to show/hide the main window, open settings, or exit; if tray initialization fails, the main window remains available from the taskbar.
-- **Structured diagnostics** – Execution flow and errors are written to `%USERPROFILE%\.config\winDrawer\Drawer.log` for easier troubleshooting.
+- **System tray control** – The main window and auxiliary windows do not create taskbar buttons during normal operation. Use the tray icon to show/hide the main window, open settings, or exit; if tray initialization fails, the main window remains available from the taskbar. Exiting (from the tray menu or the settings panel) flushes pending settings and closes the windows gracefully instead of killing the process.
+- **Structured diagnostics** – Execution flow and errors are written to `%USERPROFILE%\.config\winDrawer\Drawer.log` for easier troubleshooting. Debug-level entries are off by default (enable them with the `WINDRAWER_LOG_LEVEL` environment variable) and the log rotates to `Drawer.log.1` once it reaches 1 MB; unexpected errors are also reported once in a message box that points at this file.
 
 ## Getting Started
 
@@ -77,7 +77,7 @@ The main window launches without a border. When its position is unlocked, drag t
 - **Assets** – The window/tray icon and Lobster branding font are embedded in the application assembly from the `assets/` folder at build time:
   - `assets\drawer.icon.4.ico` for the window and tray icon.
   - `assets/fonts/Lobster-Regular.ttf` for all branded headings and buttons. The application loads it from the embedded resource; it does not depend on the font being installed in Windows or on a loose font file beside the executable.
-- **Logging** – New diagnostic output is appended to `%USERPROFILE%\.config\winDrawer\Drawer.log`. Existing logs beside an older executable are not migrated or removed. Logging failures do not prevent the app from running.
+- **Logging** – New diagnostic output is appended to `%USERPROFILE%\.config\winDrawer\Drawer.log`. Existing logs beside an older executable are not migrated or removed. Logging failures do not prevent the app from running. The minimum logged level is `Information` (`Debug` while a debugger is attached) and can be overridden per run with `WINDRAWER_LOG_LEVEL=Debug|Information|Warning|Error|Off`; an invalid value falls back to the default. When the active file reaches 1 MB it is rotated to `Drawer.log.1` (replacing the previous rotated file), so a tray session running for weeks cannot grow the log without bound. An unexpected UI-thread error is logged every time and additionally reported once in a message box that names the log file; a failed settings save cancels the close instead of discarding changes.
 
 ### Managing folders and settings
 

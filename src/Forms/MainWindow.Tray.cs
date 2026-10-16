@@ -29,7 +29,7 @@ namespace winDrawer
                 () =>
                 {
                     DrawerLogger.LogInformation("Application exit initiated from tray.");
-                    Application.Exit();
+                    ShutdownApplication("tray menu");
                 });
 
             if (!_trayController.Initialize(iconPath, Icon, AppConstants.Branding.ApplicationDisplayName))

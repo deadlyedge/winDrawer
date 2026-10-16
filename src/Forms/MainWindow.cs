@@ -8,6 +8,7 @@ namespace winDrawer
     {
         private const string AppIconResourceName = "winDrawer.drawer.icon.4.ico";
         private const int SettingsWindowOffset = 100;
+        private const int ShutdownFlushTimeoutMilliseconds = 500;
         private Font? _logoFont;
         private Font? _settingsButtonFont;
         private Font? _addDrawerButtonFont;
@@ -37,6 +38,7 @@ namespace winDrawer
         private bool? _alwaysOnTopPreview;
         private TrayController? _trayController;
         private SettingsForm? _settingsForm;
+        private bool _shutdownInProgress;
 
         public MainWindow()
         {
@@ -74,35 +76,135 @@ namespace winDrawer
 
             LocationChanged += MainWindow_LocationChanged;
 
-            FormClosing += (_, e) =>
-            {
-                if (!_settingsRepository.SavePendingChanges(TimeSpan.FromSeconds(2)))
-                {
-                    DrawerLogger.LogError("Pending drawer configuration changes could not be persisted before closing.");
-                    MessageBox.Show(this, "Some drawer settings could not be saved. Please check that the settings file is writable.",
-                        "Settings Save Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    e.Cancel = true;
-                }
-            };
+            // 在窗体加载完成后填充菜单，避免默认打开
+        }
 
-            FormClosed += (_, _) =>
-            {
-                _logoFont?.Dispose();
-                _settingsButtonFont?.Dispose();
-                _addDrawerButtonFont?.Dispose();
+        /// <summary>
+        /// Flushes pending drawer changes and lets a failed save cancel the close so the user keeps
+        /// the chance to fix the settings file.
+        /// </summary>
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
 
+            if (e.Cancel)
+            {
+                return;
+            }
+
+            if (!_settingsRepository.SavePendingChanges(TimeSpan.FromSeconds(2)))
+            {
+                DrawerLogger.LogError("Pending drawer configuration changes could not be persisted before closing.");
+                MessageBox.Show(this, "Some drawer settings could not be saved. Please check that the settings file is writable.",
+                    "Settings Save Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                e.Cancel = true;
+            }
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _logoFont?.Dispose();
+            _settingsButtonFont?.Dispose();
+            _addDrawerButtonFont?.Dispose();
+
+            try
+            {
+                _trayController?.Dispose();
+                _trayController = null;
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Failed to dispose tray controller during shutdown.", ex);
+            }
+
+            try
+            {
+                // The repository owns the background writer task and its synchronization primitives;
+                // disposing it performs the final flush, cancels the writer and releases both.
+                _settingsRepository.Dispose();
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Failed to dispose the settings repository during shutdown.", ex);
+            }
+
+            base.OnFormClosed(e);
+        }
+
+        /// <summary>
+        /// Single entry point for every shutdown request (tray menu or settings panel). The bounded
+        /// pre-flush makes the later <see cref="OnFormClosing"/> flush a no-op, so a normal exit stays
+        /// fast, and <see cref="Application.Exit"/> closes the windows through the regular WinForms
+        /// path (fonts, tray icon and settings repository are released there) instead of killing the
+        /// process abruptly.
+        /// </summary>
+        private void ShutdownApplication(string reason)
+        {
+            if (_shutdownInProgress)
+            {
+                // Owned modeless windows raise FormClosed twice (their own reason, then
+                // FormOwnerClosing), so the same request can arrive again while it is being handled.
+                DrawerLogger.LogDebug($"Ignoring a duplicate shutdown request ({reason}).");
+                return;
+            }
+
+            _shutdownInProgress = true;
+            DrawerLogger.LogWarning($"Application shutdown requested ({reason}).");
+
+            try
+            {
                 try
                 {
-                    _trayController?.Dispose();
-                    _trayController = null;
+                    if (!_settingsRepository.SavePendingChanges(TimeSpan.FromMilliseconds(ShutdownFlushTimeoutMilliseconds)))
+                    {
+                        DrawerLogger.LogWarning("Pending settings could not be persisted within the shutdown flush timeout; continuing with the shutdown.");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    DrawerLogger.LogError("Failed to dispose tray controller during shutdown.", ex);
+                    DrawerLogger.LogError("Failed to flush pending settings during shutdown.", ex);
                 }
-            };
 
-            // 在窗体加载完成后填充菜单，避免默认打开
+                // Cancelling FormClosing (for example when the settings file cannot be written) keeps
+                // the application open, which is why the in-progress flag is only held for this call.
+                Application.Exit();
+                DrawerLogger.LogInformation("Application.Exit() completed; the message loop stops unless a window cancelled its close.");
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Application.Exit failed during shutdown; forcing process exit.", ex);
+                ForceProcessExit();
+            }
+            finally
+            {
+                _shutdownInProgress = false;
+            }
+        }
+
+        /// <summary>
+        /// Last-resort termination used only when the regular shutdown path throws. Every step is
+        /// logged so an abrupt exit can never hide the reason for it.
+        /// </summary>
+        private static void ForceProcessExit()
+        {
+            try
+            {
+                Environment.Exit(0);
+                return;
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Environment.Exit failed during forced shutdown.", ex);
+            }
+
+            try
+            {
+                Process.GetCurrentProcess().Kill();
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Process.Kill failed during forced shutdown.", ex);
+            }
         }
 
         private void LoadBrandingAssets()

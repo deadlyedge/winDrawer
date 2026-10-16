@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -125,8 +124,19 @@ namespace winDrawer
             }
             settings.StartupDefaultsResetRequested += resetDefaultsHandler;
 
-            settings.FormClosed += (_, _) =>
+            var settingsCloseHandled = false;
+            settings.FormClosed += (_, args) =>
             {
+                // Owned modeless windows raise FormClosed twice: first with their own close reason and
+                // then again with FormOwnerClosing while the owner closes. The settings bookkeeping
+                // below must only run once.
+                if (settingsCloseHandled)
+                {
+                    DrawerLogger.LogDebug($"Settings window FormClosed ({args.CloseReason}) ignored after the first pass.");
+                    return;
+                }
+
+                settingsCloseHandled = true;
                 _windowLockedPreview = null;
                 _alwaysOnTopPreview = null;
                 if (ReferenceEquals(_settingsForm, settings))
@@ -144,50 +154,12 @@ namespace winDrawer
                 }
                 catch { }
 
-                // If the settings requested a shutdown we respect it.
+                // If the settings requested a shutdown we respect it. The tray menu and the settings
+                // panel share one shutdown path so both flush pending settings and release the tray
+                // icon, the branding fonts and the settings repository.
                 if (settings.ShutdownRequested)
                 {
-                    DrawerLogger.LogWarning("Settings requested application shutdown.");
-                    // Perform only minimal cleanup and exit immediately to avoid blocking UI while
-                    // many windows perform synchronous I/O during their close events.
-                    try
-                    {
-                        _trayController?.Dispose();
-                        _trayController = null;
-                    }
-                    catch (Exception ex)
-                    {
-                        DrawerLogger.LogError("Failed to dispose tray controller during shutdown request.", ex);
-                    }
-
-                    // Ensure UI message queue is processed briefly so the cleanup above is applied.
-                    try
-                    {
-                        Application.DoEvents();
-                    }
-                    catch { }
-
-                    // Try to flush pending settings to disk, wait up to 500ms, then exit.
-                    try
-                    {
-                        var flushTask = _settingsRepository.FlushAsync(TimeSpan.FromMilliseconds(500));
-                        if (flushTask == null || !flushTask.Wait(500))
-                        {
-                            // Flush timed out — force terminate.
-                            try { Process.GetCurrentProcess().Kill(); } catch { try { Environment.Exit(0); } catch { } }
-                        }
-                        else
-                        {
-                            // Flush completed — exit gracefully.
-                            try { Environment.Exit(0); } catch { try { Process.GetCurrentProcess().Kill(); } catch { } }
-                        }
-                    }
-                    catch
-                    {
-                        // On any unexpected error, force terminate to avoid hanging.
-                        try { Process.GetCurrentProcess().Kill(); } catch { try { Environment.Exit(0); } catch { } }
-                    }
-
+                    ShutdownApplication("settings panel");
                     return;
                 }
 

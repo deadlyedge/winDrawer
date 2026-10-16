@@ -75,4 +75,13 @@
 
 先做 **7.1 排序**，再做依赖排序结果的 **7.2 延迟加载**；随后做 **7.3 Always on top** 和 **7.4 初始位置**；最后做 **7.5 抽屉设置布局与关闭入口**，以 **7.6 文档和回归** 收尾。
 
+## 实施状态（7.1–7.5 已落地，7.6 待办）
+
+- **7.1 / 7.2 已实施：** 排序与视口延迟加载见 `Drawers/DrawerItemEnumerator.cs`、`Drawers/DrawerItemImageLoader.cs` 和 `DrawerWindow.FileList.cs`；纯逻辑与图像回退/释放/可见范围已用 `%TEMP%` 下的临时 smoke harness 验证。
+- **7.3 已实施：** 新增 `startup.always_on_top`（Boolean，默认 `false`），贯穿 `SettingsSnapshot`、`SettingsRepository` 读写、根目录默认模板和配置格式文档；Behavior 分区新增 **Always on top** 开关，切换即时预览、Cancel 还原、Save 持久化、Default 按模板值重置。作用范围为主窗口与当前抽屉内容窗口，设置面板不置顶。
+- **7.4 已实施：** 主设置窗体与抽屉设置对话框在创建时由 `MainWindow.ApplySettingsWindowPlacement` 设为 `Manual`，左上角取主窗口 `(X + 100, Y + 100)` 并夹取到主窗口所在显示器工作区内；位置不持久化，每次创建重新计算。
+- **7.5 已实施：** 抽屉设置对话框移除自绘标题栏关闭图标（保留标题与拖动区域），Folder 路径改为只读显示控件（点击或 Enter/Space 与 Browse 共用同一选目录流程，含指针提示与无障碍名称），Browse 移到路径下方独立一行并加宽；Escape 与 Alt+F4 均按 Cancel 处理，不提交草稿。
+- **已验证：** Debug/Release 构建 0 警告 0 错误；临时 smoke harness 32 项通过（含 `always_on_top` 缺失/真假/类型错误解析、写盘内容、重启后保持与 Default 重置）。**未验证：** 大目录滚动、多 DPI 与多显示器下的两个设置窗口位置、抽屉设置对话框在不同 DPI/长路径下的实际布局等人工 UI 回归。
+- **7.6 与 `docs/TODOs.md`：** 尚未执行，待人工验收后再同步 README、`NEXT_DEVELOPMENT_PLAN.md` 并移除 TODO 条目。
+
 本次只制定了计划，没有修改工作区文件。

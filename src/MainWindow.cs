@@ -7,6 +7,7 @@ namespace winDrawer
     public partial class MainWindow : Form
     {
         private const string AppIconResourceName = "winDrawer.drawer.icon.4.ico";
+        private const int SettingsWindowOffset = 100;
         private Font? _logoFont;
         private Font? _settingsButtonFont;
         private Font? _addDrawerButtonFont;
@@ -33,6 +34,7 @@ namespace winDrawer
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;
         private bool? _windowLockedPreview;
+        private bool? _alwaysOnTopPreview;
         private TrayController? _trayController;
         private SettingsForm? _settingsForm;
 
@@ -237,6 +239,40 @@ namespace winDrawer
 
         private bool IsWindowLocked => _windowLockedPreview ?? _settingsSnapshot.WindowLocked;
 
+        private bool IsAlwaysOnTop => _alwaysOnTopPreview ?? _settingsSnapshot.AlwaysOnTop;
+
+        /// <summary>
+        /// Applies the always-on-top option to the main window and to the drawer window that is
+        /// currently open. Settings panels are never made top-most by this option.
+        /// </summary>
+        private void ApplyAlwaysOnTop(bool enabled)
+        {
+            TopMost = enabled;
+            if (_currentDrawerWindow != null && !_currentDrawerWindow.IsDisposed)
+            {
+                _currentDrawerWindow.TopMost = enabled;
+            }
+        }
+
+        /// <summary>
+        /// Places a settings window relative to the current main-window position and keeps it inside
+        /// the working area of the screen the main window is on. The position is recalculated for every
+        /// new settings window and is never persisted.
+        /// </summary>
+        private void ApplySettingsWindowPlacement(Form dialog)
+        {
+            ArgumentNullException.ThrowIfNull(dialog);
+
+            var workingArea = Screen.FromRectangle(Bounds).WorkingArea;
+            var maximumLeft = Math.Max(workingArea.Left, workingArea.Right - dialog.Width);
+            var maximumTop = Math.Max(workingArea.Top, workingArea.Bottom - dialog.Height);
+
+            dialog.StartPosition = FormStartPosition.Manual;
+            dialog.Location = new Point(
+                Math.Clamp(Left + SettingsWindowOffset, workingArea.Left, maximumLeft),
+                Math.Clamp(Top + SettingsWindowOffset, workingArea.Top, maximumTop));
+        }
+
         private void HeaderDragEnd(object? sender, MouseEventArgs args)
         {
             if (args.Button != MouseButtons.Left)
@@ -290,6 +326,7 @@ namespace winDrawer
             }
 
             ApplyMainWindowBounds(snapshot);
+            ApplyAlwaysOnTop(snapshot.AlwaysOnTop);
             ApplyTheme(snapshot.BuildThemePalette());
             PopulateDrawerList(snapshot.Drawers);
             // 如果有当前打开的drawer，更新list中的选中状态

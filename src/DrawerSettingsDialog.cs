@@ -17,7 +17,6 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly TableLayoutPanel _layoutPanel = new();
     private readonly TableLayoutPanel _headerPanel = new();
     private readonly UILabel _titleLabel = new();
-    private readonly UIButton _closeButton = new();
     private readonly UIGroupBox _detailsGroup = new();
     private readonly UIGroupBox _overlayGroup = new();
     private readonly UIButton _browseButton = new();
@@ -44,8 +43,8 @@ internal sealed class DrawerSettingsDialog : Form
         MaximizeBox = false;
         ShowInTaskbar = false;
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(600, 448);
-        MinimumSize = new Size(540, 420);
+        ClientSize = new Size(600, 500);
+        MinimumSize = new Size(540, 480);
         DoubleBuffered = true;
 
         ConfigureColorDialog(_colorDialog);
@@ -60,6 +59,18 @@ internal sealed class DrawerSettingsDialog : Form
     {
         base.OnShown(e);
         ApplyBrandFonts();
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        // A user close without an explicit result (for example Alt+F4) must behave like Cancel and
+        // must not submit the draft values.
+        if (e.CloseReason == CloseReason.UserClosing && DialogResult == DialogResult.None)
+        {
+            DialogResult = DialogResult.Cancel;
+        }
+
+        base.OnFormClosing(e);
     }
 
     public string DrawerName => _nameTextBox.Text.Trim();
@@ -114,10 +125,7 @@ internal sealed class DrawerSettingsDialog : Form
         _titleLabel.Font = _titleFont!;
         foreach (var button in GetButtons())
         {
-            if (!ReferenceEquals(button, _closeButton))
-            {
-                button.Font = _buttonFont!;
-            }
+            button.Font = _buttonFont!;
         }
     }
 
@@ -138,15 +146,13 @@ internal sealed class DrawerSettingsDialog : Form
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
 
         _headerPanel.Dock = DockStyle.Fill;
-        _headerPanel.ColumnCount = 2;
+        _headerPanel.ColumnCount = 1;
         _headerPanel.RowCount = 1;
         _headerPanel.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
         _headerPanel.Padding = new Padding(20, 0, 10, 0);
         _headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _headerPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 38F));
         _headerPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         _headerPanel.Controls.Add(_titleLabel, 0, 0);
-        _headerPanel.Controls.Add(_closeButton, 1, 0);
 
         _titleLabel.Text = $"Drawer settings: {_nameTextBox.Text}";
         _titleLabel.Dock = DockStyle.Fill;
@@ -159,16 +165,6 @@ internal sealed class DrawerSettingsDialog : Form
         _headerPanel.MouseMove += Header_MouseMove;
         _headerPanel.MouseUp += Header_MouseUp;
 
-        _closeButton.Text = "\uE8BB";
-        _closeButton.Font = new Font("Segoe MDL2 Assets", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-        _ownedFonts.Add(_closeButton.Font);
-        _closeButton.Dock = DockStyle.Fill;
-        _closeButton.Margin = new Padding(2, 6, 0, 6);
-        _closeButton.Radius = 2;
-        _closeButton.Cursor = Cursors.Hand;
-        _closeButton.AccessibleName = "Close drawer settings";
-        _closeButton.Click += (_, _) => DialogResult = DialogResult.Cancel;
-
         _detailsGroup.Text = "Drawer details";
         _detailsGroup.Font = _inputFont;
         _detailsGroup.Dock = DockStyle.Fill;
@@ -177,27 +173,29 @@ internal sealed class DrawerSettingsDialog : Form
         _detailsGroup.Controls.Add(_fieldsPanel);
 
         _fieldsPanel.Dock = DockStyle.Fill;
-        _fieldsPanel.ColumnCount = 3;
-        _fieldsPanel.RowCount = 2;
+        _fieldsPanel.ColumnCount = 2;
+        _fieldsPanel.RowCount = 3;
         _fieldsPanel.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
         _fieldsPanel.Padding = new Padding(2, 4, 2, 0);
         _fieldsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88F));
         _fieldsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _fieldsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 92F));
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+        _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
         _fieldsPanel.Controls.Add(CreateLabel("Name"), 0, 0);
         _nameTextBox.Dock = DockStyle.Fill;
         _nameTextBox.Margin = new Padding(0, 5, 0, 5);
         _nameTextBox.BorderStyle = BorderStyle.FixedSingle;
         _fieldsPanel.Controls.Add(_nameTextBox, 1, 0);
-        _fieldsPanel.SetColumnSpan(_nameTextBox, 2);
         _fieldsPanel.Controls.Add(CreateLabel("Folder"), 0, 1);
-        _pathTextBox.Dock = DockStyle.Fill;
-        _pathTextBox.Margin = new Padding(0, 5, 0, 5);
-        _pathTextBox.BorderStyle = BorderStyle.FixedSingle;
+        ConfigurePathDisplay();
         _fieldsPanel.Controls.Add(_pathTextBox, 1, 1);
-        _fieldsPanel.Controls.Add(_browseButton, 2, 1);
+
+        // Browse gets its own full-width row below the path, so narrowing the dialog cannot squeeze
+        // the path and the button against each other.
+        _browseButton.Dock = DockStyle.Fill;
+        _browseButton.Margin = new Padding(0, 4, 0, 4);
+        _fieldsPanel.Controls.Add(_browseButton, 1, 2);
 
         ConfigureOverlayGroup();
 
@@ -217,8 +215,6 @@ internal sealed class DrawerSettingsDialog : Form
         };
         _saveButton.Click += SaveButton_Click;
         _browseButton.Text = "Browse...";
-        _browseButton.Dock = DockStyle.Fill;
-        _browseButton.Margin = new Padding(8, 3, 0, 3);
         _browseButton.Click += BrowseButton_Click;
 
         _footerPanel.Controls.AddRange([_saveButton, _cancelButton, _deleteButton]);
@@ -230,6 +226,36 @@ internal sealed class DrawerSettingsDialog : Form
 
         AcceptButton = _saveButton;
         CancelButton = _cancelButton;
+    }
+
+    /// <summary>
+    /// The folder path is a display-only field: clicking or activating it runs the same folder picker
+    /// as the Browse button, so the draft path can only change through the picker.
+    /// </summary>
+    private void ConfigurePathDisplay()
+    {
+        _pathTextBox.Dock = DockStyle.Fill;
+        _pathTextBox.Margin = new Padding(0, 5, 0, 5);
+        _pathTextBox.BorderStyle = BorderStyle.FixedSingle;
+        _pathTextBox.ReadOnly = true;
+        _pathTextBox.TabStop = true;
+        _pathTextBox.Cursor = Cursors.Hand;
+        _pathTextBox.AccessibleName = "Drawer folder path";
+        _pathTextBox.AccessibleDescription = "Read-only folder path. Activate to choose a different folder.";
+        _pathTextBox.Click += BrowseButton_Click;
+        _pathTextBox.KeyDown += PathDisplay_KeyDown;
+    }
+
+    private void PathDisplay_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode is not Keys.Enter and not Keys.Space)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+        BrowseButton_Click(sender, EventArgs.Empty);
     }
 
     private void ConfigureOverlayGroup()
@@ -329,7 +355,6 @@ internal sealed class DrawerSettingsDialog : Form
             label.Font = _inputFont;
         }
 
-        ConfigureButtonStyle(_closeButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
         ConfigureButtonStyle(_browseButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
         ConfigureButtonStyle(_clearColorButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
         ConfigureButtonStyle(_saveButton, Color.SeaGreen, Color.MediumSeaGreen, Color.DarkGreen);
@@ -355,7 +380,6 @@ internal sealed class DrawerSettingsDialog : Form
 
     private IEnumerable<UIButton> GetButtons()
     {
-        yield return _closeButton;
         yield return _browseButton;
         yield return _clearColorButton;
         yield return _saveButton;

@@ -123,7 +123,7 @@ partial class SettingsForm
         settingsTableLayoutPanel.Name = "settingsTableLayoutPanel";
         settingsTableLayoutPanel.RowCount = 4;
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 66F));
-        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+        settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 176F));
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         settingsTableLayoutPanel.Size = new Size(777, 442);
@@ -182,11 +182,13 @@ partial class SettingsForm
         behaviorCheckBoxGroup.FillColor = Color.FromArgb(64, 64, 64);
         behaviorCheckBoxGroup.ForeColor = Color.FromArgb(224, 224, 224);
         behaviorCheckBoxGroup.HoverColor = Color.Gray;
-        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with Windows", "Lock position" });
+        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with Windows", "Lock position", "Always on top" });
+        behaviorCheckBoxGroup.ItemSize = new Size(170, 34);
         behaviorCheckBoxGroup.Margin = new Padding(10);
         behaviorCheckBoxGroup.MinimumSize = new Size(1, 1);
         behaviorCheckBoxGroup.Name = "behaviorCheckBoxGroup";
         behaviorCheckBoxGroup.Padding = new Padding(0, 32, 0, 0);
+        behaviorCheckBoxGroup.RowInterval = 12;
         behaviorCheckBoxGroup.SelectedIndexes = (List<int>)resources.GetObject("behaviorCheckBoxGroup.SelectedIndexes");
         behaviorCheckBoxGroup.Size = new Size(757, 106);
         behaviorCheckBoxGroup.StartPos = new Point(12, 40);

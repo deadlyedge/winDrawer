@@ -7,6 +7,8 @@
 > **实施状态（本次已落地）：** 步骤 A–D 已按本方案完成——`DrawerWindow` 改为 partial 并新增 `DrawerWindow.FileList.cs`（列表编排、视口延迟加载、ImageList 所有权），业务逻辑拆到 `Drawers/DrawerItemInfo.cs`、`Drawers/DrawerItemEnumerator.cs`、`Drawers/DrawerItemImageLoader.cs`，`ScrollableListView` 增加 `TryGetVisibleItemRange`。排序采用已确认的“目录与文件全体混排、`LastWriteTimeUtc` 降序”契约，并已同步 [`DP_STAGE_7.md`](DP_STAGE_7.md)。时间排序、枚举降级、缩略图回退与源文件解锁、可见范围查询已用 `%TEMP%` 下的临时 smoke harness 验证（22 项通过）；大目录滚动、深浅主题、DPI 切换和双击打开等人工 UI 回归尚未执行。
 >
 > **附加拆分（同一约定，纯机械搬运）：** `MainWindow.cs` 由 1216 行拆为 `MainWindow.cs`（窗体生命周期、品牌资源、拖动/锁定、窗口边界、主题、设置快照应用，381 行）与 `MainWindow.DrawerList.cs`（抽屉列表绘制、选择切换、拖动重排与拖放提示）、`MainWindow.Drawers.cs`（打开/编辑/删除/添加抽屉）、`MainWindow.Settings.cs`（设置窗体协调、默认值重置与退出流程）、`MainWindow.Tray.cs`（托盘初始化与显示/隐藏）。成员签名集合与拆分前完全一致，未改动任何行为。
+>
+> **配置层拆分（同一约定）：** `SettingsRepository.cs` 由 1198 行拆为 `SettingsRepository.cs`（仓储状态、启动项读写、快照访问与通用 TOML/路径助手，225 行）、`SettingsRepository.Drawers.cs`（抽屉增删改、排序与抽屉表助手，312 行）、`SettingsRepository.Persistence.cs`（后台写盘循环、保存/刷新/释放与文件读写，368 行）、`SettingsRepository.Serialization.cs`（TOML 序列化与分区注释格式，129 行）、`SettingsSnapshot.cs`（设置快照模型及其 TOML 解析，185 行）。同为逐行搬运：成员签名集合与拆分前一致，除类声明加上 `partial` 外无代码行改动；临时 smoke harness 的配置读写检查（32 项）在拆分后全部通过。
 
 ## 1. 当前结构与主要问题
 

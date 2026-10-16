@@ -43,6 +43,12 @@ namespace winDrawer
                 }
             }
             settings.WindowLockPreviewChanged += windowLockPreviewHandler;
+            void alwaysOnTopPreviewHandler(bool alwaysOnTop)
+            {
+                _alwaysOnTopPreview = alwaysOnTop;
+                ApplyAlwaysOnTop(alwaysOnTop);
+            }
+            settings.AlwaysOnTopPreviewChanged += alwaysOnTopPreviewHandler;
             void resetDefaultsHandler(object? _, EventArgs _2)
             {
                 var confirmation = MessageBox.Show(
@@ -122,6 +128,7 @@ namespace winDrawer
             settings.FormClosed += (_, _) =>
             {
                 _windowLockedPreview = null;
+                _alwaysOnTopPreview = null;
                 if (ReferenceEquals(_settingsForm, settings))
                 {
                     _settingsForm = null;
@@ -132,6 +139,7 @@ namespace winDrawer
                 {
                     settings.ThemePreviewChanged -= (global::System.EventHandler<ThemePreviewEventArgs>?)previewHandler;
                     settings.WindowHeightPreviewChanged -= (global::System.EventHandler?)windowHeightPreviewHandler;
+                    settings.AlwaysOnTopPreviewChanged -= (Action<bool>?)alwaysOnTopPreviewHandler;
                     settings.StartupDefaultsResetRequested -= (global::System.EventHandler?)resetDefaultsHandler;
                 }
                 catch { }
@@ -195,7 +203,8 @@ namespace winDrawer
                         resultSettings.WindowOpacity,
                         _settingsSnapshot.WindowPosition,
                         _settingsSnapshot.Drawers,
-                        resultSettings.WindowHeight);
+                        resultSettings.WindowHeight,
+                        resultSettings.AlwaysOnTop);
                     _settingsRepository.Update(_settingsSnapshot);
                     // Save enqueued by repository's background writer.
                     ApplyMainWindowBounds(_settingsSnapshot);
@@ -206,6 +215,7 @@ namespace winDrawer
                     DrawerLogger.LogInformation("Settings dialog cancelled; reverting preview.");
                     settings.RestoreWindowHeightPreview();
                     ApplyMainWindowBounds(_settingsSnapshot);
+                    ApplyAlwaysOnTop(_settingsSnapshot.AlwaysOnTop);
                     ApplyTheme(_settingsSnapshot.BuildThemePalette());
                 }
 
@@ -216,7 +226,9 @@ namespace winDrawer
                 catch { }
             };
 
-            // Show modeless with this window as owner so it appears above and is centered relative to owner.
+            // Modeless with this window as owner; the initial position is derived from the current
+            // main-window position instead of a platform default.
+            ApplySettingsWindowPlacement(settings);
             settings.Show(this);
             DrawerLogger.LogDebug("Settings window displayed.");
         }

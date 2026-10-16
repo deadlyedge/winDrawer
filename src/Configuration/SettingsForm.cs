@@ -9,6 +9,7 @@ public partial class SettingsForm : UIForm
 {
     private const int StartWithWindowsIndex = 0;
     private const int LockPositionIndex = 1;
+    private const int AlwaysOnTopIndex = 2;
 
     private SettingsSnapshot _originalSnapshot;
     private SettingsSnapshot _workingSnapshot;
@@ -46,6 +47,8 @@ public partial class SettingsForm : UIForm
     public event EventHandler? WindowHeightPreviewChanged;
 
     public event Action<bool>? WindowLockPreviewChanged;
+
+    public event Action<bool>? AlwaysOnTopPreviewChanged;
 
     public event EventHandler? StartupDefaultsResetRequested;
 
@@ -167,6 +170,7 @@ public partial class SettingsForm : UIForm
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
         behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
+        FitBehaviorItemSize();
 
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
@@ -177,6 +181,33 @@ public partial class SettingsForm : UIForm
         previewPanel.AccessibleName = "Theme color preview. Activate to choose a color.";
         previewPanel.AccessibleDescription = "Click to change the color. The RGB color code is shown in the preview.";
         CancelButton = cancelButton;
+    }
+
+    /// <summary>
+    /// SunnyUI draws one uniform item rectangle per behavior option and uses that same rectangle for
+    /// the hover highlight and the click hit test, while the text is drawn inside it after the check
+    /// box offset. The designer value only fits the options at 100% scaling, so widen the items to the
+    /// longest option text measured with the active font; the highlight then always covers the option.
+    /// </summary>
+    private void FitBehaviorItemSize()
+    {
+        var longestTextWidth = 0;
+        foreach (var item in behaviorCheckBoxGroup.Items)
+        {
+            var text = item?.ToString() ?? string.Empty;
+            longestTextWidth = Math.Max(longestTextWidth, TextRenderer.MeasureText(text, behaviorCheckBoxGroup.Font).Width);
+        }
+
+        const int checkBoxTextGap = 10; // SunnyUI draws the text at CheckBoxSize + 10.
+        const int trailingMargin = 12;
+        var requiredWidth = behaviorCheckBoxGroup.CheckBoxSize + checkBoxTextGap + longestTextWidth + trailingMargin;
+        if (requiredWidth <= behaviorCheckBoxGroup.ItemSize.Width)
+        {
+            return;
+        }
+
+        behaviorCheckBoxGroup.ItemSize = new Size(requiredWidth, behaviorCheckBoxGroup.ItemSize.Height);
+        DrawerLogger.LogDebug($"Behavior option width widened to {requiredWidth} px for the longest option text.");
     }
 
     private void WireEvents()
@@ -219,6 +250,11 @@ public partial class SettingsForm : UIForm
         if (_workingSnapshot.WindowLocked)
         {
             selected.Add(LockPositionIndex);
+        }
+
+        if (_workingSnapshot.AlwaysOnTop)
+        {
+            selected.Add(AlwaysOnTopIndex);
         }
 
         behaviorCheckBoxGroup.SelectedIndexes = selected;
@@ -343,6 +379,7 @@ public partial class SettingsForm : UIForm
         SelectedAccentColor = ResultSettings.GetAccentColor();
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
         WindowLockPreviewChanged?.Invoke(_originalSnapshot.WindowLocked);
+        AlwaysOnTopPreviewChanged?.Invoke(_originalSnapshot.AlwaysOnTop);
         DialogResult = DialogResult.Cancel;
         _allowClose = true;
         Close();
@@ -476,19 +513,25 @@ public partial class SettingsForm : UIForm
 
         _workingSnapshot.StartWithWindows = selected.Contains(StartWithWindowsIndex);
         _workingSnapshot.WindowLocked = selected.Contains(LockPositionIndex);
+        _workingSnapshot.AlwaysOnTop = selected.Contains(AlwaysOnTopIndex);
         _workingSnapshot.WindowHeight = windowHeightTrackBar.Value;
     }
 
     private void OnBehaviorValueChanged(object? sender, EventArgs e)
     {
         var windowLocked = IsBehaviorChecked(LockPositionIndex);
-        if (_workingSnapshot.WindowLocked == windowLocked)
+        if (_workingSnapshot.WindowLocked != windowLocked)
         {
-            return;
+            _workingSnapshot.WindowLocked = windowLocked;
+            WindowLockPreviewChanged?.Invoke(windowLocked);
         }
 
-        _workingSnapshot.WindowLocked = windowLocked;
-        WindowLockPreviewChanged?.Invoke(windowLocked);
+        var alwaysOnTop = IsBehaviorChecked(AlwaysOnTopIndex);
+        if (_workingSnapshot.AlwaysOnTop != alwaysOnTop)
+        {
+            _workingSnapshot.AlwaysOnTop = alwaysOnTop;
+            AlwaysOnTopPreviewChanged?.Invoke(alwaysOnTop);
+        }
     }
 
     private bool IsBehaviorChecked(int index)

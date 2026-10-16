@@ -13,6 +13,7 @@ namespace winDrawer
 
             var drawer = _currentDrawers[index];
             using var dialog = new DrawerSettingsDialog(drawer);
+            ApplySettingsWindowPlacement(dialog);
             var result = dialog.ShowDialog(this);
             if (result == DialogResult.Cancel)
             {
@@ -114,7 +115,8 @@ namespace winDrawer
                 var drawerWindow = new DrawerWindow(_settingsRepository, drawer, _currentTheme)
                 {
                     StartPosition = FormStartPosition.Manual,
-                    Location = new Point(Right, Top)
+                    Location = new Point(Right, Top),
+                    TopMost = IsAlwaysOnTop
                 };
                 _currentDrawerWindow = drawerWindow;
                 drawerWindow.FormClosed += (_, _) =>

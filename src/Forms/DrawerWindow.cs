@@ -162,8 +162,7 @@ namespace winDrawer
             catch (Exception ex)
             {
                 DrawerLogger.LogError($"Failed to open drawer folder '{_drawer.Path}'.", ex);
-                MessageBox.Show(this, $"Failed to open folder {_drawer.Path}:{Environment.NewLine}{ex.Message}",
-                    "Open Folder Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Open Folder Failed", $"Failed to open folder {_drawer.Path}:{Environment.NewLine}{ex.Message}");
             }
         }
 
@@ -236,11 +235,7 @@ namespace winDrawer
             button.ForePressColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(pressColor);
             button.ForeSelectedColor = button.ForePressColor;
             button.ForeDisableColor = ThemePalette.GetReadableTextColor(disabledFillColor);
-            button.RectColor = _theme.Border;
-            button.RectDisableColor = _theme.Border;
-            button.RectHoverColor = _theme.Border;
-            button.RectPressColor = _theme.Border;
-            button.RectSelectedColor = _theme.Border;
+            UiButtonTheming.ApplyBorderPalette(button, _theme.Border);
         }
 
         private static Color BlendButtonColor(Color color, Color background)
@@ -303,8 +298,7 @@ namespace winDrawer
             catch (Exception ex)
             {
                 DrawerLogger.LogError($"Failed to open '{info.Path}'.", ex);
-                MessageBox.Show(this, $"Failed to open {info.Path}: {ex.Message}", "Open Failed", MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Open Failed", $"Failed to open {info.Path}: {ex.Message}");
             }
         }
     }

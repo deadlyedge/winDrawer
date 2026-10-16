@@ -22,20 +22,14 @@ namespace winDrawer
 
             if (result == DialogResult.Yes && dialog.DeleteRequested)
             {
-                var confirmation = MessageBox.Show(
-                    this,
-                    $"Remove '{drawer.Name}' from the drawer list? The folder and its files will not be deleted.",
-                    "Delete Drawer",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
-                if (confirmation != DialogResult.Yes)
+                if (!UiMessages.Confirm(this, "Delete Drawer", $"Remove '{drawer.Name}' from the drawer list? The folder and its files will not be deleted."))
                 {
                     return;
                 }
 
                 if (!_settingsRepository.DeleteDrawer(drawer.Path, out var deleteError))
                 {
-                    MessageBox.Show(this, deleteError, "Delete Drawer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UiMessages.ShowError(this, "Delete Drawer", deleteError);
                     return;
                 }
 
@@ -49,24 +43,23 @@ namespace winDrawer
                 return;
             }
 
-            var requestedPath = Environment.ExpandEnvironmentVariables(dialog.DrawerPath).Trim();
-            if (!PathsEqual(drawer.Path, requestedPath) && !Directory.Exists(requestedPath))
+            var requestedPath = PathComparison.Normalize(dialog.DrawerPath);
+            if (!PathComparison.AreSame(drawer.Path, requestedPath) && !Directory.Exists(requestedPath))
             {
-                MessageBox.Show(this, $"The selected folder does not exist or is inaccessible:{Environment.NewLine}{requestedPath}",
-                    "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiMessages.ShowWarning(this, "Drawer Settings", $"The selected folder does not exist or is inaccessible:{Environment.NewLine}{requestedPath}");
                 return;
             }
 
-            var pathChanged = !PathsEqual(drawer.Path, requestedPath);
-            if (pathChanged && _currentDrawers.Any(existing => !PathsEqual(existing.Path, drawer.Path) && PathsEqual(existing.Path, requestedPath)))
+            var pathChanged = !PathComparison.AreSame(drawer.Path, requestedPath);
+            if (pathChanged && _currentDrawers.Any(existing => !PathComparison.AreSame(existing.Path, drawer.Path) && PathComparison.AreSame(existing.Path, requestedPath)))
             {
-                MessageBox.Show(this, "Another drawer already uses the selected folder.", "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiMessages.ShowWarning(this, "Drawer Settings", "Another drawer already uses the selected folder.");
                 return;
             }
 
             if (!_settingsRepository.UpdateDrawer(drawer.Path, dialog.DrawerName, requestedPath, dialog.OverlayColor, out var updateError))
             {
-                MessageBox.Show(this, updateError, "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiMessages.ShowWarning(this, "Drawer Settings", updateError);
                 return;
             }
 
@@ -84,7 +77,7 @@ namespace winDrawer
 
         private void CloseDrawerIfOpen(string path)
         {
-            if (_currentOpenDrawer == null || !PathsEqual(_currentOpenDrawer.Path, path))
+            if (_currentOpenDrawer == null || !PathComparison.AreSame(_currentOpenDrawer.Path, path))
             {
                 return;
             }
@@ -105,7 +98,7 @@ namespace winDrawer
             if (!Directory.Exists(drawer.Path))
             {
                 DrawerLogger.LogWarning($"Drawer path not found for '{drawer.Name}': {drawer.Path}");
-                MessageBox.Show($"Folder not found:{Environment.NewLine}{drawer.Path}", "Drawer Missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiMessages.ShowWarning(this, "Drawer Missing", $"Folder not found:{Environment.NewLine}{drawer.Path}");
                 return;
             }
 
@@ -147,7 +140,7 @@ namespace winDrawer
             catch (Exception ex)
             {
                 DrawerLogger.LogError($"Failed to open drawer '{drawer.Name}'.", ex);
-                MessageBox.Show($"Failed to open drawer '{drawer.Name}': {ex.Message}", "Drawer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Drawer Error", $"Failed to open drawer '{drawer.Name}': {ex.Message}");
             }
         }
 
@@ -169,7 +162,7 @@ namespace winDrawer
             if (string.IsNullOrWhiteSpace(selectedPath) || !Directory.Exists(selectedPath))
             {
                 DrawerLogger.LogWarning($"Invalid drawer folder selected: '{selectedPath}'.");
-                MessageBox.Show(this, $"Invalid folder selected:{Environment.NewLine}{selectedPath}", "Invalid Folder", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiMessages.ShowWarning(this, "Invalid Folder", $"Invalid folder selected:{Environment.NewLine}{selectedPath}");
                 return;
             }
 
@@ -181,19 +174,19 @@ namespace winDrawer
                 if (!added)
                 {
                     DrawerLogger.LogInformation($"Drawer '{selectedPath}' already exists.");
-                    MessageBox.Show(this, "The selected folder is already configured as a drawer.", "Add Drawer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UiMessages.ShowInformation(this, "Add Drawer", "The selected folder is already configured as a drawer.");
                     return;
                 }
 
                 // Reload settings from storage to refresh the UI
                 ReloadSettingsFromStorage();
                 DrawerLogger.LogInformation($"Drawer added successfully: '{selectedPath}'.");
-                MessageBox.Show(this, $"Drawer added: {selectedPath}", "Add Drawer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UiMessages.ShowInformation(this, "Add Drawer", $"Drawer added: {selectedPath}");
             }
             catch (Exception ex)
             {
                 DrawerLogger.LogError($"Failed to add drawer '{selectedPath}'.", ex);
-                MessageBox.Show(this, $"Failed to add drawer: {ex.Message}", "Add Drawer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Add Drawer Error", $"Failed to add drawer: {ex.Message}");
             }
         }
     }

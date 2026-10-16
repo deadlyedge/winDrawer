@@ -24,7 +24,6 @@ internal static class AppConstants
     internal static class Directories
     {
         public const string Assets = "assets";
-        public const string Fonts = "fonts";
     }
 
     internal static class Logging
@@ -71,14 +70,5 @@ internal static class AppConstants
     {
         public static readonly Size WindowIconSize = new(32, 32);
         public static readonly Size TrayIconSize = new(16, 16);
-    }
-
-    internal static class DrawerUi
-    {
-        public const float ItemHoverBlendAmount = 0.28f;
-        public const int ResizeGripWidth = 30;
-        public const int ResizeGripHeight = 44;
-        public const int ContentHorizontalPadding = 2;
-        public const int ContentVerticalPadding = 8;
     }
 }

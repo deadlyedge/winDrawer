@@ -39,11 +39,10 @@ namespace winDrawer
                 catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException or System.Security.SecurityException or Tomlyn.TomlException)
                 {
                     DrawerLogger.LogError("Unable to load or initialize the settings file. The existing settings file was not replaced.", ex);
-                    MessageBox.Show(
-                        $"winDrawer could not load or initialize its settings file. Check the TOML syntax and current configuration format, verify that the configuration directory is writable, and ensure the application settings template is available. Existing settings were not replaced.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                    UiMessages.ShowError(
+                        null,
                         "Settings Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                        $"winDrawer could not load or initialize its settings file. Check the TOML syntax and current configuration format, verify that the configuration directory is writable, and ensure the application settings template is available. Existing settings were not replaced.{Environment.NewLine}{Environment.NewLine}{ex.Message}");
                     return;
                 }
 
@@ -72,11 +71,10 @@ namespace winDrawer
 
             try
             {
-                MessageBox.Show(
-                    BuildUnexpectedErrorDialogText(args.Exception),
+                UiMessages.ShowError(
+                    null,
                     $"{AppConstants.Branding.ApplicationDisplayName} - Unexpected Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    BuildUnexpectedErrorDialogText(args.Exception));
             }
             catch (Exception dialogFailure)
             {

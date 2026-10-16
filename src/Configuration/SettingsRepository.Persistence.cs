@@ -7,19 +7,6 @@ namespace winDrawer.Configuration;
 internal sealed partial class SettingsRepository
 {
     /// <summary>
-    /// Enqueue a save request: does not block. Background writer will persist the in-memory model.
-    /// </summary>
-    public void EnqueueSave()
-    {
-        lock (_writeLock)
-        {
-            _dirty = true;
-        }
-        DrawerLogger.LogDebug("Manual save enqueued.");
-        _writeSignal.Release();
-    }
-
-    /// <summary>
     /// Force a flush: waits up to <paramref name="timeout"/> for pending writes to complete.
     /// </summary>
     public async Task<bool> FlushAsync(TimeSpan timeout)
@@ -59,23 +46,6 @@ internal sealed partial class SettingsRepository
 
         DrawerLogger.LogInformation($"Flush completed. Success={success}.");
         return success;
-    }
-
-    /// <summary>
-    /// Synchronous save kept for compatibility; will persist immediately on calling thread.
-    /// Prefer EnqueueSave or FlushAsync in production code.
-    /// </summary>
-    public void Save()
-    {
-        string content;
-        lock (_writeLock)
-        {
-            content = SerializeSettings(_root);
-        }
-
-        DrawerLogger.LogInformation("Performing synchronous settings save.");
-        WriteSettingsContent(_settingsPath, content);
-        DrawerLogger.LogInformation("Synchronous settings save completed.");
     }
 
     public bool SavePendingChanges(TimeSpan timeout)

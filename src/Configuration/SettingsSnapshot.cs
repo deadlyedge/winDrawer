@@ -31,14 +31,17 @@ public sealed class SettingsSnapshot(
         return ThemePalette.FromColor(WindowColor, WindowOpacity);
     }
 
-    public Color GetAccentColor()
-    {
-        return BuildThemePalette().Accent;
-    }
-
     public SettingsSnapshot Clone()
     {
-        return new SettingsSnapshot(StartWithWindows, WindowLocked, WindowColor, WindowOpacity, WindowPosition, _drawers, WindowHeight, AlwaysOnTop);
+        return new SettingsSnapshot(
+            startWithWindows: StartWithWindows,
+            windowLocked: WindowLocked,
+            windowColor: WindowColor,
+            windowOpacity: WindowOpacity,
+            windowPosition: WindowPosition,
+            drawers: _drawers,
+            windowHeight: WindowHeight,
+            alwaysOnTop: AlwaysOnTop);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -62,28 +65,28 @@ public sealed class SettingsSnapshot(
 
     internal static SettingsSnapshot FromModel(TomlTable root)
     {
-        var startup = root.TryGetValue("startup", out var startupObj) && startupObj is TomlTable st
+        var startup = root.TryGetValue(SettingsKeys.Startup, out var startupObj) && startupObj is TomlTable st
             ? st
             : new TomlTable();
-        var drawers = root.TryGetValue("drawers", out var drawersObj) && drawersObj is TomlTableArray drawerArray
+        var drawers = root.TryGetValue(SettingsKeys.Drawers, out var drawersObj) && drawersObj is TomlTableArray drawerArray
             ? ParseDrawers(drawerArray)
             : [];
 
-        var windowHeight = GetInt(startup, "window_height", AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);
-        var windowPositionArray = GetIntArray(startup, "window_position", new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
-        var windowColor = ThemePalette.TryParseHexColor(GetString(startup, "window_color"), out var parsedColor)
+        var windowHeight = GetInt(startup, SettingsKeys.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);
+        var windowPositionArray = GetIntArray(startup, SettingsKeys.WindowPosition, new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
+        var windowColor = ThemePalette.TryParseHexColor(GetString(startup, SettingsKeys.WindowColor), out var parsedColor)
             ? parsedColor
             : AppConstants.Defaults.ThemeColor;
 
         return new SettingsSnapshot(
-            startWithWindows: GetBoolean(startup, "start_with_windows"),
-            windowLocked: GetBoolean(startup, "window_locked"),
+            startWithWindows: GetBoolean(startup, SettingsKeys.StartWithWindows),
+            windowLocked: GetBoolean(startup, SettingsKeys.WindowLocked),
             windowColor: windowColor,
-            windowOpacity: GetInt(startup, "window_opacity", AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax, AppConstants.Defaults.ThemeOpacity),
+            windowOpacity: GetInt(startup, SettingsKeys.WindowOpacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax, AppConstants.Defaults.ThemeOpacity),
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
             drawers: drawers,
             windowHeight: windowHeight,
-            alwaysOnTop: GetBoolean(startup, "always_on_top"));
+            alwaysOnTop: GetBoolean(startup, SettingsKeys.AlwaysOnTop));
     }
 
     private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray entries)
@@ -97,15 +100,15 @@ public sealed class SettingsSnapshot(
                 continue;
             }
 
-            var name = GetString(drawerTable, "name").Trim();
-            var pathValue = GetString(drawerTable, "path").Trim();
+            var name = GetString(drawerTable, SettingsKeys.DrawerName).Trim();
+            var pathValue = GetString(drawerTable, SettingsKeys.DrawerPath).Trim();
 
             if (string.IsNullOrWhiteSpace(pathValue))
             {
                 continue;
             }
 
-            var expandedPath = Environment.ExpandEnvironmentVariables(pathValue);
+            var expandedPath = PathComparison.Normalize(pathValue);
             if (string.IsNullOrWhiteSpace(name))
             {
                 name = Path.GetFileName(expandedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
@@ -116,7 +119,7 @@ public sealed class SettingsSnapshot(
             }
 
             Size? preferredSize = null;
-            if (drawerTable.TryGetValue("size", out var sizeObj) && sizeObj is TomlArray sizeArray && sizeArray.Count == 2 &&
+            if (drawerTable.TryGetValue(SettingsKeys.DrawerSize, out var sizeObj) && sizeObj is TomlArray sizeArray && sizeArray.Count == 2 &&
                 TryGetInteger(sizeArray[0], out var width) && TryGetInteger(sizeArray[1], out var height))
             {
                 preferredSize = new Size(Math.Clamp(width, 200, 4000), Math.Clamp(height, 200, 4000));
@@ -130,7 +133,7 @@ public sealed class SettingsSnapshot(
 
     private static Color? ParseOverlayColor(TomlTable drawerTable)
     {
-        return ThemePalette.TryParseHexColor(GetString(drawerTable, "overlay_color"), out var color)
+        return ThemePalette.TryParseHexColor(GetString(drawerTable, SettingsKeys.DrawerOverlayColor), out var color)
             ? Color.FromArgb(179, color.R, color.G, color.B)
             : null;
     }

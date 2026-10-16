@@ -12,20 +12,20 @@ internal sealed partial class SettingsRepository
         var metadataStore = new TomlMetadataStore();
         var options = new TomlSerializerOptions { MetadataStore = metadataStore };
         var orderedRoot = new TomlTable();
-        if (root.TryGetValue("drawers", out var drawers))
+        if (root.TryGetValue(SettingsKeys.Drawers, out var drawers))
         {
             switch (drawers)
             {
                 case TomlTableArray tableArray:
-                    orderedRoot["drawers"] = CreateDrawerTableArray(tableArray, metadataStore);
+                    orderedRoot[SettingsKeys.Drawers] = CreateDrawerTableArray(tableArray, metadataStore);
                     break;
                 default:
-                    orderedRoot["drawers"] = drawers;
+                    orderedRoot[SettingsKeys.Drawers] = drawers;
                     break;
             }
         }
 
-        if (root.TryGetValue("startup", out var startup))
+        if (root.TryGetValue(SettingsKeys.Startup, out var startup))
         {
             if (startup is TomlTable startupTable)
             {
@@ -43,17 +43,17 @@ internal sealed partial class SettingsRepository
                 AddSectionFormatting(standardStartupTable, metadataStore,
                     "启动与主窗口设置",
                     "配置登录启动、窗口位置、主题颜色和主窗口高度。");
-                orderedRoot["startup"] = standardStartupTable;
+                orderedRoot[SettingsKeys.Startup] = standardStartupTable;
             }
             else
             {
-                orderedRoot["startup"] = startup;
+                orderedRoot[SettingsKeys.Startup] = startup;
             }
         }
 
         foreach (var key in root.Keys)
         {
-            if (key is not "drawers" and not "startup")
+            if (key is not SettingsKeys.Drawers and not SettingsKeys.Startup)
             {
                 orderedRoot[key] = root[key];
             }

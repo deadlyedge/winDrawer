@@ -38,6 +38,7 @@ namespace winDrawer
         private bool? _alwaysOnTopPreview;
         private TrayController? _trayController;
         private SettingsForm? _settingsForm;
+        private bool _settingsCloseHandled;
         private bool _shutdownInProgress;
 
         public MainWindow()
@@ -55,6 +56,7 @@ namespace winDrawer
             drawerListBox.MouseMove += DrawerListBox_MouseMove;
             drawerListBox.DragEnter += DrawerListBox_DragEnter;
             drawerListBox.DragOver += DrawerListBox_DragOver;
+            drawerListBox.DragLeave += DrawerListBox_DragLeave;
             drawerListBox.DragDrop += DrawerListBox_DragDrop;
             drawerListBox.AllowDrop = true;
             drawerListBox.DrawItem += DrawerListBox_DrawItem;
@@ -95,8 +97,7 @@ namespace winDrawer
             if (!_settingsRepository.SavePendingChanges(TimeSpan.FromSeconds(2)))
             {
                 DrawerLogger.LogError("Pending drawer configuration changes could not be persisted before closing.");
-                MessageBox.Show(this, "Some drawer settings could not be saved. Please check that the settings file is writable.",
-                    "Settings Save Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Settings Save Failed", "Some drawer settings could not be saved. Please check that the settings file is writable.");
                 e.Cancel = true;
             }
         }
@@ -407,7 +408,7 @@ namespace winDrawer
             catch (Exception ex)
             {
                 DrawerLogger.LogError("Failed to reload settings from repository.", ex);
-                MessageBox.Show(this, $"Failed to refresh drawers: {ex.Message}", "Settings Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Settings Error", $"Failed to refresh drawers: {ex.Message}");
             }
         }
 
@@ -470,27 +471,8 @@ namespace winDrawer
             logoLabel.ForeColor = theme.TextPrimary;
             logoLabel.BackColor = Color.Transparent;
 
-            settingsButton.FillColor = theme.Accent;
-            settingsButton.FillHoverColor = theme.AccentHover;
-            settingsButton.FillPressColor = theme.AccentPressed;
-            settingsButton.FillSelectedColor = theme.AccentPressed;
-            settingsButton.ForeColor = theme.AccentText;
-            settingsButton.RectColor = theme.Border;
-            settingsButton.RectDisableColor = theme.Border;
-            settingsButton.RectHoverColor = theme.Border;
-            settingsButton.RectPressColor = theme.Border;
-            settingsButton.RectSelectedColor = theme.Border;
-
-            addDrawerButton.FillColor = theme.Accent;
-            addDrawerButton.FillHoverColor = theme.AccentHover;
-            addDrawerButton.FillPressColor = theme.AccentPressed;
-            addDrawerButton.FillSelectedColor = theme.AccentPressed;
-            addDrawerButton.ForeColor = theme.AccentText;
-            addDrawerButton.RectColor = theme.Border;
-            addDrawerButton.RectDisableColor = theme.Border;
-            addDrawerButton.RectHoverColor = theme.Border;
-            addDrawerButton.RectPressColor = theme.Border;
-            addDrawerButton.RectSelectedColor = theme.Border;
+            UiButtonTheming.ApplyAccentPalette(settingsButton, theme);
+            UiButtonTheming.ApplyAccentPalette(addDrawerButton, theme);
 
             drawerListBox.FillColor = theme.ContentBackground;
             drawerListBox.ForeColor = theme.TextPrimary;

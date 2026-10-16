@@ -51,14 +51,14 @@ internal sealed partial class SettingsRepository : IDisposable
 
         lock (_writeLock)
         {
-            var startup = EnsureTable(_root, "startup");
-            startup["start_with_windows"] = snapshot.StartWithWindows;
-            startup["window_locked"] = snapshot.WindowLocked;
-            startup["always_on_top"] = snapshot.AlwaysOnTop;
-            startup["window_height"] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
-            startup["window_position"] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
-            startup["window_color"] = ThemePalette.FormatHexColor(snapshot.WindowColor);
-            startup["window_opacity"] = Math.Clamp(snapshot.WindowOpacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax);
+            var startup = EnsureTable(_root, SettingsKeys.Startup);
+            startup[SettingsKeys.StartWithWindows] = snapshot.StartWithWindows;
+            startup[SettingsKeys.WindowLocked] = snapshot.WindowLocked;
+            startup[SettingsKeys.AlwaysOnTop] = snapshot.AlwaysOnTop;
+            startup[SettingsKeys.WindowHeight] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
+            startup[SettingsKeys.WindowPosition] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
+            startup[SettingsKeys.WindowColor] = ThemePalette.FormatHexColor(snapshot.WindowColor);
+            startup[SettingsKeys.WindowOpacity] = Math.Clamp(snapshot.WindowOpacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax);
             // Mark dirty and signal background writer
             _dirty = true;
         }
@@ -72,14 +72,14 @@ internal sealed partial class SettingsRepository : IDisposable
         var defaults = SettingsSnapshot.FromModel(LoadEmbeddedDefaultTable());
         var current = GetSnapshot();
         return new SettingsSnapshot(
-            defaults.StartWithWindows,
-            defaults.WindowLocked,
-            defaults.WindowColor,
-            defaults.WindowOpacity,
-            defaults.WindowPosition,
-            current.Drawers,
-            defaults.WindowHeight,
-            defaults.AlwaysOnTop);
+            startWithWindows: defaults.StartWithWindows,
+            windowLocked: defaults.WindowLocked,
+            windowColor: defaults.WindowColor,
+            windowOpacity: defaults.WindowOpacity,
+            windowPosition: defaults.WindowPosition,
+            drawers: current.Drawers,
+            windowHeight: defaults.WindowHeight,
+            alwaysOnTop: defaults.AlwaysOnTop);
     }
 
     public bool ResetStartupToEmbeddedDefaults(TimeSpan timeout, out SettingsSnapshot? resetSnapshot, out string error)
@@ -118,7 +118,7 @@ internal sealed partial class SettingsRepository : IDisposable
                 return false;
             }
 
-            if (!defaults.TryGetValue("startup", out var defaultsValue) || defaultsValue is not TomlTable defaultsStartup)
+            if (!defaults.TryGetValue(SettingsKeys.Startup, out var defaultsValue) || defaultsValue is not TomlTable defaultsStartup)
             {
                 error = "The embedded default settings do not contain a valid startup section.";
                 return false;
@@ -138,7 +138,7 @@ internal sealed partial class SettingsRepository : IDisposable
             }
 
             currentStartup.Remove(ObsoleteIconSizeSettingName);
-            _root["startup"] = currentStartup;
+            _root[SettingsKeys.Startup] = currentStartup;
             var snapshot = SettingsSnapshot.FromModel(_root);
 
             try
@@ -152,7 +152,7 @@ internal sealed partial class SettingsRepository : IDisposable
             catch (Exception ex)
             {
                 DrawerLogger.LogError("Failed to persist startup defaults; restoring the previous in-memory settings.", ex);
-                previousRoot["startup"] = previousStartup;
+                previousRoot[SettingsKeys.Startup] = previousStartup;
                 _root = previousRoot;
                 error = $"The default startup options could not be saved. Existing settings were retained.{Environment.NewLine}{ex.Message}";
                 return false;
@@ -174,7 +174,7 @@ internal sealed partial class SettingsRepository : IDisposable
 
     private static bool TryGetStartupTable(TomlTable root, out TomlTable startup)
     {
-        if (!root.TryGetValue("startup", out var value))
+        if (!root.TryGetValue(SettingsKeys.Startup, out var value))
         {
             startup = new TomlTable();
             return true;
@@ -209,17 +209,5 @@ internal sealed partial class SettingsRepository : IDisposable
         }
 
         return value is string text ? text : fallback;
-    }
-
-    private static bool PathsEqual(string? first, string? second)
-    {
-        var expandedFirst = Environment.ExpandEnvironmentVariables(first ?? string.Empty).Trim();
-        var expandedSecond = Environment.ExpandEnvironmentVariables(second ?? string.Empty).Trim();
-
-        var comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
-
-        return string.Equals(expandedFirst, expandedSecond, comparison);
     }
 }

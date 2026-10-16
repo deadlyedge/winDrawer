@@ -95,11 +95,11 @@ Drawer settings (right-click a drawer) edit the display name and the bound folde
 
 - `Program.cs` – Application entry point and global exception hooks.
 - `Forms/` – All windows and dialogs with their designer files: `MainWindow.*` (drawer list, tray integration via `TrayController`, settings preview), `DrawerWindow.*` (drawer contents, lazy thumbnails, theme), `SettingsForm.*` (modeless settings panel) and `DrawerSettingsDialog.cs`.
-- `Controls/ScrollableListView.cs` – Native `ListView` scrolling, vertical scroll bar synchronization and viewport notifications.
+- `Controls/` – Reusable UI helpers: `ScrollableListView.cs` (native `ListView` scrolling, vertical scroll bar synchronization and viewport notifications), `UiButtonTheming.cs` (shared accent/palette button colours), `UiDialogHelpers.cs` (colour-dialog preset palette and Enter/Space activation), `UiMessages.cs` (single funnel for message boxes).
 - `Drawers/` – Drawer content model and services: `DrawerItemInfo` (item metadata), `DrawerItemEnumerator` (direct-child enumeration and newest-first sorting), `DrawerItemImageLoader` (Shell icon / thumbnail per item).
-- `Configuration/` – Settings data and persistence: `SettingsRepository.*` (in-memory TOML model, drawer operations, background writer, serialization), `SettingsSnapshot.cs` (settings snapshot and TOML parsing), `DrawerDefinition.cs`, `AppConstants.cs`.
+- `Configuration/` – Settings data and persistence: `SettingsRepository.*` (in-memory TOML model, drawer operations, background writer, serialization), `SettingsSnapshot.cs` (settings snapshot and TOML parsing), `SettingsKeys.cs` (TOML key names), `DrawerDefinition.cs`, `AppConstants.cs`.
 - `Theming/` – `ThemePalette.cs` (RGB hex parsing and derived palette), `BrandingFont.cs` (embedded Lobster font), `ShellIcon.cs` (Shell icon interop), `ThemePreviewEventArgs.cs`.
-- `Infrastructure/` – Cross-cutting support: `DrawerLogger.cs` (file logger), `TrayController.cs` (NotifyIcon lifecycle), `StartupRegistration.cs` (per-user login startup).
+- `Infrastructure/` – Cross-cutting support: `DrawerLogger.cs` (file logger), `TrayController.cs` (NotifyIcon lifecycle), `StartupRegistration.cs` (per-user login startup), `PathComparison.cs` (single path-equality rule).
 
 ## Dependencies
 

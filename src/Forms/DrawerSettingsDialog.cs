@@ -248,14 +248,7 @@ internal sealed class DrawerSettingsDialog : Form
 
     private void PathDisplay_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode is not Keys.Enter and not Keys.Space)
-        {
-            return;
-        }
-
-        e.Handled = true;
-        e.SuppressKeyPress = true;
-        BrowseButton_Click(sender, EventArgs.Empty);
+        UiDialogHelpers.HandleActivationKey(e, () => BrowseButton_Click(sender, EventArgs.Empty));
     }
 
     private void ConfigureOverlayGroup()
@@ -365,15 +358,7 @@ internal sealed class DrawerSettingsDialog : Form
 
     private static void ConfigureButtonStyle(UIButton button, Color fill, Color hover, Color pressed)
     {
-        button.FillColor = fill;
-        button.FillHoverColor = hover;
-        button.FillPressColor = pressed;
-        button.FillSelectedColor = pressed;
-        button.ForeColor = Color.White;
-        button.RectColor = fill;
-        button.RectHoverColor = hover;
-        button.RectPressColor = pressed;
-        button.RectSelectedColor = pressed;
+        UiButtonTheming.ApplyColorPalette(button, fill, hover, pressed, Color.White);
         button.Radius = 20;
         button.Cursor = Cursors.Hand;
     }
@@ -473,14 +458,14 @@ internal sealed class DrawerSettingsDialog : Form
     {
         if (string.IsNullOrWhiteSpace(DrawerName))
         {
-            MessageBox.Show(this, "Drawer name cannot be empty.", "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            UiMessages.ShowWarning(this, "Drawer Settings", "Drawer name cannot be empty.");
             _nameTextBox.Focus();
             return;
         }
 
         if (string.IsNullOrWhiteSpace(DrawerPath))
         {
-            MessageBox.Show(this, "Folder path cannot be empty.", "Drawer Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            UiMessages.ShowWarning(this, "Drawer Settings", "Folder path cannot be empty.");
             _pathTextBox.Focus();
             return;
         }
@@ -491,7 +476,7 @@ internal sealed class DrawerSettingsDialog : Form
     private void ChooseColorButton_Click(object? sender, EventArgs e)
     {
         _colorDialog.Color = _selectedColor ?? AppConstants.Defaults.ThemeColor;
-        _colorDialog.CustomColors = GetDrawerDialogCustomColors(_selectedColor, _colorDialog.Color);
+        _colorDialog.CustomColors = UiDialogHelpers.BuildColorDialogCustomColors(_colorDialog.Color, _selectedColor);
 
         if (_colorDialog.ShowDialog(this) == DialogResult.OK)
         {
@@ -501,14 +486,7 @@ internal sealed class DrawerSettingsDialog : Form
 
     private void ColorPreview_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode is not Keys.Enter and not Keys.Space)
-        {
-            return;
-        }
-
-        e.Handled = true;
-        e.SuppressKeyPress = true;
-        ChooseColorButton_Click(sender, EventArgs.Empty);
+        UiDialogHelpers.HandleActivationKey(e, () => ChooseColorButton_Click(sender, EventArgs.Empty));
     }
 
     private void SetSelectedColor(Color? color)
@@ -543,40 +521,5 @@ internal sealed class DrawerSettingsDialog : Form
         dialog.FullOpen = true;
         dialog.AnyColor = true;
         dialog.SolidColorOnly = true;
-    }
-
-    private static int[] GetDrawerDialogCustomColors(Color? selectedColor, Color initialColor)
-    {
-        static int ToDialogColor(Color color) =>
-            color.R | (color.G << 8) | (color.B << 16);
-
-        var colors = new List<int> { ToDialogColor(initialColor) };
-        if (selectedColor is { } selected)
-        {
-            colors.Add(ToDialogColor(selected));
-        }
-        else
-        {
-            colors.Add(ToDialogColor(Color.FromArgb(0, 5, 51)));
-        }
-
-        colors.AddRange(
-        [
-            ToDialogColor(Color.FromArgb(9, 140, 210)),
-            ToDialogColor(Color.FromArgb(64, 64, 64)),
-            ToDialogColor(Color.White),
-            ToDialogColor(Color.Black),
-            ToDialogColor(Color.Red),
-            ToDialogColor(Color.Green),
-            ToDialogColor(Color.Blue),
-            ToDialogColor(Color.Yellow),
-            ToDialogColor(Color.Magenta),
-            ToDialogColor(Color.Cyan),
-            ToDialogColor(Color.Orange),
-            ToDialogColor(Color.Purple),
-            ToDialogColor(Color.LightGray),
-            ToDialogColor(Color.DarkGray)
-        ]);
-        return colors.ToArray();
     }
 }

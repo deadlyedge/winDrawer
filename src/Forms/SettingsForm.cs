@@ -62,10 +62,6 @@ public partial class SettingsForm : UIForm
         WindowHeightPreviewChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public Color SelectedAccentColor { get; private set; }
-
-    public bool LaunchOnStartup => IsBehaviorChecked(StartWithWindowsIndex);
-
     public bool ShutdownRequested { get; private set; }
 
     public SettingsSnapshot ResultSettings { get; private set; }
@@ -151,15 +147,7 @@ public partial class SettingsForm : UIForm
 
     private static void ConfigureButton(UIButton button, Color fill, Color hover, Color pressed)
     {
-        button.FillColor = fill;
-        button.FillHoverColor = hover;
-        button.FillPressColor = pressed;
-        button.FillSelectedColor = pressed;
-        button.RectColor = fill;
-        button.RectHoverColor = hover;
-        button.RectPressColor = pressed;
-        button.RectSelectedColor = pressed;
-        button.ForeColor = Color.White;
+        UiButtonTheming.ApplyColorPalette(button, fill, hover, pressed, Color.White);
     }
 
     private void ConfigureControls()
@@ -306,7 +294,7 @@ public partial class SettingsForm : UIForm
             SolidColorOnly = true
         };
 
-        dialog.CustomColors = GetThemeDialogCustomColors(_workingSnapshot.WindowColor);
+        dialog.CustomColors = UiDialogHelpers.BuildColorDialogCustomColors(_workingSnapshot.WindowColor);
 
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
@@ -319,40 +307,7 @@ public partial class SettingsForm : UIForm
 
     private void OnThemeColorPreviewKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode is not Keys.Enter and not Keys.Space)
-        {
-            return;
-        }
-
-        e.Handled = true;
-        e.SuppressKeyPress = true;
-        OnThemeColorPreviewClick(sender, EventArgs.Empty);
-    }
-
-    private static int[] GetThemeDialogCustomColors(Color currentColor)
-    {
-        static int ToDialogColor(Color color) =>
-            color.R | (color.G << 8) | (color.B << 16);
-
-        return
-        [
-            ToDialogColor(currentColor),
-            ToDialogColor(Color.FromArgb(0, 5, 51)),
-            ToDialogColor(Color.FromArgb(9, 140, 210)),
-            ToDialogColor(Color.FromArgb(64, 64, 64)),
-            ToDialogColor(Color.White),
-            ToDialogColor(Color.Black),
-            ToDialogColor(Color.Red),
-            ToDialogColor(Color.Green),
-            ToDialogColor(Color.Blue),
-            ToDialogColor(Color.Yellow),
-            ToDialogColor(Color.Magenta),
-            ToDialogColor(Color.Cyan),
-            ToDialogColor(Color.Orange),
-            ToDialogColor(Color.Purple),
-            ToDialogColor(Color.LightGray),
-            ToDialogColor(Color.DarkGray)
-        ];
+        UiDialogHelpers.HandleActivationKey(e, () => OnThemeColorPreviewClick(sender, EventArgs.Empty));
     }
 
     private void SaveButton_Click(object? sender, EventArgs e)
@@ -365,7 +320,6 @@ public partial class SettingsForm : UIForm
 
         SyncWorkingSnapshotFromUi();
         ResultSettings = _workingSnapshot.Clone();
-        SelectedAccentColor = ResultSettings.GetAccentColor();
         DialogResult = DialogResult.OK;
         _allowClose = true;
         Close();
@@ -376,7 +330,6 @@ public partial class SettingsForm : UIForm
         DrawerLogger.LogInformation("SettingsForm: cancel requested.");
         RestoreWindowHeightPreview();
         ResultSettings = _originalSnapshot.Clone();
-        SelectedAccentColor = ResultSettings.GetAccentColor();
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
         WindowLockPreviewChanged?.Invoke(_originalSnapshot.WindowLocked);
         AlwaysOnTopPreviewChanged?.Invoke(_originalSnapshot.AlwaysOnTop);
@@ -421,12 +374,10 @@ public partial class SettingsForm : UIForm
         catch (Exception ex)
         {
             DrawerLogger.LogError($"Unable to open settings TOML file '{settingsPath}'.", ex);
-            MessageBox.Show(
+            UiMessages.ShowError(
                 this,
-                $"Unable to open the settings file:{Environment.NewLine}{settingsPath}{Environment.NewLine}{Environment.NewLine}{ex.Message}",
                 "Open Settings TOML",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+                $"Unable to open the settings file:{Environment.NewLine}{settingsPath}{Environment.NewLine}{Environment.NewLine}{ex.Message}");
         }
     }
 
@@ -441,12 +392,10 @@ public partial class SettingsForm : UIForm
         catch (Exception ex)
         {
             DrawerLogger.LogError("Unable to read the current user's Windows startup registration.", ex);
-            MessageBox.Show(
+            UiMessages.ShowError(
                 this,
-                $"Unable to verify Windows login startup. No settings were saved.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
                 "Windows Startup",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+                $"Unable to verify Windows login startup. No settings were saved.{Environment.NewLine}{Environment.NewLine}{ex.Message}");
             return false;
         }
 
@@ -475,12 +424,10 @@ public partial class SettingsForm : UIForm
 
             _workingSnapshot.StartWithWindows = previousState;
             SetStartWithWindowsCheckBox(previousState);
-            MessageBox.Show(
+            UiMessages.ShowWarning(
                 this,
-                $"Unable to {(requestedState ? "enable" : "disable")} Windows login startup. The previous registration state was restored to {(previousState ? "enabled" : "disabled")}.{(rollbackSucceeded ? string.Empty : " Windows may still have a different registration state.")}{Environment.NewLine}{Environment.NewLine}{ex.Message}",
                 "Windows Startup",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
+                $"Unable to {(requestedState ? "enable" : "disable")} Windows login startup. The previous registration state was restored to {(previousState ? "enabled" : "disabled")}.{(rollbackSucceeded ? string.Empty : " Windows may still have a different registration state.")}{Environment.NewLine}{Environment.NewLine}{ex.Message}");
             return false;
         }
     }
@@ -499,7 +446,6 @@ public partial class SettingsForm : UIForm
     private void UpdatePreview()
     {
         var palette = _workingSnapshot.BuildThemePalette();
-        SelectedAccentColor = palette.Accent;
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = palette.Border;
         previewPanel.ForeColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);

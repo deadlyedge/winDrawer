@@ -198,8 +198,7 @@ public partial class DrawerWindow
             DrawerLogger.LogError($"Failed to populate drawer '{_drawer.Name}'.", ex);
             ClearFileList();
             ShowListStatus("Failed to load", ex.Message);
-            MessageBox.Show(this, $"Failed to load drawer contents: {ex.Message}", "Drawer Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            UiMessages.ShowError(this, "Drawer Error", $"Failed to load drawer contents: {ex.Message}");
         }
         finally
         {

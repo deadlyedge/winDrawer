@@ -22,13 +22,13 @@ internal sealed partial class SettingsRepository
 
             foreach (var entry in drawers)
             {
-                var candidatePath = ReadString(entry, "path");
-                if (!PathsEqual(candidatePath, drawerPath))
+                var candidatePath = ReadString(entry, SettingsKeys.DrawerPath);
+                if (!PathComparison.AreSame(candidatePath, drawerPath))
                 {
                     continue;
                 }
 
-                entry["size"] = new TomlArray { size.Width, size.Height };
+                entry[SettingsKeys.DrawerSize] = new TomlArray { size.Width, size.Height };
 
                 _dirty = true;
                 _writeSignal.Release();
@@ -51,9 +51,9 @@ internal sealed partial class SettingsRepository
             return false;
         }
 
-        var expandedOriginalPath = Environment.ExpandEnvironmentVariables(originalPath).Trim();
-        var expandedPath = Environment.ExpandEnvironmentVariables(newPath).Trim();
-        if (!PathsEqual(expandedOriginalPath, expandedPath) && !Directory.Exists(expandedPath))
+        var expandedOriginalPath = PathComparison.Normalize(originalPath);
+        var expandedPath = PathComparison.Normalize(newPath);
+        if (!PathComparison.AreSame(expandedOriginalPath, expandedPath) && !Directory.Exists(expandedPath))
         {
             error = "The selected folder does not exist or is inaccessible.";
             return false;
@@ -71,7 +71,7 @@ internal sealed partial class SettingsRepository
                 return false;
             }
 
-            var matches = drawers.Where(entry => PathsEqual(ReadString(entry, "path"), originalPath)).ToList();
+            var matches = drawers.Where(entry => PathComparison.AreSame(ReadString(entry, SettingsKeys.DrawerPath), originalPath)).ToList();
             if (matches.Count != 1)
             {
                 error = matches.Count == 0
@@ -80,21 +80,21 @@ internal sealed partial class SettingsRepository
                 return false;
             }
 
-            if (drawers.Any(entry => !ReferenceEquals(entry, matches[0]) && PathsEqual(ReadString(entry, "path"), expandedPath)))
+            if (drawers.Any(entry => !ReferenceEquals(entry, matches[0]) && PathComparison.AreSame(ReadString(entry, SettingsKeys.DrawerPath), expandedPath)))
             {
                 error = "Another drawer already uses the selected folder.";
                 return false;
             }
 
-            matches[0]["name"] = name.Trim();
-            matches[0]["path"] = expandedPath;
+            matches[0][SettingsKeys.DrawerName] = name.Trim();
+            matches[0][SettingsKeys.DrawerPath] = expandedPath;
             if (normalizedColor is { } drawerColor)
             {
-                matches[0]["overlay_color"] = FormatOverlayColor(drawerColor);
+                matches[0][SettingsKeys.DrawerOverlayColor] = FormatOverlayColor(drawerColor);
             }
             else
             {
-                matches[0].Remove("overlay_color");
+                matches[0].Remove(SettingsKeys.DrawerOverlayColor);
             }
 
             _dirty = true;
@@ -121,7 +121,7 @@ internal sealed partial class SettingsRepository
                 return false;
             }
 
-            var matches = drawers.Where(entry => PathsEqual(ReadString(entry, "path"), drawerPath)).ToList();
+            var matches = drawers.Where(entry => PathComparison.AreSame(ReadString(entry, SettingsKeys.DrawerPath), drawerPath)).ToList();
             if (matches.Count != 1)
             {
                 error = matches.Count == 0
@@ -130,7 +130,7 @@ internal sealed partial class SettingsRepository
                 return false;
             }
 
-            if (!_root.TryGetValue("drawers", out var value) || !RemoveDrawerEntry(value, matches[0]))
+            if (!_root.TryGetValue(SettingsKeys.Drawers, out var value) || !RemoveDrawerEntry(value, matches[0]))
             {
                 error = "The drawer entry could not be removed from settings.";
                 return false;
@@ -150,7 +150,7 @@ internal sealed partial class SettingsRepository
 
         lock (_writeLock)
         {
-            if (!TryGetDrawers(_root, out var drawers) || !_root.TryGetValue("drawers", out var value))
+            if (!TryGetDrawers(_root, out var drawers) || !_root.TryGetValue(SettingsKeys.Drawers, out var value))
             {
                 error = "The drawer configuration is unavailable.";
                 return false;
@@ -166,7 +166,7 @@ internal sealed partial class SettingsRepository
             var byPath = new Dictionary<string, TomlTable>(StringComparer.OrdinalIgnoreCase);
             foreach (var drawer in drawers)
             {
-                var path = Environment.ExpandEnvironmentVariables(ReadString(drawer, "path")).Trim();
+                var path = PathComparison.Normalize(ReadString(drawer, SettingsKeys.DrawerPath));
                 if (string.IsNullOrWhiteSpace(path) || !byPath.TryAdd(path, drawer))
                 {
                     error = "Drawer paths are missing or duplicated in settings; reordering was cancelled.";
@@ -178,7 +178,7 @@ internal sealed partial class SettingsRepository
             var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var requestedPath in orderedPaths)
             {
-                var path = Environment.ExpandEnvironmentVariables(requestedPath ?? string.Empty).Trim();
+                var path = PathComparison.Normalize(requestedPath);
                 if (!seenPaths.Add(path) || !byPath.TryGetValue(path, out var entry))
                 {
                     error = "The requested order does not match the configured drawers.";
@@ -236,7 +236,7 @@ internal sealed partial class SettingsRepository
             return false;
         }
 
-        var expanded = Environment.ExpandEnvironmentVariables(path).Trim();
+        var expanded = PathComparison.Normalize(path);
         lock (_writeLock)
         {
             var drawers = EnsureDrawersArray(_root);
@@ -244,8 +244,8 @@ internal sealed partial class SettingsRepository
             // Check for existing entry
             foreach (var entry in drawers)
             {
-                var candidatePath = ReadString(entry, "path");
-                if (PathsEqual(candidatePath, expanded))
+                var candidatePath = ReadString(entry, SettingsKeys.DrawerPath);
+                if (PathComparison.AreSame(candidatePath, expanded))
                 {
                     DrawerLogger.LogDebug($"Drawer path already tracked: '{expanded}'.");
                     return false;
@@ -257,8 +257,8 @@ internal sealed partial class SettingsRepository
                 ? Path.GetFileName(expanded.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
                 : name;
 
-            entryTable["name"] = entryName ?? string.Empty;
-            entryTable["path"] = expanded;
+            entryTable[SettingsKeys.DrawerName] = entryName ?? string.Empty;
+            entryTable[SettingsKeys.DrawerPath] = expanded;
 
             AddDrawerEntry(_root, entryTable);
             DrawerLogger.LogInformation($"Added drawer '{entryName}' => '{expanded}'.");
@@ -278,14 +278,14 @@ internal sealed partial class SettingsRepository
             return drawers;
         }
 
-        root["drawers"] = new TomlTableArray();
+        root[SettingsKeys.Drawers] = new TomlTableArray();
         return [];
     }
 
     private static bool TryGetDrawers(TomlTable root, out List<TomlTable> drawers)
     {
         drawers = [];
-        if (!root.TryGetValue("drawers", out var value))
+        if (!root.TryGetValue(SettingsKeys.Drawers, out var value))
         {
             return false;
         }
@@ -301,12 +301,12 @@ internal sealed partial class SettingsRepository
 
     private static void AddDrawerEntry(TomlTable root, TomlTable drawer)
     {
-        if (root.TryGetValue("drawers", out var value) && value is TomlTableArray tableArray)
+        if (root.TryGetValue(SettingsKeys.Drawers, out var value) && value is TomlTableArray tableArray)
         {
             tableArray.Add(drawer);
             return;
         }
 
-        root["drawers"] = new TomlTableArray { drawer };
+        root[SettingsKeys.Drawers] = new TomlTableArray { drawer };
     }
 }

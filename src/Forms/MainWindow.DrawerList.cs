@@ -242,7 +242,7 @@ namespace winDrawer
                 return;
             }
 
-            var sourceIndex = _currentDrawers.FindIndex(drawer => PathsEqual(drawer.Path, draggedPath));
+            var sourceIndex = _currentDrawers.FindIndex(drawer => PathComparison.AreSame(drawer.Path, draggedPath));
             var point = drawerListBox.PointToClient(new Point(e.X, e.Y));
             var rawInsertionIndex = GetRawDropInsertionIndex(point);
             if (sourceIndex < 0 || rawInsertionIndex < 0)
@@ -298,7 +298,7 @@ namespace winDrawer
                 return;
             }
 
-            var sourceIndex = _currentDrawers.FindIndex(drawer => PathsEqual(drawer.Path, draggedPath));
+            var sourceIndex = _currentDrawers.FindIndex(drawer => PathComparison.AreSame(drawer.Path, draggedPath));
             if (sourceIndex < 0 || _dropInsertionIndex < 0)
             {
                 ClearDragInsertionMarker();
@@ -323,7 +323,7 @@ namespace winDrawer
                 if (!_settingsRepository.ReorderDrawers(orderedPaths, out var error))
                 {
                     DrawerLogger.LogWarning($"Drawer reorder was rejected: {error}");
-                    MessageBox.Show(this, error, "Reorder Drawers", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    UiMessages.ShowWarning(this, "Reorder Drawers", error);
                     ReloadSettingsFromStorage();
                     return;
                 }
@@ -333,7 +333,7 @@ namespace winDrawer
             catch (Exception ex)
             {
                 DrawerLogger.LogError("Failed to reorder drawers.", ex);
-                MessageBox.Show(this, $"Failed to save drawer order: {ex.Message}", "Reorder Drawers", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UiMessages.ShowError(this, "Reorder Drawers", $"Failed to save drawer order: {ex.Message}");
                 ReloadSettingsFromStorage();
             }
             finally
@@ -341,13 +341,6 @@ namespace winDrawer
                 ClearDragInsertionMarker();
             }
         }
-        private static bool PathsEqual(string first, string second)
-        {
-            var left = Environment.ExpandEnvironmentVariables(first).Trim();
-            var right = Environment.ExpandEnvironmentVariables(second).Trim();
-            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
-        }
-
         private void UpdateSelectedDrawer()
         {
             _suppressSelectionChange = true;
@@ -357,7 +350,7 @@ namespace winDrawer
                 {
                     for (int i = 0; i < _currentDrawers.Count; i++)
                     {
-                        if (string.Equals(_currentDrawers[i].Path, _currentOpenDrawer.Path, StringComparison.OrdinalIgnoreCase))
+                        if (PathComparison.AreSame(_currentDrawers[i].Path, _currentOpenDrawer.Path))
                         {
                             drawerListBox.SelectedIndex = i;
                             return;

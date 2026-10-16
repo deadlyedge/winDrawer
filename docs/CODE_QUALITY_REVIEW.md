@@ -20,7 +20,7 @@
 
 **主要短板集中在三类**：① 退出/异常路径过于激进或过于安静（`Process.Kill`、全局异常只写日志）；② 重复的小工具代码（路径比较、色板、按钮样式、键盘激活）与死代码；③ 日志与生命周期收尾（日志无级别/上限、仓储未释放、部分事件未退订）。
 
-分级统计：高 4 项、中 8 项、低 6 项。其中**高优先级的 H1–H4 已于 2026-10-16 修复并通过验证，详见第 9 节**；中低优先级条目状态不变。
+分级统计：高 4 项、中 8 项、低 6 项。**高优先级的 H1–H4（第 9 节）与中优先级的 M1–M8（第 10 节）已于 2026-10-16 修复并通过验证**；低优先级 L1–L6 状态不变。
 
 ## 3. 问题清单
 
@@ -55,12 +55,12 @@
 
 ### 3.2 中优先级（结构与可维护性）
 
-**M1 `SettingsButton_Click` 是整个代码库最大的单方法（约 214 行）**
+**M1 `SettingsButton_Click` 是整个代码库最大的单方法（约 214 行）** ｜ ✅ 已修复（2026-10-16，见第 10.1 节）
 - 位置：`src/Forms/MainWindow.Settings.cs:23-234`。内含 4 个本地函数（预览、窗口高度预览、锁定预览、置顶预览、默认值重置）与完整退出序列。
 - 影响：读一屏才能确认设置流程语义；本地函数无法被单测；退出序列与 UI 逻辑混在一起（见 H1）。
 - 建议：拆为私有方法：`ShowSettingsWindow()`、`WireSettingsPreviewHandlers(SettingsForm)`、`HandleStartupDefaultsReset(SettingsForm)`、`ShutdownApplication(string)`；本地函数改为私有方法后，退订逻辑也能用同一引用（见 M7）。
 
-**M2 重复的小工具代码 4 组**
+**M2 重复的小工具代码 4 组** ｜ ✅ 已修复（2026-10-16，见第 10.2 节）
 | 重复内容 | 位置 | 建议 |
 |---|---|---|
 | 路径比较（展开环境变量 + Trim + Windows 忽略大小写） | `src/Configuration/SettingsRepository.cs:214`、`src/Forms/MainWindow.DrawerList.cs:344` | 提取到单一位置（如 `Configuration/PathComparison.cs` 或 `Infrastructure/`），两边复用 |
@@ -71,17 +71,17 @@
 - 影响：同一视觉/行为规则有 2-4 份实现，修改时容易只改一处（历史上已经出现过主题色相关规则分散的问题）。
 - 建议：新增一个约 80-120 行的静态帮助类（例如 `Theming/UiInteropHelpers.cs` 或 `Forms/DialogPresentationHelpers.cs`），只放"无状态、可复用"的部分；**不要**为此引入样式引擎或按控件自绘体系。
 
-**M3 `SettingsSnapshot` 的 8 参数位置构造函数容易写错**
+**M3 `SettingsSnapshot` 的 8 参数位置构造函数容易写错** ｜ ✅ 已修复（2026-10-16，见第 10.3 节）
 - 位置：`src/Configuration/SettingsSnapshot.cs:6-17`；调用方有 4 处，其中 `SettingsRepository.cs`（`GetEmbeddedStartupDefaults`）与 `MainWindow.Settings.cs:199` 使用**位置参数**。
 - 影响：新增字段（如 `alwaysOnTop`）时必须人工核对每一处位置参数；顺序写错会静默产生错误设置（类型相同的 bool 尤其危险）。
 - 建议：调用处统一改为命名参数（本次 `FromModel` 已经是命名参数，可作范本）；或在保持类型不变的前提下增加一个 `Clone()` 之外的 `With(...)` 风格方法。改动小、收益稳定。
 
-**M4 TOML 键名散落在多个分部文件中**
+**M4 TOML 键名散落在多个分部文件中** ｜ ✅ 已修复（2026-10-16，见第 10.4 节）
 - 位置：`"startup"`、`"drawers"`、`"window_color"` 等字符串出现在 `SettingsRepository.cs`、`.Persistence.cs`、`.Serialization.cs`、`SettingsSnapshot.cs` 中。
 - 影响：键名拼写错误不会被编译器发现；新增字段需要跨 4 个文件检索。
 - 建议：新增 `Configuration/SettingsKeys.cs`（或 `TomlKeys`）集中常量，序列化/解析/重置三处引用同一组常量。
 
-**M5 死代码（已确认无引用）**
+**M5 死代码（已确认无引用）** ｜ ✅ 已修复（2026-10-16，见第 10.5 节）
 | 成员 | 位置 | 说明 |
 |---|---|---|
 | `SettingsForm.LaunchOnStartup` | `src/Forms/SettingsForm.cs:67` | 仅声明；启动项实际由 `SettingsSnapshot.StartWithWindows` 驱动 |
@@ -91,17 +91,17 @@
 | `AppConstants.Directories.Fonts`、`DrawerUi.ItemHoverBlendAmount`、`ResizeGripWidth`、`ResizeGripHeight`、`ContentHorizontalPadding`、`ContentVerticalPadding` | `src/Configuration/AppConstants.cs:27/66-70` | 自绘卡片列表时期的遗留常量，已无引用 |
 - 建议：删除或在删除前确认无外部（脚本/文档）依赖；`Save()` 若打算保留为"运维/测试入口"，请补一条注释说明用途，否则一并删除。
 
-**M6 拖动插入提示的 `DragLeave` 处理器从未订阅（顺带是真实小缺陷）**
+**M6 拖动插入提示的 `DragLeave` 处理器从未订阅（顺带是真实小缺陷）** ｜ ✅ 已修复（2026-10-16，见第 10.5 节）
 - 位置：`src/Forms/MainWindow.DrawerList.cs:232` 定义 `DrawerListBox_DragLeave`，但 `MainWindow` 构造函数只订阅了 `DragEnter/DragOver/DragDrop`（`src/Forms/MainWindow.cs:52-54`）。
 - 影响：把抽屉拖动到列表之外再放开时，插入位置提示条可能残留到下一次操作（虽然 `DragDrop` 的 `finally` 与 `PopulateDrawerList` 会清理，但"拖出列表"这条路径没有清理点）。
 - 建议：订阅 `DragLeave += DrawerListBox_DragLeave`（一行修复），或在构造处明确删除该处理器。
 
-**M7 事件退订不一致**
+**M7 事件退订不一致** ｜ ✅ 已修复（2026-10-16，见第 10.1 节）
 - 位置：`src/Forms/MainWindow.Settings.cs:138-145` 退订了 `ThemePreviewChanged`、`WindowHeightPreviewChanged`、`AlwaysOnTopPreviewChanged`、`StartupDefaultsResetRequested`，但**没有**退订 `WindowLockPreviewChanged`。
 - 影响：处理器生命周期不一致，未来若宿主窗体复用会引入隐性泄漏；也让"谁负责退订"的规则不清晰。
 - 建议：把 5 个处理器（含锁定预览）改为私有方法并统一退订；或在 `SettingsForm.Dispose` 内统一清空自身事件。
 
-**M8 `MessageBox` 调用密集且标题/按钮组合靠手工重复**
+**M8 `MessageBox` 调用密集且标题/按钮组合靠手工重复** ｜ ✅ 已修复（2026-10-16，见第 10.5 节）
 - 位置：`src/Forms/MainWindow.Drawers.cs`（200 行内 11 处）、`MainWindow.Settings.cs`（4 处）、`DrawerWindow.cs`（2 处）、`DrawerWindow.FileList.cs`（1 处）、`SettingsForm.cs`（3 处）。
 - 影响：提示文案、标题、图标组合靠复制粘贴；后续统一文案或本地化需要逐处修改。
 - 建议：增加极薄的 `UiMessages.ShowError(owner, title, message)` / `ShowWarning` / `ShowInfo` 包装（约 30 行），保留 WinForms 原生对话框语义，不做自绘提示层。
@@ -144,6 +144,8 @@
 | 6 | M1 拆分 `SettingsButton_Click`（含 M7 统一退订） | ~2 小时 | 中；设置窗体高频，需 Save/Cancel/Default 回归 |
 | 7 | H4 日志级别与轮转 | 1–2 小时 | 低；注意保持错误可见性 |
 | 8 | L1/L2/L4/L5 一致性收尾 | 1–2 小时 | 低 |
+
+> 2026-10-16 更新：上表第 1–7 步对应的 M5/M6、H2/H3、H1、M2/M8、M3/M4、M1/M7、H4 均已完成并通过验证（见第 9、10 节）；仅第 8 步的低优先级一致性收尾尚未处理。
 
 ## 5. 建议保持不动的部分
 
@@ -258,3 +260,58 @@
 - 既有的未覆盖项（真实大目录滚动、非 96 DPI、多显示器、任务栏/托盘外观、设置面板 Save/Cancel/Default 实机回归）仍然待手工回归，见第 1 节限制。
 - 中优先级 M1–M8 与低优先级 L1–L6 未改动。其中建议下一步先做 M5（死代码清理）与 M6（`DragLeave` 一行修复），再考虑 M2（抽取重复工具）与 M8（统一提示入口）。
 - `docs/TODOs.md` 仍是空占位文件；是否恢复 7.1–7.5 的历史条目仍待你确认。
+
+## 10. 中优先级问题修复记录（2026-10-16）
+
+改动涉及 12 个源文件与 5 个新增文件（`Controls/UiButtonTheming.cs`、`Controls/UiDialogHelpers.cs`、`Controls/UiMessages.cs`、`Infrastructure/PathComparison.cs`、`Configuration/SettingsKeys.cs`），未新增项目或依赖。
+
+### 10.1 M1 + M7 `SettingsButton_Click` 拆分与统一挂接/解绑
+
+- 原 214 行方法拆为：`SettingsButton_Click`（28 行，只负责打开面板）+ `AttachSettingsHandlers`/`DetachSettingsHandlers` + 5 个具名事件处理器（`Settings_ThemePreviewChanged`、`Settings_WindowHeightPreviewChanged`、`Settings_WindowLockPreviewChanged`、`Settings_AlwaysOnTopPreviewChanged`、`Settings_StartupDefaultsResetRequested`）+ `Settings_FormClosed` + `ApplyAcceptedSettings`（保存分支）+ `RevertSettingsPreview`（取消分支）+ `ResetStartupToEmbeddedDefaults` + `RestoreStartupRegistration`（两处重复的注册表回滚逻辑合并）。
+- 4 个本地函数改为私有方法后，**5 个事件全部可统一退订**（M7 中 `WindowLockPreviewChanged` 的遗漏随之消除）。需要面板引用的两个处理器改用 `sender is SettingsForm`（`SettingsForm` 触发这些事件时以 `this` 作 sender），因此不再需要闭包捕获。
+- `settingsCloseHandled` 局部变量改为 `_settingsCloseHandled` 字段，语义不变（拥有窗体二次 `FormClosed` 时只结算一次）。
+- 保存/取消分支的行为等价性由 10.6 的两个新探针模式验证。
+
+### 10.2 M2 提取 4 组重复工具
+
+| 组 | 新位置 | 调用点变化 |
+|---|---|---|
+| 路径比较 | `Infrastructure/PathComparison.cs`（`Normalize` / `AreSame`） | 删除 `SettingsRepository.PathsEqual` 与 `MainWindow.PathsEqual` 两份实现；`SettingsRepository.Drawers.cs`（6 处）、`MainWindow.DrawerList.cs`（3 处）、`MainWindow.Drawers.cs`（5 处）改用共享实现；5 处 `Environment.ExpandEnvironmentVariables(...).Trim()` 改用 `PathComparison.Normalize`。`UpdateSelectedDrawer` 里原先未展开环境变量的内联比较也统一为同一规则（与仓储的相等语义一致） |
+| 颜色对话框预设色 | `Controls/UiDialogHelpers.BuildColorDialogCustomColors(primary, secondary?)` | 删除 `SettingsForm.GetThemeDialogCustomColors` 与 `DrawerSettingsDialog.GetDrawerDialogCustomColors`；两者生成的 16 项自定义色完全一致，"第二个色或默认主题色"的差异由参数表达 |
+| 按钮三态配色 | `Controls/UiButtonTheming.ApplyAccentPalette` / `ApplyColorPalette` / `ApplyBorderPalette` | `MainWindow.ApplyTheme` 的 20 行内联改为 2 次 `ApplyAccentPalette`；`SettingsForm.ConfigureButton` 与 `DrawerSettingsDialog.ConfigureButtonStyle` 的 9 行赋值改为 `ApplyColorPalette`（两个对话框各自的 `Radius`/`Cursor` 保持原样）；`DrawerWindow.ApplyThemeToButton` 的 5 行边框赋值改为 `ApplyBorderPalette` |
+| Enter/Space 激活 | `Controls/UiDialogHelpers.HandleActivationKey` | `SettingsForm.OnThemeColorPreviewKeyDown`、`DrawerSettingsDialog.PathDisplay_KeyDown`、`DrawerSettingsDialog.ColorPreview_KeyDown` 三处改为一行调用，`Handled`/`SuppressKeyPress` 语义集中定义 |
+
+### 10.3 M3 位置参数改为命名参数
+
+`SettingsRepository.GetEmbeddedStartupDefaults`、`MainWindow.ApplyAcceptedSettings`（M1 拆出的保存分支）、`SettingsSnapshot.Clone` 三处 `new SettingsSnapshot(...)` 全部改为命名参数；以后新增字段不再需要人工核对参数位置。
+
+### 10.4 M4 TOML 键名集中到 `SettingsKeys`
+
+新增 `Configuration/SettingsKeys.cs`（13 个常量），替换 `SettingsRepository.cs`、`SettingsRepository.Drawers.cs`、`SettingsRepository.Serialization.cs`、`SettingsSnapshot.cs` 中约 45 处字符串字面量。检索确认键名现在只出现在该文件与既有的私有常量 `ObsoleteIconSizeSettingName`（`icon_size`）中。`key is not SettingsKeys.Drawers and not SettingsKeys.Startup` 使用常量模式，拼写错误会在编译期报错。
+
+### 10.5 M5 死代码 + M6 `DragLeave` + M8 提示收敛
+
+- **M5 删除**：`SettingsForm.SelectedAccentColor`（含 3 处只写不读的赋值）、`SettingsForm.LaunchOnStartup`、`SettingsSnapshot.GetAccentColor()`（随前一项成为死代码）、`SettingsRepository.EnqueueSave()`、`SettingsRepository.Save()`、`AppConstants.Directories.Fonts` 与整个 `AppConstants.DrawerUi` 类（5 个自绘卡片时代的常量）。
+- **M6**：`MainWindow` 构造函数补上 `drawerListBox.DragLeave += DrawerListBox_DragLeave;`，把抽屉拖出列表后插入提示条会立即清除（原先只在 `DragDrop` 的 `finally` 与重新填充列表时清除）。
+- **M8**：新增 `Controls/UiMessages.cs`（`ShowError`/`ShowWarning`/`ShowInformation`/`Confirm`），共替换 29 处调用：`MainWindow.*` 19 处、`DrawerWindow.*` 3 处、`DrawerSettingsDialog` 2 处、`SettingsForm` 3 处、`Program` 2 处。现在 `MessageBox.Show` 只出现在 `UiMessages.cs` 内（可用一次检索强制）。两处原先无属主的提示（`Drawer Missing`、`Drawer Error`）改为以主窗口为属主，与其他提示的归属/z 序一致。
+
+### 10.6 验证（本节所有结论均来自实际执行）
+
+| 验证 | 方式 | 结果 |
+|---|---|---|
+| 构建 | `dotnet build -c Debug` / `-c Release` | 0 警告 0 错误 |
+| 单文件发布 | `dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o %TEMP%\wD-publish-check` | 成功（`winDrawer.exe` 4,773,850 字节，比改动前少 4,096 字节，与删除的死代码一致） |
+| 配置层回归 | `%TEMP%\winDrawer.SmokeHarness`（已把 `SettingsKeys.cs`、`PathComparison.cs` 加入其编译项） | `SMOKE OK`，exit 0（32 项：排序契约、枚举降级、缩略图回退与解锁、`always_on_top` 缺失/真假/类型错误解析与写盘往返与 Default 重置、真实可见区间）——正好覆盖 M3/M4 改动的读写路径 |
+| 退出与设置关闭回归 | `%TEMP%\winDrawer.ShutdownProbe` 六种模式 | 全部 PASS（第 9.5 节表格 + 下面两行） |
+| **保存语义（M1 重点）** | 新探针 `--settings-save`：构造真实 `MainWindow`，反射把 `_settingsRepository` 指向 `%TEMP%` 下的一次性设置文件，打开面板、用真实高度滑块触发预览、点击 Save | 8/8 PASS：预览生效；写入"Applying settings changes from dialog."；新的 `window_height` 确实进入设置文件；设置结算只执行一次；面板已释放；主窗口随后正常关闭 |
+| **取消语义（M1 重点）** | 新探针 `--settings-cancel`：同样隔离仓储，改高度后点击 Cancel | 8/8 PASS：写入"Settings dialog cancelled; reverting preview."；设置文件**未**被写入；**主窗口高度回到保存值**（断言实际 `ClientSize.Height` 与 DPI 缩放后的期望值一致） |
+| UI 外观回归 | `%TEMP%\winDrawer.AppProbe` | `PROBE OK`（设置窗体可构造；抽屉设置对话框客户区 600×500、按钮尺寸/无障碍属性/控件类型不变） |
+| 检索不变量 | `MessageBox.Show`、TOML 键字面量 | `MessageBox.Show` 仅存在于 `UiMessages.cs`；键名仅存在于 `SettingsKeys.cs`（加既有的 `ObsoleteIconSizeSettingName`） |
+
+两个设置探针在保存前会把登录启动选项设为注册表当前状态，因此不会改动用户的启动项；日志与设置写入都落在 `%TEMP%\winDrawer.ShutdownProbe\` 下，不触碰用户文件。
+
+### 10.7 仍未验证 / 后续
+
+- **未做实机手工回归**：颜色对话框预设色、按钮 hover/pressed 观感、`DragLeave` 的真实拖拽体验、非 96 DPI 与多显示器行为（与第 9.6 节同一批待办）。
+- M2 的按钮配色提取是"逐属性等价"的机械搬移，但**观感**仍建议人工确认一次（尤其抽屉窗口关闭按钮的红色与设置对话框的语义色）。
+- 低优先级 L1–L6 未改动。其中 L4（无障碍覆盖）与 L1（`MainWindow` 生命周期风格）现在更容易实施，因为相关代码已经拆分（`OnFormClosed` 已在 H3 中改为 override，L1 实际已顺带完成，可在下一轮核对后关闭该条）。

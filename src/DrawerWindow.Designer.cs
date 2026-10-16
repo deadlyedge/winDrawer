@@ -16,7 +16,7 @@ namespace winDrawer
                 drawerContentsListView.Items.Clear();
                 drawerContentsListView.LargeImageList = null;
                 drawerImageList.Images.Clear();
-                DisposeImageListImages();
+                DisposeFileListImages();
                 openFolderIconPictureBox.Image?.Dispose();
                 openFolderIconPictureBox.Image = null;
                 components.Dispose();

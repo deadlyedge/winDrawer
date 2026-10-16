@@ -160,6 +160,41 @@ internal sealed class ScrollableListView : ListView
         NotifyViewportChanged();
     }
 
+    /// <summary>
+    /// Reports the index range that intersects the visible area. The range is derived from the item
+    /// rectangles, so it is exact for the current layout but costs one native query per item; callers
+    /// use it after a short debounce instead of on every scroll message.
+    /// </summary>
+    public bool TryGetVisibleItemRange(out int firstIndex, out int lastIndex)
+    {
+        firstIndex = -1;
+        lastIndex = -1;
+
+        if (IsDisposed || Disposing || !IsHandleCreated || ClientSize.Width <= 0 || ClientSize.Height <= 0 || Items.Count == 0)
+        {
+            return false;
+        }
+
+        var viewport = ClientRectangle;
+        for (var index = 0; index < Items.Count; index++)
+        {
+            var itemBounds = GetItemRect(index);
+            if (!itemBounds.IntersectsWith(viewport))
+            {
+                continue;
+            }
+
+            if (firstIndex < 0)
+            {
+                firstIndex = index;
+            }
+
+            lastIndex = index;
+        }
+
+        return firstIndex >= 0;
+    }
+
     private int GetIconScrollPosition()
     {
         var origin = new NativePoint();

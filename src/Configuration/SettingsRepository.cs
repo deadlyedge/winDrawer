@@ -8,6 +8,8 @@ namespace winDrawer.Configuration;
 
 internal sealed class SettingsRepository : IDisposable
 {
+    private const string ObsoleteIconSizeSettingName = "icon_size";
+
     private readonly string _settingsPath;
     private TomlTable _root;
 
@@ -136,7 +138,7 @@ internal sealed class SettingsRepository : IDisposable
                 currentStartup[key] = defaultsStartup[key];
             }
 
-            currentStartup.Remove("icon_size");
+            currentStartup.Remove(ObsoleteIconSizeSettingName);
             _root["startup"] = currentStartup;
             var snapshot = SettingsSnapshot.FromModel(_root);
 
@@ -811,12 +813,17 @@ internal sealed class SettingsRepository : IDisposable
                 var standardStartupTable = new TomlTable();
                 foreach (var key in startupTable.Keys)
                 {
+                    if (string.Equals(key, ObsoleteIconSizeSettingName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     standardStartupTable[key] = startupTable[key];
                 }
 
                 AddSectionFormatting(standardStartupTable, metadataStore,
                     "启动与主窗口设置",
-                    "配置登录启动、窗口位置、主题颜色和图标大小。");
+                    "配置登录启动、窗口位置、主题颜色和主窗口高度。");
                 orderedRoot["startup"] = standardStartupTable;
             }
             else

@@ -78,7 +78,7 @@ path = "%USERPROFILE%\\Downloads"
 ## 6. 迁移与演进
 
 - 当前版本应使用本文件第 2 节给出的字段格式。
-- `startup.icon_size` 已从当前设置模型移除；应用不再读取或写入该键。普通保存按未知键保护规则保留已有 `icon_size`，在设置页确认 **Default** 时删除该废弃键。
+- `startup.icon_size` 已从当前设置模型移除；应用不再读取或写入该键。任何设置写盘（包括普通保存和 **Default**）都会从 `[startup]` 序列化结果中剔除 `icon_size`；其它未知键仍保留。
 - 当前抽屉 schema 使用标准 TOML 字符串，并要求尺寸使用同级 `size = [width, height]` 数组；不兼容旧的 `[drawers.size]` 子表。升级前需将旧尺寸子表转换为本节新格式。
 - 当前格式没有 schema version。首次引入 `schema_version` 或改用其他格式前，先定义默认版本、旧版本升级、未知未来版本处理和回滚策略。
 - 程序尚未发布，不实现旧配置运行时迁移或 HSLA 兼容读取。阶段 6.1 中开发者当前用户目录配置由开发任务直接改写为新字段；应用首次启动时若活动文件不存在，则用随程序部署的根目录 `Drawer-settings.toml` 模板初始化。应用不会搜索、读取或迁移其它路径中的配置。
@@ -91,6 +91,7 @@ path = "%USERPROFILE%\\Downloads"
 - [ ] 空文件、缺少 startup、缺少 drawers 均使用定义的默认值。
 - [ ] 示例配置可读取并写回，抽屉顺序、名称、路径、尺寸和主题值不丢失。
 - [ ] `window_color` 的合法/非法十六进制值和 `window_opacity` 的缺失/越界值符合规则。
+- [ ] 普通保存、后台写盘及退出 flush 均不输出遗留的 `[startup].icon_size`，且其它未知 startup 键保持不变。
 - [ ] Settings Default 取消确认时不改设置；确认后仅重置模板中支持的 startup 项、删除 `icon_size`、保留 drawers/未知键，并与 Windows 登录启动注册一致；失败时恢复原值并提示。
 - [ ] 窗口坐标正常、数组过短、类型错误均不 panic。
 - [ ] 抽屉 name/path/size 缺失、尺寸数组长度/类型错误、尺寸越界与无效 path 符合规则。

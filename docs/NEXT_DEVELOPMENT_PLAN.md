@@ -26,7 +26,7 @@
 - 系统颜色控件的可定制范围应先通过 WinForms/Windows 实际能力评估，例如初始颜色、完整颜色选择模式、预设颜色和自定义颜色列表；采用系统控件本身支持且可验证的选项，不以自绘控件复刻 H/S/L 面板。
 - `ColorDialog` 评估结果：`Color` 设置打开时的当前颜色；`AllowFullOpen = true` 允许进入自定义颜色面板，`FullOpen = true` 初始展开该面板；`AnyColor = true` 显示完整基本颜色集；`CustomColors` 使用整数 BGR/`COLORREF` 色值数组。Windows 公共对话框有 16 个自定义颜色槽，应用传入 16 个值并将当前颜色/应用预设色放入其中。`SolidColorOnly` 用于限制为纯色选择，主要影响 256 色及以下系统中的组合色显示。WinForms 未提供修改原生对话框字体、布局、控件位置或主题的属性；这些外观保持 Windows 公共对话框默认行为。模态原生对话框没有选择变化事件，应用在用户确认后立即更新主题预览，取消选择则保持现值。
 - `SettingsForm` 已按 Behavior、Visual、General 分区。整理分区时先盘点现有控件和行为，目标是更清楚的分组和对齐，不删除或悄然改变功能。
-- 阶段 6.3 已按用户确认实现：Default 从嵌入模板立即重置受支持的 startup 选项，需用户确认并同步 Windows 登录启动注册；Save/Cancel 管理后续草稿，Cancel 不撤销已确认的 Default。普通保存保留未知 startup 键，Default 会删除废弃的 `icon_size`。主设置窗体点外不关闭；按钮使用 Lobster，其他文本使用系统字体；按钮语义色统一为保存绿、取消/退出红、其他蓝。
+- 阶段 6.3 已按用户确认实现：Default 从嵌入模板立即重置受支持的 startup 选项，需用户确认并同步 Windows 登录启动注册；Save/Cancel 管理后续草稿，Cancel 不撤销已确认的 Default。所有写盘都会删除废弃的 `icon_size`，其它未知 startup 键仍予保留。主设置窗体点外不关闭；按钮使用 Lobster，其他文本使用系统字体；按钮语义色统一为保存绿、取消/退出红、其他蓝。
 - 抽屉设置标题使用英文 `Drawer settings: {drawer name}`；独立的 `Overlay color` 区域使用可点击色块，色块内显示英文提示和当前 `#RRGGBB`（未设置时显示 `No overlay`），点击后打开系统颜色对话框；区域内说明蒙版固定以 70% 混合且仅影响当前抽屉。
 - `Lobster-Regular.ttf` 作为程序集内嵌资源通过固定资源名加载，并以 `PrivateFontCollection.AddMemoryFont` 在内存中创建字体；主窗口品牌标题/按钮及主设置、抽屉设置的标题和非图标按钮（包括 Save、Cancel、Delete）统一使用该应用内字体。关闭图标使用 Segoe MDL2 Assets；其他标签、输入框和说明文字使用 Segoe UI。字体字节缓冲区和字体集合维持到进程退出，控件使用的派生 Font 在各窗体关闭时释放；资源缺失或加载失败时清晰回退 Segoe UI，不依赖字体是否安装在 Windows。
 - `DrawerWindow` 通过移除 `WS_CAPTION` 隐藏标题栏，Designer 仍设置 `FormBorderStyle.Sizable`；底部刷新/关闭按钮使用 Segoe MDL2 Assets 字形，当前主题应用代码也会给按钮设置主题颜色。边框和图标颜色问题应在实际窗口截图/运行效果下定位，不能只凭静态属性假定已解决。

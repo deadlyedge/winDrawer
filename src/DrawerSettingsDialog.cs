@@ -262,6 +262,7 @@ internal sealed class DrawerSettingsDialog : Form
 
         _colorPreview.Size = new Size(240, 84);
         _colorPreview.MinimumSize = new Size(1, 1);
+        _colorPreview.Font = _inputFont;
         _colorPreview.Margin = new Padding(0, 0, 12, 0);
         _colorPreview.Padding = new Padding(8, 4, 8, 4);
         _colorPreview.TextAlignment = ContentAlignment.MiddleCenter;

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    一次性评估工具：把 CLSID_ExplorerBrowser 放进一个无边框 WinForms 窗口里看效果，
+    用来判断 winDrawer 的抽屉内容是否值得迁移到外壳文件夹视图。
+    刻意不加入 src/winDrawer.slnx，也不引用主程序，避免影响应用构建。
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ExplorerBrowserProbe</RootNamespace>
+    <AssemblyName>ExplorerBrowserProbe</AssemblyName>
+    <!-- 事件接收器和窗格可见性提供者要通过 COM 回调给外壳，必须对 COM 可见。 -->
+    <ComVisible>true</ComVisible>
+  </PropertyGroup>
+
+</Project>

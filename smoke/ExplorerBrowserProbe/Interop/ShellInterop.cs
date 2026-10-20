@@ -63,6 +63,8 @@ internal static class ShellGuids
     public static readonly Guid IServiceProvider = new("6d5140c1-7436-11ce-8034-00aa006009fa");
     public static readonly Guid IObjectWithSite = new("fc4801a3-2ba9-11cf-a229-00aa003d7352");
     public static readonly Guid IUnknown = new("00000000-0000-0000-c000-000000000046");
+    public static readonly Guid IContextMenu = new("000214e4-0000-0000-c000-000000000046");
+    public static readonly Guid IPersistFolder2 = new("1ac3d9f0-175c-11d1-95be-00609797ea4f");
 }
 
 /// <summary>ShlGuid.h 里的窗格标识（IExplorerPaneVisibility 用）。</summary>
@@ -139,6 +141,7 @@ internal enum FolderFlags : uint
     ShowSelAlways = 0x2000,
     NoGrouping = 0x100000,
     FullRowSelect = 0x200000,
+    NoFilters = 0x400000,
     NoColumnHeader = 0x800000,
     NoHeaderInAllViews = 0x1000000,
     NoBrowserViewState = 0x10000000,
@@ -434,12 +437,56 @@ internal static class NativeMethods
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr SendMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    public const uint MfByPosition = 0x400;
+
+    /// <summary>CMF_NORMAL：给 QueryContextMenu 传的默认标志。</summary>
+    public const uint CmfNormal = 0;
+
+    [DllImport("shell32.dll")]
+    public static extern int SHGetNameFromIDList(IntPtr pidl, uint sigdnName, out IntPtr ppszName);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr CreatePopupMenu();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool DestroyMenu(IntPtr hMenu);
+
+    [DllImport("user32.dll")]
+    public static extern int GetMenuItemCount(IntPtr hMenu);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetSubMenu(IntPtr hMenu, int nPos);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetMenuString(IntPtr hMenu, uint uIDItem, System.Text.StringBuilder lpString, int cchMax, uint flags);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    public static extern uint GetPixel(IntPtr hdc, int x, int y);
+
+    /// <summary>
+    /// uxtheme 未公开导出（序号 135）：SetPreferredAppMode，让外壳控件走深色渲染。
+    /// 0=Default、1=AllowDark、2=ForceDark、3=ForceLight；返回值是之前的模式。
+    /// 仅在 --dark 实验里调用，失败只记日志。
+    /// </summary>
+    [DllImport("uxtheme.dll", EntryPoint = "#135", SetLastError = true)]
+    public static extern int SetPreferredAppMode(int appMode);
 }
 
 /// <summary>把 HRESULT 变成可读文本；只有真正失败（小于 0）时才抛异常。</summary>
 internal static class HResult
 {
     public const int ENoInterface = unchecked((int)0x80004002);
+
+    /// <summary>OnNavigationPending 返回任意失败码都会取消导航；这里用 E_ABORT 表达“宿主有意拦下”。</summary>
+    public const int EAbort = unchecked((int)0x80004004);
 
     public static void Check(int hr, string operation)
     {
@@ -505,4 +552,57 @@ internal static class ShellText
         FolderViewModes.Content => "FVM_CONTENT",
         _ => $"0x{viewMode:X}",
     };
+}
+
+/// <summary>SIGDN_*（shobjidl_core.h）：取项目的显示名/解析名。</summary>
+internal static class ShellDisplayNames
+{
+    public const uint NormalDisplay = 0x00000000;
+    public const uint DesktopAbsoluteParsing = 0x80028000;
+    public const uint FileSystemPath = 0x80058000;
+}
+
+/// <summary>SVGIO_*（shobjidl_core.h）：IShellView::GetItemObject 要取哪一部分。</summary>
+internal static class ShellViewItems
+{
+    public const uint Background = 0;
+    public const uint Selection = 0x1;
+    public const uint AllView = 0x2;
+    public const uint Checked = 0x3;
+}
+
+/// <summary>IContextMenu（IID 000214e4-0000-0000-c000-000000000046）。</summary>
+[ComImport]
+[Guid("000214e4-0000-0000-c000-000000000046")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IContextMenu
+{
+    [PreserveSig]
+    int QueryContextMenu(IntPtr hMenu, uint indexMenu, uint idCmdFirst, uint idCmdLast, uint uFlags);
+
+    [PreserveSig]
+    int InvokeCommand(IntPtr pici);
+
+    [PreserveSig]
+    int GetCommandString(IntPtr idCmd, uint uType, IntPtr pReserved, IntPtr pszName, uint cchMax);
+}
+
+/// <summary>
+/// IPersistFolder2（IID 1ac3d9f0-175c-11d1-95be-00609797ea4f）。
+/// 继承链是 IPersist → IPersistFolder → IPersistFolder2，vtable 顺序必须按此列出。
+/// 由 DefView（外壳视图）实现，用来问“视图现在到底在哪个目录”。
+/// </summary>
+[ComImport]
+[Guid("1ac3d9f0-175c-11d1-95be-00609797ea4f")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IPersistFolder2
+{
+    [PreserveSig]
+    int GetClassID(out Guid pClassId);
+
+    [PreserveSig]
+    int Initialize(IntPtr pidl);
+
+    [PreserveSig]
+    int GetCurFolder(out IntPtr ppidl);
 }

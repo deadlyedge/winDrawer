@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using ExplorerBrowserProbe.Interop;
@@ -17,9 +18,18 @@ internal sealed class ExplorerBrowserHost : Control
     /// <summary>SVUIA_ACTIVATE_FOCUS：让视图拥有 UI 激活状态，F2 重命名依赖它。</summary>
     private const uint SvUiaActivateFocus = 2;
 
-    /// <summary>窗口被整体重设前（如切换选项）用的状态前缀。</summary>
+    /// <summary>命令行追加的 FOLDERFLAGS，叠加在烟测固定的 FWF_NOBROWSERVIEWSTATE 之上。</summary>
     private readonly FolderFlags _extraFlags;
+
+    /// <summary>
+    /// 透明实验时故意不加 WS_CLIPCHILDREN：FWF_TRANSPARENT 要靠父窗口先画背景，
+    /// 而 WS_CLIPCHILDREN 会把父窗口在子窗口区域的绘制裁掉，两者互斥。
+    /// </summary>
+    private readonly bool _clipChildren;
+
     private readonly bool _paneProbeRequested;
+    private readonly bool _dumpMenuOnNavigation;
+    private readonly bool _samplePixelsOnNavigation;
 
     private IExplorerBrowser? _browser;
     private BrowserEventSink? _eventSink;
@@ -30,37 +40,74 @@ internal sealed class ExplorerBrowserHost : Control
     private bool _advised;
     private bool _paneProviderInstalled;
     private bool _dumpOnNavigation;
+    private int _navigationPendingCount;
+    private int _navigationCompleteCount;
+    private bool _persistFolderLogged;
     private string? _pendingPath;
     private ExplorerBrowserOptions _options;
     private uint _viewMode;
+    private FolderOpenMode _folderOpenMode;
 
-    public ExplorerBrowserHost(ExplorerBrowserOptions options, uint viewMode, FolderFlags extraFlags, bool paneProbeRequested)
+    public ExplorerBrowserHost(ProbeOptions options)
     {
-        _options = options;
-        _viewMode = viewMode;
-        _extraFlags = extraFlags;
-        _paneProbeRequested = paneProbeRequested;
+        _options = options.BrowserOptions;
+        _viewMode = options.ViewMode;
+        _extraFlags = options.ExtraFlags;
+        _paneProbeRequested = options.PaneProbe;
+        _dumpMenuOnNavigation = options.DumpMenu;
+        _samplePixelsOnNavigation = options.SamplePixels;
+        _folderOpenMode = options.FolderOpen;
+        _clipChildren = (options.ExtraFlags & FolderFlags.Transparent) == 0;
 
         TabStop = false;
         SetStyle(ControlStyles.Selectable, false);
-        BackColor = Color.White;
+        BackColor = options.Background ?? Color.White;
         MinimumSize = new Size(1, 1);
     }
 
     /// <summary>状态文本（同时写日志）。窗体工具条把它显示出来。</summary>
     public event Action<string>? StatusChanged;
 
+    /// <summary>每次导航完成后触发一次，自检脚本用它串流程。</summary>
+    public event Action? NavigationCompleted;
+
     public ExplorerBrowserOptions Options => _options;
 
     public uint ViewMode => _viewMode;
+
+    public FolderOpenMode FolderOpenMode => _folderOpenMode;
+
+    /// <summary>外壳回调 OnNavigationPending 的次数（自检据此判断导航请求有没有真的发生）。</summary>
+    public int NavigationPendingCount => _navigationPendingCount;
+
+    public int NavigationCompleteCount => _navigationCompleteCount;
+
+    /// <summary>切换双击文件夹的去向；不需要重建浏览器（只影响 OnNavigationPending 的决策）。</summary>
+    public void SetFolderOpenMode(FolderOpenMode mode)
+    {
+        _folderOpenMode = mode;
+        ProbeLog.Write($"文件夹打开方式 -> {DescribeFolderOpenMode(mode)}");
+        Report($"文件夹打开方式 -> {DescribeFolderOpenMode(mode)}");
+    }
+
+    public static string DescribeFolderOpenMode(FolderOpenMode mode) => mode switch
+    {
+        FolderOpenMode.OpenInExplorer => "explorer（拦下导航，另开资源管理器窗口）",
+        FolderOpenMode.Block => "block（只拦下导航）",
+        _ => "inplace（在本窗口里继续浏览）",
+    };
 
     protected override CreateParams CreateParams
     {
         get
         {
             var parameters = base.CreateParams;
-            // 外壳视图是本控件的子窗口。没有 WS_CLIPCHILDREN 时，本控件的背景绘制会盖住外壳视图。
-            parameters.Style |= NativeMethods.WsClipChildren;
+            if (_clipChildren)
+            {
+                // 外壳视图是本控件的子窗口。没有 WS_CLIPCHILDREN 时，本控件的背景绘制会盖住外壳视图。
+                parameters.Style |= NativeMethods.WsClipChildren;
+            }
+
             return parameters;
         }
     }
@@ -159,6 +206,11 @@ internal sealed class ExplorerBrowserHost : Control
             NavigateCore(_pendingPath);
         }
     }
+
+    /// <summary>
+    /// 自检用：请求一次导航，但不改变锚定目录，用来验证 OnNavigationPending 的拦截是否生效。
+    /// </summary>
+    public void NavigateForSelfTest(string path) => NavigateCore(path);
 
     /// <summary>把键盘焦点交回外壳视图。点过工具条按钮后需要它，否则 F2 到不了视图。</summary>
     public void FocusShellView()
@@ -301,12 +353,274 @@ internal sealed class ExplorerBrowserHost : Control
         }
     }
 
+    /// <summary>
+    /// 外壳在导航前回调。inplace 模式放行；其它模式拦下对“非锚定目录”的导航，
+    /// 需要时用 Windows Shell 另开一个资源管理器窗口（不自己拼命令行）。
+    /// 返回失败码即取消导航，这是文档规定的做法。
+    /// </summary>
+    internal int HandleNavigationPending(IntPtr pidlFolder)
+    {
+        _navigationPendingCount++;
+        var target = ResolveShellName(pidlFolder);
+        if (target.Length == 0)
+        {
+            ProbeLog.Write("OnNavigationPending：pidl 解析不出名字，放行。");
+            return 0;
+        }
+
+        if (_folderOpenMode == FolderOpenMode.Inplace)
+        {
+            ProbeLog.Write($"OnNavigationPending('{target}') -> 放行（inplace）");
+            return 0;
+        }
+
+        if (IsSamePath(target, _pendingPath))
+        {
+            ProbeLog.Write($"OnNavigationPending('{target}') -> 放行（正是锚定目录）");
+            return 0;
+        }
+
+        if (_folderOpenMode == FolderOpenMode.OpenInExplorer)
+        {
+            OpenFolderInExplorer(target);
+        }
+
+        ProbeLog.Write($"OnNavigationPending('{target}') -> 已取消导航（{DescribeFolderOpenMode(_folderOpenMode)}）");
+        return HResult.EAbort;
+    }
+
+    /// <summary>把 pidl 解析成名字：优先解析路径，失败退回普通显示名。</summary>
+    private static string ResolveShellName(IntPtr pidl)
+    {
+        if (pidl == IntPtr.Zero)
+        {
+            return string.Empty;
+        }
+
+        foreach (var sigdn in new[] { ShellDisplayNames.DesktopAbsoluteParsing, ShellDisplayNames.NormalDisplay })
+        {
+            if (NativeMethods.SHGetNameFromIDList(pidl, sigdn, out var pointer) >= 0 && pointer != IntPtr.Zero)
+            {
+                try
+                {
+                    return Marshal.PtrToStringUni(pointer) ?? string.Empty;
+                }
+                finally
+                {
+                    Marshal.FreeCoTaskMem(pointer);
+                }
+            }
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>只判断“是否同一个目录”，够烟测用；主程序里已有统一的 PathComparison。</summary>
+    private static bool IsSamePath(string left, string? right)
+    {
+        if (string.IsNullOrEmpty(right))
+        {
+            return false;
+        }
+
+        return string.Equals(
+            left.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            right.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>交给 Windows Shell 打开：等价于在资源管理器里双击文件夹，不自己拼命令行。</summary>
+    private static void OpenFolderInExplorer(string path)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            ProbeLog.Write($"Shell 打开 '{path}' -> 已请求（pid={(process is null ? "未知" : process.Id.ToString())}）");
+        }
+        catch (Exception ex)
+        {
+            ProbeLog.Write($"Shell 打开 '{path}' 失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>问外壳视图“你现在在哪个目录”（IPersistFolder2），用来验证导航是否真的被拦下。</summary>
+    public string GetCurrentViewPath()
+    {
+        if (_shellView is not IPersistFolder2 persist)
+        {
+            if (!_persistFolderLogged)
+            {
+                _persistFolderLogged = true;
+                ProbeLog.Write("外壳视图不支持 IPersistFolder2，无法自报当前目录（改用导航事件里的 pidl 判断）。");
+            }
+
+            return string.Empty;
+        }
+
+        var hr = persist.GetCurFolder(out var pidl);
+        if (hr < 0 || pidl == IntPtr.Zero)
+        {
+            if (!_persistFolderLogged)
+            {
+                _persistFolderLogged = true;
+                ProbeLog.Write($"IPersistFolder2.GetCurFolder -> {HResult.Describe(hr)}");
+            }
+
+            return string.Empty;
+        }
+
+        try
+        {
+            return ResolveShellName(pidl);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(pidl);
+        }
+    }
+
+    /// <summary>
+    /// 枚举外壳视图背景右键菜单里实际存在的项，用来回答“排序/分组能不能隐藏”：
+    /// 菜单内容由外壳按 FOLDERFLAGS 和视图模式生成，只有拿到真实菜单才知道标志有没有起作用。
+    /// </summary>
+    public void DumpBackgroundMenu()
+    {
+        if (_shellView is null)
+        {
+            Report("还没有外壳视图，无法转储菜单");
+            return;
+        }
+
+        var interfaceId = ShellGuids.IContextMenu;
+        var hr = _shellView.GetItemObject(ShellViewItems.Background, ref interfaceId, out var pointer);
+        if (hr < 0 || pointer == IntPtr.Zero)
+        {
+            ProbeLog.Write($"IShellView.GetItemObject(SVGIO_BACKGROUND, IID_IContextMenu) -> {HResult.Describe(hr)}");
+            Report($"取不到背景菜单（{HResult.Describe(hr)}）");
+            return;
+        }
+
+        IContextMenu? menu = null;
+        var popup = IntPtr.Zero;
+        try
+        {
+            menu = (IContextMenu)Marshal.GetObjectForIUnknown(pointer);
+            popup = NativeMethods.CreatePopupMenu();
+            var queryHr = menu.QueryContextMenu(popup, 0, 1, 0x7FFF, NativeMethods.CmfNormal);
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"背景右键菜单（QueryContextMenu -> {HResult.Describe(queryHr)}）");
+            builder.AppendLine($"  选项={ShellText.Describe(_options)} 标志={ShellText.Describe(CurrentFlags())} 视图={ShellText.DescribeViewMode(_viewMode)}");
+            AppendMenuItems(builder, popup, "  ", 0);
+            ProbeLog.WriteBlock(builder.ToString().TrimEnd());
+            Report("背景菜单已写入日志");
+        }
+        catch (Exception ex)
+        {
+            ProbeLog.Write($"背景菜单转储失败: {ex.Message}");
+            Report("背景菜单转储失败");
+        }
+        finally
+        {
+            if (popup != IntPtr.Zero)
+            {
+                NativeMethods.DestroyMenu(popup);
+            }
+
+            if (menu is not null)
+            {
+                Marshal.ReleaseComObject(menu);
+            }
+
+            Marshal.Release(pointer);
+        }
+    }
+
+    private static void AppendMenuItems(StringBuilder builder, IntPtr hMenu, string indent, int depth)
+    {
+        var count = NativeMethods.GetMenuItemCount(hMenu);
+        for (var index = 0; index < count; index++)
+        {
+            var text = new StringBuilder(256);
+            var length = NativeMethods.GetMenuString(hMenu, (uint)index, text, text.Capacity, NativeMethods.MfByPosition);
+            builder.AppendLine($"{indent}[{index}] {(length > 0 ? text.ToString() : "（分隔符）")}");
+
+            var subMenu = NativeMethods.GetSubMenu(hMenu, index);
+            if (subMenu != IntPtr.Zero && depth < 2)
+            {
+                AppendMenuItems(builder, subMenu, indent + "    ", depth + 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 采样外壳视图窗口的像素，客观判断“视图背景到底是系统色还是宿主窗口的颜色”。
+    /// 需要窗口在真实桌面上可见；隐藏桌面/远程会话里 GetPixel 的结果不可信（日志会标注）。
+    /// </summary>
+    public void SampleViewPixels()
+    {
+        if (_shellViewWindow == IntPtr.Zero)
+        {
+            Report("还没有外壳视图窗口，无法采样");
+            return;
+        }
+
+        var hdc = NativeMethods.GetDC(_shellViewWindow);
+        if (hdc == IntPtr.Zero)
+        {
+            Report("GetDC 失败，无法采样像素");
+            return;
+        }
+
+        try
+        {
+            var background = BackColor;
+            var expected = ColorRef(background);
+            var samples = new Dictionary<uint, int>();
+            var size = ClientSize;
+
+            for (var row = 1; row <= 5; row++)
+            {
+                for (var column = 1; column <= 5; column++)
+                {
+                    var color = NativeMethods.GetPixel(hdc, size.Width * column / 6, size.Height * row / 6) & 0xFFFFFF;
+                    samples[color] = samples.TryGetValue(color, out var seen) ? seen + 1 : 1;
+                }
+            }
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"外壳视图像素采样 5x5（宿主背景=#{background.R:X2}{background.G:X2}{background.B:X2}，标志={ShellText.Describe(CurrentFlags())}，视图={ShellText.DescribeViewMode(_viewMode)}）:");
+            foreach (var sample in samples.OrderByDescending(pair => pair.Value))
+            {
+                var rgb = $"#{sample.Key & 0xFF:X2}{(sample.Key >> 8) & 0xFF:X2}{(sample.Key >> 16) & 0xFF:X2}";
+                builder.AppendLine($"  {rgb} x{sample.Value}{(sample.Key == expected ? "  <= 与宿主背景一致" : string.Empty)}");
+            }
+
+            if (!NativeMethods.IsWindowVisible(_shellViewWindow))
+            {
+                builder.AppendLine("  注意：外壳视图窗口当前不可见，结果不可信。");
+            }
+
+            ProbeLog.WriteBlock(builder.ToString().TrimEnd());
+            Report(samples.ContainsKey(expected)
+                ? "采样：出现了宿主背景色，说明该区域由宿主窗口绘制"
+                : "采样：没有出现宿主背景色，说明视图自己画了不透明背景");
+        }
+        finally
+        {
+            NativeMethods.ReleaseDC(_shellViewWindow, hdc);
+        }
+    }
+
+    private static uint ColorRef(Color color) => (uint)(color.R | (color.G << 8) | (color.B << 16));
+
     /// <summary>打开 --dump 后，导航完成时自动输出一次窗口结构诊断。</summary>
     public void EnableDiagnosticDump(bool enabled) => _dumpOnNavigation = enabled;
 
     /// <summary>导航完成：抓取 IShellView、激活它、按需装站点、记录外壳实际使用的视图设置。</summary>
-    internal void HandleNavigationComplete()
+    internal void HandleNavigationComplete(IntPtr pidlFolder)
     {
+        _navigationCompleteCount++;
         CaptureShellView();
 
         if (_shellView is not null)
@@ -318,20 +632,41 @@ internal sealed class ExplorerBrowserHost : Control
         FocusShellView();
         LogCurrentInfo("导航完成后");
 
+        // 事件里的 pidl 和视图自报的当前目录应当一致；不同就说明导航状态与视图状态脱节了。
+        var eventPath = ResolveShellName(pidlFolder);
+        var viewPath = GetCurrentViewPath();
+        ProbeLog.Write($"导航目标：事件='{eventPath}'，视图自报='{viewPath}'");
+
         if (_paneProbeRequested && !_paneProviderInstalled)
         {
             InstallPaneProvider();
         }
 
-        Report($"已显示: {_pendingPath}");
+        Report($"已显示: {(eventPath.Length > 0 ? eventPath : _pendingPath)}");
 
         if (_dumpOnNavigation)
         {
             DumpDiagnostics();
         }
+
+        if (_dumpMenuOnNavigation)
+        {
+            DumpBackgroundMenu();
+        }
+
+        if (_samplePixelsOnNavigation)
+        {
+            SampleViewPixels();
+        }
+
+        NavigationCompleted?.Invoke();
     }
 
-    internal void HandleNavigationFailed() => Report($"导航失败: {_pendingPath}");
+    internal void HandleNavigationFailed(IntPtr pidlFolder)
+    {
+        var target = ResolveShellName(pidlFolder);
+        Report($"导航失败: {(target.Length > 0 ? target : _pendingPath)}");
+    }
 
     private void CaptureShellView()
     {

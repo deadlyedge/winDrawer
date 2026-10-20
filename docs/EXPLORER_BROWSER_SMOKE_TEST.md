@@ -46,14 +46,66 @@ dotnet run --project smoke\ExplorerBrowserProbe -- "<目录>" --dump
 - **销毁路径干净**：关闭窗口时 `Unadvise`、`Destroy` 均返回 `S_OK`，进程以退出码 0 结束（用 `--auto-close=<秒>` 可自动验证）。
 - **导航与激活链路正常**：`Initialize`/`SetOptions`/`Advise`/`BrowseToObject` 全部返回 `S_OK`，`OnNavigationPending → OnViewCreated → OnNavigationComplete` 按序回调，`GetCurrentView(IID_IShellView)` 与 `UIActivate(SVUIA_ACTIVATE_FOCUS)` 成功。目录不存在时 `SHCreateItemFromParsingName` 返回 `0x80070002`，视图留空，进程不崩。
 - 包装窗口 `ExplorerBrowserControl` 默认带 `WS_BORDER`；`EBO_NOBORDER` / `EBO_NOWRAPPERWINDOW` 是否真的消除这条边框，需要肉眼确认。
+- **`IPersistFolder2` 拿不到当前目录**：对 `IShellView` 查询 `IPersistFolder2` 失败，宿主无法让视图自报“现在在哪个目录”；判断当前位置只能依靠 `OnNavigationPending`/`OnNavigationComplete` 回调里的 pidl（用 `SHGetNameFromIDList` 解析）。
+
+## 3.1 第二轮追加实验：双击文件夹、排序菜单、彩色背景
+
+用 `--self-test`（脚本化自检，日志见 `probe.log` 的“自检开始/结束”块）实测，结论如下。
+
+### 问题 1：双击文件夹能否改成“另开一个资源管理器窗口”
+
+**可以，而且不需要放弃原生行为。** 做法是宿主实现 `IExplorerBrowserEvents::OnNavigationPending`：文档规定“返回任何失败码都会取消导航”，因此在回调里判断目标目录是否就是抽屉锚定目录——不是就返回 `E_ABORT` 取消，并按需用 `ProcessStartInfo(path) { UseShellExecute = true }` 让 Shell 打开一个新窗口。
+
+实测（`--folder-open=block` / `--folder-open=explorer`，目录 `src`）：
+
+- 第一次导航到锚定目录时回调打印 `放行（正是锚定目录）`；
+- 触发进入 `src\bin` 时打印 `已取消导航`，视图**仍然留在 `src`**（等待 2 秒后事件计数 `OnNavigationPending=2`、`OnNavigationComplete=1`，说明第二次导航确实没有完成）；
+- `explorer` 模式下先打印 `Shell 打开 '<子目录>' -> 已请求`，再取消导航；
+- 取消后外壳会紧接着回调 `OnNavigationFailed`，这与文档“取消导航”的语义一致，不是错误。
+
+两个必须注意的实现细节：
+
+1. `OnNavigationPending` 是**异步**送达的：宿主动调用 `BrowseToObject` 后立即返回，回调要等消息循环下一轮才到（实测约 50 ms 后），所以不能在调用点同步假设“已经拦下了”。
+2. 三种策略的取舍：`inplace` 保留外壳原生导航（在小窗口里容易迷路）；`explorer` = 拦下并另开资源管理器窗口（推荐）；`block` = 只拦下（适合固定单层内容）。另外 `EBO_NAVIGATEONCE` 只能做到“不再继续导航”，不会替你打开新窗口。
+
+### 问题 2：排序/分组选项能否通过选项隐藏
+
+**没有公开的 FOLDERFLAGS 能去掉它们；只能由宿主接管右键菜单。**
+
+客观证据来自菜单转储（`IShellView::GetItemObject(SVGIO_BACKGROUND, IID_IContextMenu)` + `IContextMenu::QueryContextMenu`，把真实菜单枚举出来），在同时加了 `FWF_NOGROUPING`、`FWF_NOFILTERS`、`FWF_NOCOLUMNHEADER`、`FWF_NOHEADERINALLVIEWS`（`GetCurrentInfo` 确认全部生效）的情况下，背景菜单依旧是：
+
+```
+[0] 查看(&V)      → 超大图标/大图标/中等图标/小图标/列表/详细信息/平铺/内容
+[1] 排序方式(&O)  → 名称/修改日期/类型/大小/递增/递减
+[2] 分组依据(&P)  → none/(无)/递增/递减/更多…
+[3] 刷新(&E)      ……以及粘贴、第三方菜单项（Git、VS Code、WizTree、PowerRename 等）、新建、属性
+```
+
+即：这些标志影响的是**视图状态**（分组、筛选器、列头），不会移除菜单项。列头可以用 `FWF_NOCOLUMNHEADER` 隐藏，但“排序方式/分组依据”菜单项不行。
+
+同时这次转储也证明**接管菜单在技术上可行**：`GetItemObject(SVGIO_BACKGROUND, IID_IContextMenu)` 能拿到可用的 `IContextMenu`，`QueryContextMenu` 能构建出完整菜单（含第三方项）。因此若要隐藏排序/分组，路径是宿主自己处理视图的右键消息、把这份菜单删掉「排序方式」「分组依据」（及可选「查看」）后再显示，并自己转发 `InvokeCommand`。这项工作需要在 DefView 窗口上做子类化，属于真正的功能开发，不在烟测范围内。
+
+### 问题 3：能否给内容区应用彩色/透明背景
+
+**不能。视图自身背景由外壳绘制，公开选项里没有可用的着色手段。**
+
+- `FWF_TRANSPARENT` 的官方说明是“Draw transparently. This is used only for the desktop.”——它本来就是给桌面用的。实测：宿主背景设为 `#203040`、加 `--transparent`（同时去掉 `WS_CLIPCHILDREN`，让宿主有机会先画背景），再叠加 `--no-wrapper`（让 DefView 直接挂在宿主上），外壳视图 5×5 采样的像素**全部仍是 `#FFFFFF`**，从未出现宿主背景色。
+- 深色实验（`--dark`，调用 uxtheme 未公开导出 `SetPreferredAppMode(ForceDark)`，实测返回“之前的模式=0”即调用成功）也不会让视图变深色：背景采样仍是 `#FFFFFF`。深色渲染依赖系统/应用的深色模式支持，不能用这个开关当作可靠手段。
+- 因此可用的“颜色/透明”手段只剩窗口整体 `Opacity`（WinForms 让整个窗口变成分层窗口，外壳视图一起被降低不透明度）。winDrawer 现在的“专属颜色 + 70% 蒙版”效果无法用外壳视图复现；要么接受浅色内容区，要么继续自己画列表。
+
+> 采样可信度：`--sample-pixels` 在窗口不可见时会打印“结果不可信”。上面的结论里，第二、三次采样没有出现该提示（窗口可见），且与官方文档一致；仍建议在真实桌面上再跑一次 `--sample-pixels` 复核。
+
 
 ## 4. 仍需人工确认（自动化跑不到）
 
 - [ ] `F2` 就地改名是否真的可用，提交后视图是否立即更新。
 - [ ] 拖出 / 拖入是否都可用；同盘与异盘行为是否与资源管理器一致。
 - [ ] 连续缩放、最大化、跨不同 DPI 显示器移动后布局是否正常。
-- [ ] `Opacity` < 100% 时外壳视图是否仍然正确绘制（分层窗口），以及 `FWF_TRANSPARENT` 能否让视图背景用父窗口背景色。
-- [ ] 字体、语言（若系统是中文，视图内是中文吗）、深浅色主题是否与 winDrawer 的配色预期冲突。
+- [ ] 双击文件夹：把 `Folders` 切到 explorer 模式后，双击是否只新开资源管理器窗口、本窗口内容保持不变（需要在真实桌面上确认，自检里的自动触发无法验证“新窗口真的出现了”）。
+- [ ] 右键菜单：肉眼复核一次确实存在「排序方式」「分组依据」（问题 2 的结论基于程序化转储）。
+- [ ] `Opacity` < 100% 时外壳视图在分层窗口里的实际观感（文字是否发虚、能否接受）。
+- [ ] 真实桌面上再跑一次 `--sample-pixels`，复核问题 3 的“背景不透明”结论。
+- [ ] 字体、语言与深浅色：系统处于深色模式时视图内的文字/背景是否可读，是否与 winDrawer 的配色预期冲突。
 
 ## 5. 迁移判断要点（给结论用）
 

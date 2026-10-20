@@ -20,8 +20,8 @@ internal sealed class BrowserEventSink : IExplorerBrowserEvents
 
     public int OnNavigationPending(IntPtr pidlFolder)
     {
-        ProbeLog.Write("IExplorerBrowserEvents.OnNavigationPending");
-        return 0;
+        // 放行还是拦下由宿主决定：返回失败码即取消导航。
+        return _host.HandleNavigationPending(pidlFolder);
     }
 
     public int OnViewCreated(IntPtr psv)
@@ -33,14 +33,14 @@ internal sealed class BrowserEventSink : IExplorerBrowserEvents
     public int OnNavigationComplete(IntPtr pidlFolder)
     {
         ProbeLog.Write("IExplorerBrowserEvents.OnNavigationComplete");
-        _host.HandleNavigationComplete();
+        _host.HandleNavigationComplete(pidlFolder);
         return 0;
     }
 
     public int OnNavigationFailed(IntPtr pidlFolder)
     {
         ProbeLog.Write("IExplorerBrowserEvents.OnNavigationFailed");
-        _host.HandleNavigationFailed();
+        _host.HandleNavigationFailed(pidlFolder);
         return 0;
     }
 }

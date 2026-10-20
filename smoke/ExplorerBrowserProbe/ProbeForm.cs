@@ -29,14 +29,18 @@ internal sealed class ProbeForm : Form
         FolderViewModes.Tile,
     };
 
+    private readonly ProbeOptions _options;
     private readonly ExplorerBrowserHost _host;
     private readonly TableLayoutPanel _root;
     private readonly Label _statusLabel;
     private readonly float _baseOpacity;
     private readonly System.Windows.Forms.Timer? _autoCloseTimer;
+    private System.Windows.Forms.Timer? _selfTestTimer;
+    private int _selfTestStage;
 
     public ProbeForm(ProbeOptions options)
     {
+        _options = options;
         _baseOpacity = Math.Clamp(options.Opacity, 0, 100) / 100f;
 
         Text = $"ExplorerBrowser probe — {ProbeLog.Path}";
@@ -52,12 +56,13 @@ internal sealed class ProbeForm : Form
         Opacity = _baseOpacity;
         KeyPreview = true;
 
-        _host = new ExplorerBrowserHost(options.BrowserOptions, options.ViewMode, options.ExtraFlags, options.PaneProbe)
+        _host = new ExplorerBrowserHost(options)
         {
             Dock = DockStyle.Fill,
         };
         _host.EnableDiagnosticDump(options.DumpOnNavigation);
         _host.StatusChanged += OnHostStatusChanged;
+        _host.NavigationCompleted += OnHostNavigationCompleted;
 
         _statusLabel = new Label
         {
@@ -84,6 +89,9 @@ internal sealed class ProbeForm : Form
         };
         buttons.Controls.Add(CreateButton("Frames", ToggleFrames));
         buttons.Controls.Add(CreateButton("View mode", CycleViewMode));
+        buttons.Controls.Add(CreateButton("Folders", CycleFolderOpenMode));
+        buttons.Controls.Add(CreateButton("Menu", () => _host.DumpBackgroundMenu()));
+        buttons.Controls.Add(CreateButton("Pixels", () => _host.SampleViewPixels()));
         buttons.Controls.Add(CreateButton("Reload", () => { _host.Reload(); _host.FocusShellView(); }));
         buttons.Controls.Add(CreateButton("Opacity", ToggleOpacity));
         buttons.Controls.Add(CreateButton("Diagnostics", () => _host.DumpDiagnostics()));
@@ -183,6 +191,99 @@ internal sealed class ProbeForm : Form
         _host.FocusShellView();
     }
 
+    /// <summary>依次切换双击文件夹的去向，用来对比“就地浏览 / 另开资源管理器 / 只拦下”。</summary>
+    private void CycleFolderOpenMode()
+    {
+        var next = _host.FolderOpenMode switch
+        {
+            FolderOpenMode.Inplace => FolderOpenMode.OpenInExplorer,
+            FolderOpenMode.OpenInExplorer => FolderOpenMode.Block,
+            _ => FolderOpenMode.Inplace,
+        };
+
+        _host.SetFolderOpenMode(next);
+        _host.FocusShellView();
+    }
+
+    /// <summary>自检只在第一次导航完成后启动一次。</summary>
+    private void OnHostNavigationCompleted()
+    {
+        if (!_options.SelfTest || _selfTestStage > 0)
+        {
+            return;
+        }
+
+        _selfTestStage = 1;
+        // 在外壳的导航回调栈之外再执行，避免在回调里重新发起导航。
+        BeginInvoke((Action)RunSelfTest);
+    }
+
+    /// <summary>
+    /// 脚本化自检：把“目录 / 菜单结构 / 拦截子目录导航 / 背景像素”一次性记录到日志，然后关窗。
+    /// 用 --folder-open=block 跑时不会真的弹出资源管理器窗口。
+    /// </summary>
+    private void RunSelfTest()
+    {
+        ProbeLog.WriteBlock("==== 自检开始 ====");
+
+        var rootPath = _host.GetCurrentViewPath();
+        ProbeLog.WriteBlock($"1) 锚定目录='{_options.Directory}'，视图自报='{rootPath}'");
+
+        ProbeLog.WriteBlock("2) 背景右键菜单结构：");
+        _host.DumpBackgroundMenu();
+
+        ProbeLog.WriteBlock("3) 视图像素采样：");
+        _host.SampleViewPixels();
+
+        var subdirectory = FindFirstSubdirectory(rootPath.Length > 0 ? rootPath : _options.Directory);
+        if (subdirectory is null)
+        {
+            ProbeLog.WriteBlock("4) 目录里没有子目录，跳过“子目录导航拦截”测试。");
+            FinishSelfTest();
+            return;
+        }
+
+        ProbeLog.WriteBlock($"4) 触发进入子目录的导航：'{subdirectory}'（当前模式 {ExplorerBrowserHost.DescribeFolderOpenMode(_host.FolderOpenMode)}）");
+        _host.NavigateForSelfTest(subdirectory);
+        ProbeLog.WriteBlock($"   导航调用刚返回时：OnNavigationPending 次数={_host.NavigationPendingCount}，OnNavigationComplete 次数={_host.NavigationCompleteCount}");
+
+        // 外壳可能在消息循环的下一轮才真正处理这次导航，所以给两秒再看拦截结果。
+        _selfTestTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+        _selfTestTimer.Tick += (_, _) => FinishSelfTest();
+        _selfTestTimer.Start();
+    }
+
+    /// <summary>自检收尾：记录拦截后的最终状态并关窗。</summary>
+    private void FinishSelfTest()
+    {
+        _selfTestTimer?.Stop();
+
+        ProbeLog.WriteBlock($"   等待后：OnNavigationPending 次数={_host.NavigationPendingCount}，OnNavigationComplete 次数={_host.NavigationCompleteCount}");
+        ProbeLog.WriteBlock($"   视图自报目录='{_host.GetCurrentViewPath()}'（拿不到就用上面的导航事件记录判断）");
+        ProbeLog.WriteBlock("==== 自检结束 ====");
+        Close();
+    }
+
+    private static string? FindFirstSubdirectory(string path)
+    {
+        try
+        {
+            if (!Directory.Exists(path))
+            {
+                return null;
+            }
+
+            return Directory.GetDirectories(path)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            ProbeLog.Write($"枚举子目录失败: {ex.Message}");
+            return null;
+        }
+    }
+
     private void ToggleOpacity()
     {
         Opacity = Math.Abs(Opacity - _baseOpacity) < 0.001
@@ -217,6 +318,10 @@ internal sealed class ProbeForm : Form
                 _host.FocusShellView();
                 e.Handled = true;
                 break;
+            case Keys.F6:
+                CycleFolderOpenMode();
+                e.Handled = true;
+                break;
             case Keys.F7:
                 ToggleFrames();
                 e.Handled = true;
@@ -229,6 +334,14 @@ internal sealed class ProbeForm : Form
                 _host.DumpDiagnostics();
                 e.Handled = true;
                 break;
+            case Keys.F10:
+                _host.DumpBackgroundMenu();
+                e.Handled = true;
+                break;
+            case Keys.F11:
+                _host.SampleViewPixels();
+                e.Handled = true;
+                break;
             default:
                 base.OnKeyDown(e);
                 break;
@@ -239,6 +352,7 @@ internal sealed class ProbeForm : Form
     {
         base.OnFormClosed(e);
         _autoCloseTimer?.Dispose();
+        _selfTestTimer?.Dispose();
         ProbeLog.Write($"窗口已关闭（{e.CloseReason}）。");
     }
 

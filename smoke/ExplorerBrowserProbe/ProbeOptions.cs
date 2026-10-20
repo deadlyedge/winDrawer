@@ -2,6 +2,19 @@ using ExplorerBrowserProbe.Interop;
 
 namespace ExplorerBrowserProbe;
 
+/// <summary>双击文件夹的去向。</summary>
+internal enum FolderOpenMode
+{
+    /// <summary>在外壳视图里继续浏览（原生行为，小窗口里容易迷路）。</summary>
+    Inplace,
+
+    /// <summary>拦下导航，并让 Windows Shell 另开一个资源管理器窗口。</summary>
+    OpenInExplorer,
+
+    /// <summary>只拦下导航，不做别的（用于验证拦截本身是否有效）。</summary>
+    Block,
+}
+
 /// <summary>
 /// 命令行参数。所有开关都有默认值，直接运行就能看到默认的“无框架文件夹视图”。
 /// </summary>
@@ -19,9 +32,17 @@ internal sealed class ProbeOptions
         + "  --navigate-once      加 EBO_NAVIGATEONCE：不再允许继续导航。\r\n"
         + "  --always-navigate    加 EBO_ALWAYSNAVIGATE。\r\n"
         + "  --view=<mode>        icon|smallicon|list|details|thumbnail|tile|content|auto，默认 icon。\r\n"
-        + "  --hide-header        加 FWF_NOCOLUMNHEADER|FWF_NOHEADERINALLVIEWS。\r\n"
-        + "  --transparent        加 FWF_TRANSPARENT：视图背景使用父窗口背景。\r\n"
+        + "  --hide-header        加 FWF_NOCOLUMNHEADER|FWF_NOHEADERINALLVIEWS（隐藏列头，星号见下）。\r\n"
+        + "  --no-group           加 FWF_NOGROUPING（禁止分组）。\r\n"
+        + "  --no-filters         加 FWF_NOFILTERS（不显示筛选）。\r\n"
+        + "  --transparent        加 FWF_TRANSPARENT：视图背景使用父窗口背景（官方文档注明仅用于桌面，实测预期无效，保留用于对照）。\r\n"
+        + "  --background=#RRGGBB 宿主窗口背景色，配合 --transparent 观察父背景能不能透出来。\r\n"
+        + "  --folder-open=<mode> 双击文件夹的去向：inplace（默认，在本窗口里继续浏览）/ explorer（拦下导航并用 Shell 另开资源管理器窗口）/ block（只拦下不另开）。\r\n"
         + "  --pane-probe         实验：把本烟测的 IExplorerPaneVisibility 装到视图站点上，观察外壳是否来查询窗格。\r\n"
+        + "  --dump-menu          枚举外壳视图背景右键菜单的结构（查看/排序/分组/刷新等）。\r\n"
+        + "  --sample-pixels      采样外壳视图窗口的像素并与期望背景色比对（需要真实可见的桌面）。\r\n"
+        + "  --dark               实验：调用 uxtheme 未公开导出 SetPreferredAppMode(ForceDark)，看外壳视图会不会变深色。\r\n"
+        + "  --self-test          脚本化自检：诊断 + 菜单转储 + 触发一次子目录导航 + 像素采样，然后自动关窗。\r\n"
         + "  --opacity=<0-100>    窗口整体不透明度，默认 100；用来观察外壳视图在分层窗口里的表现。\r\n"
         + "  --dump               导航完成后把窗口结构诊断写进日志。\r\n"
         + "  --auto-close=<秒>    打开后自动关窗（用于验证销毁路径，退出码应为 0）。\r\n"
@@ -34,6 +55,20 @@ internal sealed class ProbeOptions
     public uint ViewMode { get; init; } = FolderViewModes.Icon;
 
     public FolderFlags ExtraFlags { get; init; } = FolderFlags.None;
+
+    /// <summary>双击文件夹的去向。默认在本窗口里继续浏览（外壳的固有行为）。</summary>
+    public FolderOpenMode FolderOpen { get; init; } = FolderOpenMode.Inplace;
+
+    /// <summary>宿主窗口背景色；null 表示用默认白色。</summary>
+    public Color? Background { get; init; }
+
+    public bool Dark { get; init; }
+
+    public bool DumpMenu { get; init; }
+
+    public bool SamplePixels { get; init; }
+
+    public bool SelfTest { get; init; }
 
     public bool PaneProbe { get; init; }
 
@@ -56,6 +91,12 @@ internal sealed class ProbeOptions
         var dump = false;
         var autoCloseSeconds = 0;
         var help = false;
+        var folderOpen = FolderOpenMode.Inplace;
+        Color? background = null;
+        var dark = false;
+        var dumpMenu = false;
+        var samplePixels = false;
+        var selfTest = false;
 
         foreach (var raw in args)
         {
@@ -95,8 +136,42 @@ internal sealed class ProbeOptions
                 case "hide-header":
                     extraFlags |= FolderFlags.NoColumnHeader | FolderFlags.NoHeaderInAllViews;
                     break;
+                case "no-group":
+                    extraFlags |= FolderFlags.NoGrouping;
+                    break;
+                case "no-filters":
+                    extraFlags |= FolderFlags.NoFilters;
+                    break;
                 case "transparent":
                     extraFlags |= FolderFlags.Transparent;
+                    break;
+                case "dark":
+                    dark = true;
+                    break;
+                case "dump-menu":
+                    dumpMenu = true;
+                    break;
+                case "sample-pixels":
+                    samplePixels = true;
+                    break;
+                case "self-test":
+                    selfTest = true;
+                    break;
+                case "background":
+                    if (!TryParseColor(value, out var parsedColor))
+                    {
+                        ProbeLog.Write($"无法识别的 --background 值 '{value}'（需要 #RRGGBB），忽略。");
+                    }
+                    else
+                    {
+                        background = parsedColor;
+                    }
+                    break;
+                case "folder-open":
+                    if (!TryParseFolderOpenMode(value, out folderOpen))
+                    {
+                        ProbeLog.Write($"无法识别的 --folder-open 值 '{value}'（inplace|explorer|block），改用 inplace。");
+                    }
                     break;
                 case "pane-probe":
                     paneProbe = true;
@@ -155,6 +230,52 @@ internal sealed class ProbeOptions
             DumpOnNavigation = dump,
             AutoCloseSeconds = autoCloseSeconds,
             ShowHelp = help,
+            FolderOpen = folderOpen,
+            Background = background,
+            Dark = dark,
+            DumpMenu = dumpMenu,
+            SamplePixels = samplePixels,
+            SelfTest = selfTest,
         };
+    }
+
+    /// <summary>只接受 #RRGGBB / RRGGBB。</summary>
+    private static bool TryParseColor(string value, out Color color)
+    {
+        color = Color.Empty;
+        var text = value.Trim().TrimStart('#');
+        if (text.Length != 6)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(text, System.Globalization.NumberStyles.HexNumber, null, out var rgb))
+        {
+            return false;
+        }
+
+        color = Color.FromArgb(255, (rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+        return true;
+    }
+
+    private static bool TryParseFolderOpenMode(string value, out FolderOpenMode mode)
+    {
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "inplace":
+                mode = FolderOpenMode.Inplace;
+                return true;
+            case "explorer":
+            case "external":
+                mode = FolderOpenMode.OpenInExplorer;
+                return true;
+            case "block":
+            case "none":
+                mode = FolderOpenMode.Block;
+                return true;
+            default:
+                mode = FolderOpenMode.Inplace;
+                return false;
+        }
     }
 }

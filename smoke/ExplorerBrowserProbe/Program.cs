@@ -30,12 +30,21 @@ internal static class Program
             ProbeLog.Write($"Application.OleRequired 失败，拖放可能不可用: {ex.Message}");
         }
 
+        if (options.Dark)
+        {
+            ApplyDarkModeExperiment();
+        }
+
         ProbeLog.Write("=== ExplorerBrowser 烟测启动（参数说明: --help） ===");
         ProbeLog.Write($"目录        : {options.Directory}");
         ProbeLog.Write($"浏览器选项  : {ShellText.Describe(options.BrowserOptions)}");
         ProbeLog.Write($"视图模式    : {ShellText.DescribeViewMode(options.ViewMode)}");
         ProbeLog.Write($"文件夹标志  : {ShellText.Describe(options.ExtraFlags)}");
+        ProbeLog.Write($"宿主背景色  : {(options.Background is { } background ? $"#{background.R:X2}{background.G:X2}{background.B:X2}" : "默认白")}");
+        ProbeLog.Write($"文件夹打开  : {ExplorerBrowserHost.DescribeFolderOpenMode(options.FolderOpen)}");
         ProbeLog.Write($"窗格探针    : {(options.PaneProbe ? "开" : "关")}");
+        ProbeLog.Write($"自检/菜单/像素 : {(options.SelfTest ? "开" : "关")}/{(options.DumpMenu ? "开" : "关")}/{(options.SamplePixels ? "开" : "关")}");
+        ProbeLog.Write($"深色实验    : {(options.Dark ? "开" : "关")}");
         ProbeLog.Write($"不透明度    : {options.Opacity}%");
 
         if (options.ShowHelp)
@@ -65,6 +74,24 @@ internal static class Program
         }
 
         ProbeLog.Write($"=== 烟测结束，日志: {ProbeLog.Path} ===");
+    }
+
+    /// <summary>
+    /// 实验：让外壳控件走深色渲染。uxtheme 的 SetPreferredAppMode 是未公开导出
+    /// （不同 Windows 版本的序号可能不同），所以只做“能调就调、失败只记日志”，
+    /// 并且必须在创建任何窗口之前调用。
+    /// </summary>
+    private static void ApplyDarkModeExperiment()
+    {
+        try
+        {
+            var previous = NativeMethods.SetPreferredAppMode(2); // ForceDark
+            ProbeLog.Write($"实验：SetPreferredAppMode(ForceDark) -> 之前的模式={previous}（0=Default，1=AllowDark，2=ForceDark，3=ForceLight）");
+        }
+        catch (Exception ex)
+        {
+            ProbeLog.Write($"实验：SetPreferredAppMode 不可用（{ex.GetType().Name}: {ex.Message}）");
+        }
     }
 
     private static void ReportUnexpected(Exception exception)

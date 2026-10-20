@@ -211,3 +211,10 @@ owned visibility: owner shown → owned Visible=True, IsWindowVisible=True；
   - `src/Infrastructure/TrayController.cs` 菜单文案 `Show/Hide` → `Show/Hide window and drawer`；`README.md` 的托盘、快捷键与运行说明同步为“主窗口 + 已打开的抽屉”。
   - **已验证**：Debug（`-o %TEMP%\windrawer-build-82-debug`，因为运行中的实例锁定了 `src\bin\Debug`）与 Release 构建均 0 警告 0 错误；`%TEMP%\windrawer-border-probe` 探针确认 `Show() → Hide() → Show()` 只触发一次 `Shown`（因此重新显示不会重新枚举目录或重建缩略图，正是 8.2 验收的前提假设）。
   - **未验证**：真实 UI 下的组合隐藏/显示（主窗口与抽屉一起隐藏、重新显示后位置是否重新吸附在右侧、滚动位置/选中项/缩略图是否保持、快速反复切换是否产生额外窗口或任务栏按钮、`AlwaysOnTop` 开启时的表现、托盘 Settings 从隐藏状态恢复抽屉、抽屉已关闭时只切换主窗口）——这些需要手工回归，或在你关闭当前实例后运行上述端到端脚本。
+
+- **8.3 已实施（收窄抽屉顶部可见边带）**
+  - **实测基线（探针，本机 200% DPI）**：`Sizable` 去掉 `WS_CAPTION` 后，窗口矩形到客户区的非客户区内缩四边都是 13px，但 DWM 只在左/右/下把其中 11px 当作不可见缩放边框，于是可见带为“顶部 13px、其它三边 2px”，且顶部这 13px 由 DWM 用窗框色（本机系统强调色）绘制；`PrintWindow(PW_RENDERFULLCONTENT)` 复核确认这 13px 属于非客户区。
+  - **实现**：新增 `src/Forms/DrawerWindow.Chrome.cs`——`WM_NCCALCSIZE` 把 `NCCALCSIZE_PARAMS.rgrc[0].top` 改回窗口矩形的顶边（客户区顶到可见上边缘），左/右/下保留系统计算值；`WM_NCHITTEST` 仅把顶部 8 逻辑像素内、系统判定为 `HTCLIENT` 的命中改判为 `HTTOP`/`HTTOPLEFT`/`HTTOPRIGHT`。`InitializeWindow` 与 `DpiChanged` 调用 `UpdateTopResizeGrip(dpi)` 设置该缩放条厚度。
+  - **与计划的偏差（已记录）**：计划设想让窗体自身的 `WM_NCHITTEST` 直接覆盖顶部客户区，但客户区被 `drawerContentsListView` 覆盖，命中测试会先到子控件、窗体收不到该消息。因此改为在客户区顶部保留一段 8 逻辑像素的**不可见缩放条**（`Form.Padding.Top`），并把 `DrawerWindow.ApplyTheme` 里的窗体 `BackColor` 由 `windowBackground` 改为 `contentBackground`（客户区其余部分仍由 `mainTableLayoutPanel` 覆盖，因此只影响这条缩放条），使它与列表内容同色、肉眼无法分辨，同时顶部与两个上角仍可拖动缩放。
+  - **已验证**：Debug（`-o %TEMP%\windrawer-build-83-debug`）与 Release 构建均 0 警告 0 错误；探针实测新行为客户区内缩为 `L=13 T=0 R=13 B=13`（改动前 `T=13`），窗口外框尺寸与改动前完全一致（788x609），`PrintWindow` 中顶部第 0 行起已是客户区像素（改动前顶部 13px 为非客户区），并且 WinForms 的 `ClientSize`（762x596）与真实客户区一致——不存在“`ClientSize` 与实际客户区相差一个顶部内缩”的漂移风险（尺寸持久化与 `OnShown` 使用的是窗口 `Size`，其值未变）。
+  - **未验证**：真实应用中的观感与交互——顶部色带是否已完全不可见、缩放条光标是否为上边缘样式、从顶部/左上/右上拖动缩放是否生效、左/右/下边缘与 `MinimumSize` 是否照旧、贴靠/阴影/圆角是否正常、DPI 切换后缩放条厚度是否正确，以及“打开 → 缩放 → 关闭 → 重开”是否无尺寸漂移。本机为 200% DPI，100%/150% 未实测（非客户区度量随 DPI 等比缩放，本次只验证了几何变化本身）。

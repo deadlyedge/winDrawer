@@ -38,6 +38,7 @@ namespace winDrawer
             InitializeFileList();
 
             UpdateStandardFolderIcon(DeviceDpi);
+            UpdateTopResizeGrip(DeviceDpi);
             drawerPathTableLayoutPanel.Click += OpenFolderButton_Click;
             openFolderIconPictureBox.Click += OpenFolderButton_Click;
             fullPathLabel.Click += OpenFolderButton_Click;
@@ -71,7 +72,9 @@ namespace winDrawer
             var windowBackground = _drawer.OverlayColor is { } overlayColor
                 ? BlendColor(_theme.WindowBackground, overlayColor)
                 : _theme.WindowBackground;
-            BackColor = windowBackground;
+            // The client area is covered by mainTableLayoutPanel except for the top resize strip, which
+            // must be indistinguishable from the list content instead of showing the window frame.
+            BackColor = contentBackground;
 
             mainTableLayoutPanel.BackColor = windowBackground;
             drawerHeaderTableLayoutPanel.BackColor = Color.Transparent;

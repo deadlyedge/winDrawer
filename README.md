@@ -68,7 +68,7 @@ dotnet publish .\src\winDrawer.csproj `
 dotnet run --project .\src\winDrawer.csproj
 ```
 
-The main window launches without a border. When its position is unlocked, drag the branded header (shown with a move cursor) to reposition it; locking the position disables dragging and removes that cursor hint. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available. Items are ordered newest first by last write time (directories and files mixed), and list icons for the visible area are generated as you scroll.
+The main window launches without a border. When its position is unlocked, drag the branded header (shown with a move cursor) to reposition it; locking the position disables dragging and removes that cursor hint. Select a configured folder to open its drawer. Drawers show direct child files and directories in a native `ListView`; single-click selects an item and double-click delegates its default open action to Windows Shell. JPG/JPEG/PNG thumbnails are shown as list icons where available. Items are ordered newest first by last write time (directories and files mixed), and list icons for the visible area are generated as you scroll. The drawer hides its title bar but keeps a resizable frame: the caption-less top band is reclaimed as client area, and an invisible strip at the top of the content keeps the top edge (and the top corners) resizable like the other three sides.
 
 ## Configuration
 

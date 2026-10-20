@@ -54,6 +54,7 @@ public partial class DrawerWindow
     private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
     {
         UpdateStandardFolderIcon(e.DeviceDpiNew);
+        UpdateTopResizeGrip(e.DeviceDpiNew);
         RefreshFileListForDpi(e.DeviceDpiNew);
     }
 

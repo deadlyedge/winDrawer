@@ -17,6 +17,7 @@ namespace winDrawer
                 drawerContentsListView.LargeImageList = null;
                 drawerImageList.Images.Clear();
                 DisposeFileListImages();
+                DisposeDrawerContextMenu();
                 openFolderIconPictureBox.Image?.Dispose();
                 openFolderIconPictureBox.Image = null;
                 components.Dispose();
@@ -41,7 +42,6 @@ namespace winDrawer
             openFolderIconPictureBox = new PictureBox();
             fullPathLabel = new UILabel();
             drawerButtonTableLayoutPanel = new FlowLayoutPanel();
-            refreshDrawerButton = new UIButton();
             closeDrawerButton = new UIButton();
             mainTableLayoutPanel.SuspendLayout();
             drawerHeaderTableLayoutPanel.SuspendLayout();
@@ -171,7 +171,6 @@ namespace winDrawer
             // drawerButtonTableLayoutPanel
             // 
             drawerButtonTableLayoutPanel.Controls.Add(closeDrawerButton);
-            drawerButtonTableLayoutPanel.Controls.Add(refreshDrawerButton);
             drawerButtonTableLayoutPanel.Dock = DockStyle.Fill;
             drawerButtonTableLayoutPanel.Location = new Point(491, 0);
             drawerButtonTableLayoutPanel.Margin = new Padding(0);
@@ -181,22 +180,6 @@ namespace winDrawer
             drawerButtonTableLayoutPanel.FlowDirection = FlowDirection.RightToLeft;
             drawerButtonTableLayoutPanel.WrapContents = false;
             drawerButtonTableLayoutPanel.Padding = new Padding(0, 3, 3, 3);
-            // 
-            // refreshDrawerButton
-            // 
-            refreshDrawerButton.Cursor = Cursors.Hand;
-            refreshDrawerButton.Font = new Font("Segoe MDL2 Assets", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            refreshDrawerButton.Location = new Point(219, 3);
-            refreshDrawerButton.MinimumSize = new Size(1, 1);
-            refreshDrawerButton.Name = "refreshDrawerButton";
-            refreshDrawerButton.Radius = 2;
-            refreshDrawerButton.Size = new Size(40, 38);
-            refreshDrawerButton.TabIndex = 0;
-            refreshDrawerButton.Text = "\uE72C";
-            refreshDrawerButton.AccessibleName = "Refresh folder contents";
-            refreshDrawerButton.AccessibleDescription = "Reloads the contents of this drawer.";
-            refreshDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
-            drawerToolTip.SetToolTip(refreshDrawerButton, "Refresh folder contents");
             // 
             // closeDrawerButton
             // 
@@ -245,7 +228,6 @@ namespace winDrawer
         private PictureBox openFolderIconPictureBox;
         private UILabel fullPathLabel;
         private FlowLayoutPanel drawerButtonTableLayoutPanel;
-        private UIButton refreshDrawerButton;
         private UIButton closeDrawerButton;
         private ScrollableListView drawerContentsListView;
         private UIScrollBar drawerContentsScrollBar;

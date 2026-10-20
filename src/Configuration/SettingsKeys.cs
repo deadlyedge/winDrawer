@@ -21,4 +21,5 @@ internal static class SettingsKeys
     public const string DrawerPath = "path";
     public const string DrawerSize = "size";
     public const string DrawerOverlayColor = "overlay_color";
+    public const string DrawerSortMode = "sort_mode";
 }

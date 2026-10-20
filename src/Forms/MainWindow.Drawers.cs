@@ -127,6 +127,7 @@ namespace winDrawer
                     TopMost = IsAlwaysOnTop
                 };
                 _currentDrawerWindow = drawerWindow;
+                drawerWindow.SortModeChanged += (_, _) => ReloadSettingsFromStorage();
                 drawerWindow.FormClosed += (_, _) =>
                 {
                     ReloadSettingsFromStorage();

@@ -42,6 +42,47 @@ internal sealed partial class SettingsRepository
         return false;
     }
 
+    /// <summary>
+    /// Persists the display order of one drawer. Like <see cref="UpdateDrawerSize"/> it updates the
+    /// in-memory model and lets the background writer save it.
+    /// </summary>
+    public bool UpdateDrawerSortMode(string drawerPath, DrawerSortMode sortMode)
+    {
+        if (string.IsNullOrWhiteSpace(drawerPath))
+        {
+            DrawerLogger.LogWarning("Attempted to persist a drawer sort mode with an empty path.");
+            return false;
+        }
+
+        lock (_writeLock)
+        {
+            if (!TryGetDrawers(_root, out var drawers))
+            {
+                DrawerLogger.LogWarning($"Drawer collection missing when updating the sort mode for '{drawerPath}'.");
+                return false;
+            }
+
+            foreach (var entry in drawers)
+            {
+                if (!PathComparison.AreSame(ReadString(entry, SettingsKeys.DrawerPath), drawerPath))
+                {
+                    continue;
+                }
+
+                entry[SettingsKeys.DrawerSortMode] = DrawerSortModeText.ToTomlValue(sortMode);
+
+                _dirty = true;
+                _writeSignal.Release();
+                DrawerLogger.LogInformation($"Queued drawer sort mode update for '{drawerPath}' => {sortMode}.");
+
+                return true;
+            }
+        }
+
+        DrawerLogger.LogWarning($"Unable to find drawer entry when updating the sort mode for '{drawerPath}'.");
+        return false;
+    }
+
     public bool UpdateDrawer(string originalPath, string name, string newPath, Color? overlayColor, out string error)
     {
         error = string.Empty;

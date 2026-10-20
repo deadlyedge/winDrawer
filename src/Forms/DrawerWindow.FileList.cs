@@ -46,9 +46,10 @@ public partial class DrawerWindow
         ShowListStatus("Loading...");
     }
 
-    private async void RefreshDrawerButton_Click(object? sender, EventArgs e)
+    /// <summary>User-requested refresh from the context menu or the F5 shortcut.</summary>
+    private Task RefreshDrawerAsync()
     {
-        await PopulateFileListAsync();
+        return PopulateFileListAsync();
     }
 
     private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
@@ -164,7 +165,8 @@ public partial class DrawerWindow
         try
         {
             var folderPath = _drawer.Path;
-            var items = await Task.Run(() => DrawerItemEnumerator.Enumerate(folderPath, cancellation.Token));
+            var sortMode = _drawer.SortMode;
+            var items = await Task.Run(() => DrawerItemEnumerator.Enumerate(folderPath, sortMode, cancellation.Token));
 
             if (!IsCurrentFileListLoad(generation, cancellation))
             {

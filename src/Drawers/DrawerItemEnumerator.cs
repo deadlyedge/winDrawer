@@ -10,7 +10,7 @@ internal static class DrawerItemEnumerator
     /// </summary>
     private static readonly DateTime MissingTimestamp = DateTime.FromFileTimeUtc(0);
 
-    public static List<DrawerItemInfo>? Enumerate(string folderPath, CancellationToken cancellationToken)
+    public static List<DrawerItemInfo>? Enumerate(string folderPath, DrawerSortMode sortMode, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!Directory.Exists(folderPath))
@@ -62,29 +62,38 @@ internal static class DrawerItemEnumerator
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        items.Sort(CompareItems);
+        items.Sort((left, right) => CompareItems(left, right, sortMode));
         cancellationToken.ThrowIfCancellationRequested();
         return items;
     }
 
-    internal static int CompareItems(DrawerItemInfo left, DrawerItemInfo right)
+    /// <summary>
+    /// Deterministic order for one sort mode. Missing timestamps sort after readable ones in the time
+    /// modes, and every mode ends with the full path so the order never depends on enumeration order.
+    /// </summary>
+    internal static int CompareItems(DrawerItemInfo left, DrawerItemInfo right, DrawerSortMode sortMode)
     {
-        if (left.LastWriteTimeUtc is { } leftTime)
+        if (sortMode != DrawerSortMode.NameAscending)
         {
-            if (right.LastWriteTimeUtc is not { } rightTime)
+            if (left.LastWriteTimeUtc is { } leftTime)
             {
-                return -1;
-            }
+                if (right.LastWriteTimeUtc is not { } rightTime)
+                {
+                    return -1;
+                }
 
-            var timeComparison = rightTime.CompareTo(leftTime);
-            if (timeComparison != 0)
-            {
-                return timeComparison;
+                var timeComparison = sortMode == DrawerSortMode.NewestFirst
+                    ? rightTime.CompareTo(leftTime)
+                    : leftTime.CompareTo(rightTime);
+                if (timeComparison != 0)
+                {
+                    return timeComparison;
+                }
             }
-        }
-        else if (right.LastWriteTimeUtc is not null)
-        {
-            return 1;
+            else if (right.LastWriteTimeUtc is not null)
+            {
+                return 1;
+            }
         }
 
         var nameComparison = StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name);

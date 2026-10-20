@@ -129,7 +129,12 @@ public sealed class SettingsSnapshot(
                 preferredSize = new Size(Math.Clamp(width, 200, 4000), Math.Clamp(height, 200, 4000));
             }
 
-            results.Add(new DrawerDefinition(name, expandedPath, preferredSize, ParseOverlayColor(drawerTable)));
+            results.Add(new DrawerDefinition(
+                name,
+                expandedPath,
+                preferredSize,
+                ParseOverlayColor(drawerTable),
+                DrawerSortModeText.Parse(GetString(drawerTable, SettingsKeys.DrawerSortMode))));
         }
 
         return results;

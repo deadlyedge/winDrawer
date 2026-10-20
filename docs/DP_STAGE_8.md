@@ -218,3 +218,14 @@ owned visibility: owner shown → owned Visible=True, IsWindowVisible=True；
   - **与计划的偏差（已记录）**：计划设想让窗体自身的 `WM_NCHITTEST` 直接覆盖顶部客户区，但客户区被 `drawerContentsListView` 覆盖，命中测试会先到子控件、窗体收不到该消息。因此改为在客户区顶部保留一段 8 逻辑像素的**不可见缩放条**（`Form.Padding.Top`），并把 `DrawerWindow.ApplyTheme` 里的窗体 `BackColor` 由 `windowBackground` 改为 `contentBackground`（客户区其余部分仍由 `mainTableLayoutPanel` 覆盖，因此只影响这条缩放条），使它与列表内容同色、肉眼无法分辨，同时顶部与两个上角仍可拖动缩放。
   - **已验证**：Debug（`-o %TEMP%\windrawer-build-83-debug`）与 Release 构建均 0 警告 0 错误；探针实测新行为客户区内缩为 `L=13 T=0 R=13 B=13`（改动前 `T=13`），窗口外框尺寸与改动前完全一致（788x609），`PrintWindow` 中顶部第 0 行起已是客户区像素（改动前顶部 13px 为非客户区），并且 WinForms 的 `ClientSize`（762x596）与真实客户区一致——不存在“`ClientSize` 与实际客户区相差一个顶部内缩”的漂移风险（尺寸持久化与 `OnShown` 使用的是窗口 `Size`，其值未变）。
   - **未验证**：真实应用中的观感与交互——顶部色带是否已完全不可见、缩放条光标是否为上边缘样式、从顶部/左上/右上拖动缩放是否生效、左/右/下边缘与 `MinimumSize` 是否照旧、贴靠/阴影/圆角是否正常、DPI 切换后缩放条厚度是否正确，以及“打开 → 缩放 → 关闭 → 重开”是否无尺寸漂移。本机为 200% DPI，100%/150% 未实测（非客户区度量随 DPI 等比缩放，本次只验证了几何变化本身）。
+
+- **8.4 已实施（右键菜单 + 三种排序 + 移除刷新按钮）**
+  - 新增 `src/Drawers/DrawerSortMode.cs`：`NewestFirst`/`OldestFirst`/`NameAscending` 与 TOML 文本映射（`newest`/`oldest`/`name`，缺失、大小写变体、未知取值或错误类型一律按 `newest`）。
+  - `DrawerItemEnumerator.Enumerate(folderPath, sortMode, token)` 与 `CompareItems(left, right, sortMode)` 按模式分派：三种模式都保持目录与文件混排；时间模式先比时间（不可读的排最后）、相同再比名称 `OrdinalIgnoreCase`、最后比完整路径 `Ordinal`，名称模式直接比名称再比路径。比较器仍是纯逻辑、不做文件系统 I/O。
+  - 持久化（D3）：`DrawerDefinition.SortMode` + `WithSortMode`；`SettingsKeys.DrawerSortMode`；`SettingsSnapshot.ParseDrawers` 读取该键；`SettingsRepository.UpdateDrawerSortMode` 完全照 `UpdateDrawerSize` 的模式（`_writeLock` + `PathComparison.AreSame` 定位 + 写字符串值 + 标脏 + 唤醒后台 writer + 日志）。新增抽屉不写该键（缺失即 `newest`），只有用户在菜单里明确切换才写入。
+  - 新 `src/Forms/DrawerWindow.ContextMenu.cs`：`Refresh`（`ShortcutKeyDisplayString = "F5"`）、分隔符、`Sort by name`/`Newest first`/`Oldest first` 三项互斥勾选（菜单打开前按当前模式刷新勾选）、`ProcessCmdKey` 处理 F5、`SortModeChanged` 事件，并在窗体 Dispose 中释放菜单。
+  - 新 `src/Controls/UiContextMenuTheming.cs`：按 `ThemePalette` 提供菜单配色表，并让文字与勾选标记在“面板底色”和“强调色选中态”下都保持可读（勾选标记由自定义渲染绘制）。
+  - 移除右下角刷新按钮：`DrawerWindow.Designer.cs` 删除控件、初始化、提示与无障碍文本并释放上下文菜单；`DrawerWindow.InitializeWindow` 去掉点击订阅、`ApplyTheme` 去掉按钮主题调用并改为重染菜单；`DrawerWindow.FileList.cs` 把 `RefreshDrawerButton_Click` 改为 `RefreshDrawerAsync()`，`Enumerate` 调用改传 `_drawer.SortMode`；`ApplyDrawerDefinition` 在模式变化时重新排序。
+  - `MainWindow.OpenDrawer` 订阅 `drawerWindow.SortModeChanged` → 走现有 `ReloadSettingsFromStorage()`，保证重新打开或编辑抽屉时使用最新模式。
+  - **已验证**：Debug（`-o %TEMP%\windrawer-build-84-debug`）与 Release 构建均 0 警告 0 错误；`%TEMP%\windrawer-hotkey-harness` 扩展后 **65/65 通过**，新增覆盖：三种模式的真实目录排序（混排、方向、同名按名称 tie-break）、时间不可读在时间模式排最后而在名称模式按名称参与、同名不同路径按路径 `Ordinal`、`sort_mode` 缺失/大小写/未知/错误类型的解析、`UpdateDrawerSortMode` 的写盘内容与其它抽屉字段保留、Default 重置不改动 `sort_mode`、新增抽屉不写该键。
+  - **未验证**：真实 UI 中的菜单观感（深浅主题与抽屉专属蒙版下勾选/悬停对比度、菜单边框与分隔线）、列表任意位置右键是否都能弹出、切换后是否立即重排、F5 是否刷新、`sort_mode` 重启后是否恢复、切换后 `ReloadSettingsFromStorage()` 是否引起抽屉列表闪烁或选中态异常，以及移除刷新按钮后底部按钮行的布局。

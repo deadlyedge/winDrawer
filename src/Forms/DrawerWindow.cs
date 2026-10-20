@@ -36,13 +36,13 @@ namespace winDrawer
 
             drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
             InitializeFileList();
+            InitializeDrawerContextMenu();
 
             UpdateStandardFolderIcon(DeviceDpi);
             UpdateTopResizeGrip(DeviceDpi);
             drawerPathTableLayoutPanel.Click += OpenFolderButton_Click;
             openFolderIconPictureBox.Click += OpenFolderButton_Click;
             fullPathLabel.Click += OpenFolderButton_Click;
-            refreshDrawerButton.Click += RefreshDrawerButton_Click;
             closeDrawerButton.Click += (_, _) => Close();
 
             Size = _drawer.PreferredSize ?? Size;
@@ -92,17 +92,30 @@ namespace winDrawer
             fullPathLabel.ForeColor = _theme.TextSecondary;
             fullPathLabel.BackColor = Color.Transparent;
 
-            ApplyThemeToButton(refreshDrawerButton, isCloseButton: false);
             ApplyThemeToButton(closeDrawerButton, isCloseButton: true);
+
+            if (_drawerContextMenu is not null)
+            {
+                UiContextMenuTheming.Apply(_drawerContextMenu, _theme);
+            }
         }
 
         public void ApplyDrawerDefinition(DrawerDefinition drawer)
         {
+            var previousSortMode = _drawer.SortMode;
             _drawer = drawer ?? throw new ArgumentNullException(nameof(drawer));
             Text = _drawer.Name;
             fullPathLabel.Text = _drawer.Path;
             drawerToolTip.SetToolTip(fullPathLabel, _drawer.Path);
             ApplyTheme(_theme);
+            UpdateSortModeChecks();
+
+            // A definition that arrives with another mode (for example after the settings file was
+            // edited outside the drawer) must be reflected in the list immediately.
+            if (_drawer.SortMode != previousSortMode)
+            {
+                _ = RefreshDrawerAsync();
+            }
         }
 
         private static Color BlendColor(Color background, Color overlay)

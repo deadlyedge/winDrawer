@@ -42,7 +42,7 @@ internal sealed partial class SettingsRepository
 
                 AddSectionFormatting(standardStartupTable, metadataStore,
                     "启动与主窗口设置",
-                    "配置登录启动、窗口位置、主题颜色和主窗口高度。");
+                    "配置登录启动、显示/隐藏快捷键、窗口行为、主题颜色和主窗口高度。");
                 orderedRoot[SettingsKeys.Startup] = standardStartupTable;
             }
             else

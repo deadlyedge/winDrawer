@@ -104,6 +104,10 @@ namespace winDrawer
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            // Releasing the shortcut keeps the "hotkey turned off" path explicit; it is a no-op when
+            // OnHandleDestroyed already released it.
+            ReleaseHotKey();
+
             _logoFont?.Dispose();
             _settingsButtonFont?.Dispose();
             _addDrawerButtonFont?.Dispose();
@@ -434,6 +438,12 @@ namespace winDrawer
             PopulateDrawerList(snapshot.Drawers);
             // 如果有当前打开的drawer，更新list中的选中状态
             UpdateSelectedDrawer();
+
+            // The global shortcut follows the same preview/save/cancel semantics as the other startup
+            // options. The flag allows OnHandleCreated to register it when this runs before the handle
+            // exists (the constructor path).
+            _settingsApplied = true;
+            SyncHotkeyRegistration(_toggleHotkeyPreview ?? snapshot.ToggleHotkeyEnabled);
         }
 
         private void ApplyMainWindowBounds(SettingsSnapshot snapshot)

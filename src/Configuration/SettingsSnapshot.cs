@@ -11,7 +11,8 @@ public sealed class SettingsSnapshot(
     Point windowPosition,
     IEnumerable<DrawerDefinition>? drawers = null,
     int windowHeight = winDrawer.AppConstants.Defaults.MainWindowHeightDefault,
-    bool alwaysOnTop = false)
+    bool alwaysOnTop = false,
+    bool toggleHotkeyEnabled = true)
 {
     private readonly List<DrawerDefinition> _drawers = drawers != null
             ? [.. drawers]
@@ -24,6 +25,7 @@ public sealed class SettingsSnapshot(
     public Point WindowPosition { get; set; } = windowPosition;
     public int WindowHeight { get; set; } = Math.Clamp(windowHeight, winDrawer.AppConstants.Defaults.MainWindowHeightMin, winDrawer.AppConstants.Defaults.MainWindowHeightMax);
     public bool AlwaysOnTop { get; set; } = alwaysOnTop;
+    public bool ToggleHotkeyEnabled { get; set; } = toggleHotkeyEnabled;
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public ThemePalette BuildThemePalette()
@@ -41,7 +43,8 @@ public sealed class SettingsSnapshot(
             windowPosition: WindowPosition,
             drawers: _drawers,
             windowHeight: WindowHeight,
-            alwaysOnTop: AlwaysOnTop);
+            alwaysOnTop: AlwaysOnTop,
+            toggleHotkeyEnabled: ToggleHotkeyEnabled);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -86,7 +89,8 @@ public sealed class SettingsSnapshot(
             windowPosition: new Point(windowPositionArray[0], windowPositionArray[1]),
             drawers: drawers,
             windowHeight: windowHeight,
-            alwaysOnTop: GetBoolean(startup, SettingsKeys.AlwaysOnTop));
+            alwaysOnTop: GetBoolean(startup, SettingsKeys.AlwaysOnTop),
+            toggleHotkeyEnabled: GetBoolean(startup, SettingsKeys.ToggleHotkeyEnabled, fallback: true));
     }
 
     private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray entries)

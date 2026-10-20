@@ -10,6 +10,7 @@ public partial class SettingsForm : UIForm
     private const int StartWithWindowsIndex = 0;
     private const int LockPositionIndex = 1;
     private const int AlwaysOnTopIndex = 2;
+    private const int ToggleHotkeyIndex = 3;
 
     private SettingsSnapshot _originalSnapshot;
     private SettingsSnapshot _workingSnapshot;
@@ -49,6 +50,12 @@ public partial class SettingsForm : UIForm
     public event Action<bool>? WindowLockPreviewChanged;
 
     public event Action<bool>? AlwaysOnTopPreviewChanged;
+
+    /// <summary>
+    /// Raised when the "Enable Win+Shift+D" option changes so the host can register or release the
+    /// global shortcut immediately.
+    /// </summary>
+    public event Action<bool>? ToggleHotkeyPreviewChanged;
 
     public event EventHandler? StartupDefaultsResetRequested;
 
@@ -158,6 +165,8 @@ public partial class SettingsForm : UIForm
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
         behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
+        behaviorCheckBoxGroup.AccessibleName = "Behavior options";
+        behaviorCheckBoxGroup.AccessibleDescription = "Toggles for startup, window position lock, always-on-top and the Win+Shift+D shortcut.";
         FitBehaviorItemSize();
 
         previewPanel.FillColor = _workingSnapshot.WindowColor;
@@ -243,6 +252,11 @@ public partial class SettingsForm : UIForm
         if (_workingSnapshot.AlwaysOnTop)
         {
             selected.Add(AlwaysOnTopIndex);
+        }
+
+        if (_workingSnapshot.ToggleHotkeyEnabled)
+        {
+            selected.Add(ToggleHotkeyIndex);
         }
 
         behaviorCheckBoxGroup.SelectedIndexes = selected;
@@ -333,6 +347,7 @@ public partial class SettingsForm : UIForm
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(_originalSnapshot.BuildThemePalette()));
         WindowLockPreviewChanged?.Invoke(_originalSnapshot.WindowLocked);
         AlwaysOnTopPreviewChanged?.Invoke(_originalSnapshot.AlwaysOnTop);
+        ToggleHotkeyPreviewChanged?.Invoke(_originalSnapshot.ToggleHotkeyEnabled);
         DialogResult = DialogResult.Cancel;
         _allowClose = true;
         Close();
@@ -460,6 +475,7 @@ public partial class SettingsForm : UIForm
         _workingSnapshot.StartWithWindows = selected.Contains(StartWithWindowsIndex);
         _workingSnapshot.WindowLocked = selected.Contains(LockPositionIndex);
         _workingSnapshot.AlwaysOnTop = selected.Contains(AlwaysOnTopIndex);
+        _workingSnapshot.ToggleHotkeyEnabled = selected.Contains(ToggleHotkeyIndex);
         _workingSnapshot.WindowHeight = windowHeightTrackBar.Value;
     }
 
@@ -477,6 +493,13 @@ public partial class SettingsForm : UIForm
         {
             _workingSnapshot.AlwaysOnTop = alwaysOnTop;
             AlwaysOnTopPreviewChanged?.Invoke(alwaysOnTop);
+        }
+
+        var toggleHotkey = IsBehaviorChecked(ToggleHotkeyIndex);
+        if (_workingSnapshot.ToggleHotkeyEnabled != toggleHotkey)
+        {
+            _workingSnapshot.ToggleHotkeyEnabled = toggleHotkey;
+            ToggleHotkeyPreviewChanged?.Invoke(toggleHotkey);
         }
     }
 

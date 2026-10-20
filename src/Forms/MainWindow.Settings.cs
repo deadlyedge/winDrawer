@@ -43,6 +43,7 @@ namespace winDrawer
             settings.WindowHeightPreviewChanged += Settings_WindowHeightPreviewChanged;
             settings.WindowLockPreviewChanged += Settings_WindowLockPreviewChanged;
             settings.AlwaysOnTopPreviewChanged += Settings_AlwaysOnTopPreviewChanged;
+            settings.ToggleHotkeyPreviewChanged += Settings_ToggleHotkeyPreviewChanged;
             settings.StartupDefaultsResetRequested += Settings_StartupDefaultsResetRequested;
             settings.FormClosed += Settings_FormClosed;
         }
@@ -55,6 +56,7 @@ namespace winDrawer
                 settings.WindowHeightPreviewChanged -= Settings_WindowHeightPreviewChanged;
                 settings.WindowLockPreviewChanged -= Settings_WindowLockPreviewChanged;
                 settings.AlwaysOnTopPreviewChanged -= Settings_AlwaysOnTopPreviewChanged;
+                settings.ToggleHotkeyPreviewChanged -= Settings_ToggleHotkeyPreviewChanged;
                 settings.StartupDefaultsResetRequested -= Settings_StartupDefaultsResetRequested;
                 settings.FormClosed -= Settings_FormClosed;
             }
@@ -83,6 +85,7 @@ namespace winDrawer
             _settingsCloseHandled = true;
             _windowLockedPreview = null;
             _alwaysOnTopPreview = null;
+            _toggleHotkeyPreview = null;
             if (ReferenceEquals(_settingsForm, settings))
             {
                 _settingsForm = null;
@@ -131,7 +134,8 @@ namespace winDrawer
                 windowPosition: _settingsSnapshot.WindowPosition,
                 drawers: _settingsSnapshot.Drawers,
                 windowHeight: resultSettings.WindowHeight,
-                alwaysOnTop: resultSettings.AlwaysOnTop);
+                alwaysOnTop: resultSettings.AlwaysOnTop,
+                toggleHotkeyEnabled: resultSettings.ToggleHotkeyEnabled);
             _settingsRepository.Update(_settingsSnapshot);
             // Saving is handled by the repository's background writer.
             ApplyMainWindowBounds(_settingsSnapshot);
@@ -145,6 +149,7 @@ namespace winDrawer
             ApplyMainWindowBounds(_settingsSnapshot);
             ApplyAlwaysOnTop(_settingsSnapshot.AlwaysOnTop);
             ApplyTheme(_settingsSnapshot.BuildThemePalette());
+            SyncHotkeyRegistration(_settingsSnapshot.ToggleHotkeyEnabled);
         }
 
         private void Settings_ThemePreviewChanged(object? sender, ThemePreviewEventArgs e)
@@ -178,6 +183,26 @@ namespace winDrawer
         {
             _alwaysOnTopPreview = alwaysOnTop;
             ApplyAlwaysOnTop(alwaysOnTop);
+        }
+
+        /// <summary>
+        /// Applies the "Enable Win+Shift+D" preview. A registration failure keeps the user's choice
+        /// (it is what gets saved) and only tells the user that the combination is unavailable; the
+        /// next start or handle recreation retries the registration.
+        /// </summary>
+        private void Settings_ToggleHotkeyPreviewChanged(bool enabled)
+        {
+            if (ApplyToggleHotkey(enabled) || !enabled || !IsHandleCreated)
+            {
+                return;
+            }
+
+            var owner = _settingsForm is { IsDisposed: false } settings ? settings : (IWin32Window)this;
+            UiMessages.ShowWarning(
+                owner,
+                AppConstants.Branding.ApplicationDisplayName,
+                $"The shortcut {AppConstants.HotKeys.ToggleVisibilityDescription} could not be registered because another program already uses it. "
+                + "The option stays enabled and winDrawer will try again the next time it starts.");
         }
 
         private void Settings_StartupDefaultsResetRequested(object? sender, EventArgs e)
@@ -238,6 +263,8 @@ namespace winDrawer
             }
 
             _settingsSnapshot = resetSnapshot!;
+            // The reset replaces the dialog baseline, so a pending hotkey preview must not survive it.
+            _toggleHotkeyPreview = null;
             settings.ApplyResetBaseline(_settingsSnapshot);
             ApplySettings(_settingsSnapshot);
         }

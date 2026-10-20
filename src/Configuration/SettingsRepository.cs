@@ -55,6 +55,7 @@ internal sealed partial class SettingsRepository : IDisposable
             startup[SettingsKeys.StartWithWindows] = snapshot.StartWithWindows;
             startup[SettingsKeys.WindowLocked] = snapshot.WindowLocked;
             startup[SettingsKeys.AlwaysOnTop] = snapshot.AlwaysOnTop;
+            startup[SettingsKeys.ToggleHotkeyEnabled] = snapshot.ToggleHotkeyEnabled;
             startup[SettingsKeys.WindowHeight] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
             startup[SettingsKeys.WindowPosition] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
             startup[SettingsKeys.WindowColor] = ThemePalette.FormatHexColor(snapshot.WindowColor);
@@ -79,7 +80,8 @@ internal sealed partial class SettingsRepository : IDisposable
             windowPosition: defaults.WindowPosition,
             drawers: current.Drawers,
             windowHeight: defaults.WindowHeight,
-            alwaysOnTop: defaults.AlwaysOnTop);
+            alwaysOnTop: defaults.AlwaysOnTop,
+            toggleHotkeyEnabled: defaults.ToggleHotkeyEnabled);
     }
 
     public bool ResetStartupToEmbeddedDefaults(TimeSpan timeout, out SettingsSnapshot? resetSnapshot, out string error)

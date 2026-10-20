@@ -48,6 +48,19 @@ internal static class AppConstants
         public const string ApplicationDisplayName = "winDrawer";
     }
 
+    /// <summary>
+    /// Global (system-wide) shortcuts. The values are registered against the main-window handle and
+    /// the window receives <see cref="GlobalHotKey.WmHotKey"/> for the matching id.
+    /// </summary>
+    internal static class HotKeys
+    {
+        /// <summary>Window-message identifier of the show/hide shortcut ('WD').</summary>
+        public const int ToggleVisibilityId = 0x5744;
+
+        /// <summary>Human-readable shortcut name used in logs and user messages.</summary>
+        public const string ToggleVisibilityDescription = "Win+Shift+D";
+    }
+
     internal static class Defaults
     {
         public static readonly Point WindowPosition = new(100, 100);

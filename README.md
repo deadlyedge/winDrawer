@@ -8,6 +8,7 @@ winDrawer is a small Windows Forms utility for keeping frequently used folders c
 - **Image thumbnails** – JPG/JPEG and PNG thumbnails appear as list icons; other items use Windows Shell icons.
 - **Newest-first list with lazy icons** – Directories and files are mixed and sorted by last-modified time (`LastWriteTimeUtc`, descending; ties by name then full path, unreadable timestamps last). Icons and thumbnails load only for the visible area plus a one-screen margin, so large folders appear immediately.
 - **Always on top** – Optionally keep the main window and the current drawer window above other windows; the option never applies to the settings panels.
+- **Global show/hide shortcut** – Press `Win+Shift+D` from any application to toggle the main window, exactly like the tray menu. The shortcut is registered per main-window handle and can be switched off with the **Enable Win+Shift+D** option in Settings; if another program already owns the combination, winDrawer keeps the option enabled, logs a warning and retries on the next start.
 - **Live theming** – Choose the theme color through the Windows color dialog, adjust window opacity separately, and preview changes before saving.
 - **Adjustable main window** – Set the main window height; the drawer list uses the remaining area and scrolls naturally.
 - **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
@@ -71,7 +72,7 @@ The main window launches without a border. When its position is unlocked, drag t
 
 ## Configuration
 
-- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour (`start_with_windows`, `window_locked`, `always_on_top`), window height and position, the `#RRGGBB` theme color, separate window opacity, and drawer data. A missing user settings file is initialized from the embedded root `Drawer-settings.toml` template; an existing file is never replaced by the template. If settings cannot be read or initialized, the app reports an error and leaves the existing file untouched. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
+- **Settings file** – `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml` stores startup behaviour (`start_with_windows`, `window_locked`, `always_on_top`, `toggle_hotkey_enabled`), window height and position, the `#RRGGBB` theme color, separate window opacity, and drawer data. A missing user settings file is initialized from the embedded root `Drawer-settings.toml` template; an existing file is never replaced by the template. If settings cannot be read or initialized, the app reports an error and leaves the existing file untouched. The settings panel's **Open Settings TOML** button opens the active file in Windows Notepad.
 - **Current TOML format** – Theme color is `startup.window_color = "#RRGGBB"`; `startup.window_opacity` is a separate integer percentage (0–100). Drawer overlay colors use `drawers[].overlay_color = "#RRGGBB"` and are blended at a fixed 70%. Drawer sizes use `size = [width, height]` inside each `[[drawers]]` table. See [`docs/CONFIGURATION_FORMAT.md`](docs/CONFIGURATION_FORMAT.md) for validation rules and unsupported legacy forms.
 - **Existing legacy settings** – Back up an existing TOML file before manually converting it to the current format. The application does not migrate `window_color_hsla`, old `[drawers.size]` subtables, or other legacy representations; it does not search other directories for settings. The historical file under `reference/` is not a supported import template.
 - **Assets** – The window/tray icon and Lobster branding font are embedded in the application assembly from the `assets/` folder at build time:
@@ -86,8 +87,9 @@ The main window launches without a border. When its position is unlocked, drag t
 3. Toggle **Lock position** to immediately enable/disable main-window dragging and its move-cursor hint. Cancel restores the setting that was active when Settings opened; Save persists the new state.
 4. Adjust **window height** to resize the main window. The drawer list scrolls to keep every configured folder available.
 5. Toggle **Always on top** to keep the main window and the open drawer window above other windows; the preview applies immediately, Cancel restores the previous state, Save persists it, and Default restores the template value (`false`).
-6. Enable **Start with windows** to register startup for the current Windows user.
-7. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
+6. Toggle **Enable Win+Shift+D** to register or release the global show/hide shortcut immediately; Cancel restores the previous state, Save persists it, and Default restores the template value (`true`). If another program already owns the combination, the option stays enabled, the failure is reported once and the registration is retried on the next start.
+7. Enable **Start with windows** to register startup for the current Windows user.
+8. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
 
 The main window and auxiliary windows normally do not appear as taskbar buttons; use the system-tray menu to show/hide the main window, open Settings, or exit. If tray initialization fails, the main window remains available from the taskbar.
 
@@ -99,7 +101,7 @@ Drawer settings (right-click a drawer) edit the display name and the bound folde
 - `Drawers/` – Drawer content model and services: `DrawerItemInfo` (item metadata), `DrawerItemEnumerator` (direct-child enumeration and newest-first sorting), `DrawerItemImageLoader` (Shell icon / thumbnail per item).
 - `Configuration/` – Settings data and persistence: `SettingsRepository.*` (in-memory TOML model, drawer operations, background writer, serialization), `SettingsSnapshot.cs` (settings snapshot and TOML parsing), `SettingsKeys.cs` (TOML key names), `DrawerDefinition.cs`, `AppConstants.cs`.
 - `Theming/` – `ThemePalette.cs` (RGB hex parsing and derived palette), `BrandingFont.cs` (embedded Lobster font), `ShellIcon.cs` (Shell icon interop), `ThemePreviewEventArgs.cs`.
-- `Infrastructure/` – Cross-cutting support: `DrawerLogger.cs` (file logger), `TrayController.cs` (NotifyIcon lifecycle), `StartupRegistration.cs` (per-user login startup), `PathComparison.cs` (single path-equality rule).
+- `Infrastructure/` – Cross-cutting support: `DrawerLogger.cs` (file logger), `TrayController.cs` (NotifyIcon lifecycle), `StartupRegistration.cs` (per-user login startup), `PathComparison.cs` (single path-equality rule), `GlobalHotKey.cs` (Win32 `RegisterHotKey`/`UnregisterHotKey` wrapper for the Win+Shift+D shortcut).
 
 ## Dependencies
 

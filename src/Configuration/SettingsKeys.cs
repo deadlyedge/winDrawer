@@ -12,6 +12,7 @@ internal static class SettingsKeys
     public const string StartWithWindows = "start_with_windows";
     public const string WindowLocked = "window_locked";
     public const string AlwaysOnTop = "always_on_top";
+    public const string ToggleHotkeyEnabled = "toggle_hotkey_enabled";
     public const string WindowHeight = "window_height";
     public const string WindowPosition = "window_position";
     public const string WindowColor = "window_color";

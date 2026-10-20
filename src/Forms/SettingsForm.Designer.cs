@@ -182,7 +182,7 @@ partial class SettingsForm
         behaviorCheckBoxGroup.FillColor = Color.FromArgb(64, 64, 64);
         behaviorCheckBoxGroup.ForeColor = Color.FromArgb(224, 224, 224);
         behaviorCheckBoxGroup.HoverColor = Color.Gray;
-        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with Windows", "Lock position", "Always on top" });
+        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with Windows", "Lock position", "Always on top", "Enable Win+Shift+D" });
         behaviorCheckBoxGroup.ItemSize = new Size(170, 34);
         behaviorCheckBoxGroup.Margin = new Padding(10);
         behaviorCheckBoxGroup.MinimumSize = new Size(1, 1);

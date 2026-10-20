@@ -193,4 +193,12 @@ owned visibility: owner shown → owned Visible=True, IsWindowVisible=True；
 
 ## 实施状态
 
-本文件当前只包含阶段八计划（D1、D1b、D1c、D2、D3、D4、D8、D9 已确认；D5–D7 的拖放工作推迟到阶段九）。8.1–8.5 的实施结论（改了哪些文件、实测数值、构建与 smoke harness 结果、仍未执行的手工回归）在实施完成后追加到本节。
+本文件最初只包含阶段八计划；以下是已落地阶段的结论（D1、D1b、D1c、D2、D3、D4、D8、D9 已确认；D5–D7 的拖放工作推迟到阶段九）。
+
+- **8.1 已实施（全局快捷键 + 启用选项）**
+  - 新增 `src/Infrastructure/GlobalHotKey.cs`（`RegisterHotKey`/`UnregisterHotKey` 封装、`MOD_WIN|MOD_SHIFT|MOD_NOREPEAT`、错误码说明）；`AppConstants.HotKeys` 存放 id（`0x5744`）与显示名；新增 `src/Forms/MainWindow.HotKey.cs`（`OnHandleCreated` 注册、`OnHandleDestroyed`/`OnFormClosed` 释放、`WndProc` 处理 `WM_HOTKEY`、幂等的 `SyncHotkeyRegistration`，注册句柄单独保存以避免在句柄销毁后访问 `Handle` 重建窗口）。
+  - 新增配置字段 `startup.toggle_hotkey_enabled`（Boolean，默认 `true`）：`SettingsKeys`、`SettingsSnapshot`（属性 + `Clone` + `FromModel` 回退 `true`）、`SettingsRepository.Update`/`GetEmbeddedStartupDefaults`、根目录模板 `Drawer-settings.toml` 与序列化段落说明均已同步。
+  - 设置面板：Behavior 组新增第 4 项 `Enable Win+Shift+D`（索引 3），接入勾选状态、工作快照、预览事件（`ToggleHotkeyPreviewChanged`）、取消还原；`MainWindow` 的 `ApplyAcceptedSettings`/`RevertSettingsPreview`/`Settings_FormClosed`/Default 重置路径都会让注册状态与配置保持一致；注册失败时仅在面板显式打开该项时用 `UiMessages.ShowWarning` 提示一次，并保留用户选择（D1b）。
+  - **已验证**：Debug 构建 0 警告 0 错误；`%TEMP%\windrawer-hotkey-harness` 临时 harness（链接真实源文件 + 嵌入真实模板）34 项通过——`toggle_hotkey_enabled` 缺失/真/假/字符串/整数的解析、模板默认 `true`、写盘内容与重载保持、Default 重置为 `true` 且保留 drawers/未知键并删除 `icon_size`、其它 startup 字段回归，以及真实 Win32 注册（成功、重复注册返回 1409、释放后可重新注册、零句柄拒绝）。
+  - **未验证**：快捷键在真实 UI 中的端到端手动回归——前台为其它应用时按 Win+Shift+D 是否切换、设置面板勾选/取消/保存/Default 的即时效果、被其它程序占用时的提示观感、句柄重建（如切换 `ShowInTaskbar`）后的重新注册、退出后组合键失效；Behavior 组新增第 4 项后的实际排版与高 DPI 显示也未人工确认。本文件不声称这些项已验收。
+  - 本次还准备了一个可复现的端到端脚本 `%TEMP%\windrawer-hotkey-e2e.ps1`（启动 Debug 版应用 → 检查注册日志 → 向主窗口投递 `WM_HOTKEY` 验证显示/隐藏 → 用 `WM_CLOSE` 优雅退出），但执行时本机已有一个 winDrawer 实例（`Z:\userScripts\winDrawer.exe`，旧构建）在运行，为避免干扰该实例而**未执行**。关闭正在运行的实例后可直接运行该脚本，或手工按 Win+Shift+D 验证。

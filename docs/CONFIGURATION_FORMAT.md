@@ -17,6 +17,7 @@
 start_with_windows = false
 window_locked = false
 always_on_top = false
+toggle_hotkey_enabled = true
 window_color = "#000533"
 window_opacity = 95
 window_height = 200
@@ -40,6 +41,7 @@ path = "%USERPROFILE%\\Downloads"
 | `startup.start_with_windows` | Boolean | `false` | 是否在 Windows 登录时启动。若 UI 提供该选项，必须真正生效；是否纳入首版见产品需求。 |
 | `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止通过拖动区域移动主窗口，并隐藏标题区的移动光标提示；解锁后立即恢复拖动与提示。 |
 | `startup.always_on_top` | Boolean | `false` | 为 `true` 时把主窗口和当前抽屉内容窗口设为置顶（`Form.TopMost`）。设置面板本身不置顶；该选项不影响托盘入口、显示/隐藏、任务栏归属和窗口锁定。缺失或类型无效时按 `false` 处理。 |
+| `startup.toggle_hotkey_enabled` | Boolean | `true` | 为 `true` 时在启动时注册全局快捷键 Win+Shift+D（语义与托盘 `Show/Hide` 相同）。缺失或类型无效时按 `true` 处理。注册失败（例如组合键已被其它程序占用）不改变该值：应用只记录日志，并在下次启动或主窗口句柄重建时重试；在设置面板显式打开该项时失败会给出一次可见提示。 |
 | `startup.window_height` | Integer | `200` | 主窗口客户区高度，单位为 96 DPI 逻辑像素（DIP），支持范围 100–1000。屏幕空间不足时运行时高度会临时受工作区限制，但保存的期望值不变。缺失或类型无效时使用默认高度 200。 |
 | `startup.window_color` | `#RRGGBB` 字符串 | `#000533` | 主主题基础颜色；只接受 6 位 RGB 十六进制颜色。缺失或格式错误时使用默认颜色。 |
 | `startup.window_opacity` | Integer | `95` | 主窗口透明度百分比，支持 0–100；超范围值夹取，缺失或类型无效时使用默认值。 |
@@ -99,6 +101,7 @@ path = "%USERPROFILE%\\Downloads"
 - [ ] Settings Default 取消确认时不改设置；确认后仅重置模板中支持的 startup 项、删除 `icon_size`、保留 drawers/未知键，并与 Windows 登录启动注册一致；失败时恢复原值并提示。
 - [ ] 窗口坐标正常、数组过短、类型错误均不 panic。
 - [ ] `startup.always_on_top` 缺失、为 `true`、类型错误时的解析结果，以及 Default 重置和 Save 后重启的取值符合规则。
+- [ ] `startup.toggle_hotkey_enabled` 缺失、为 `true`/`false`、类型错误时分别按 `true`/`false`/`true` 解析；Save 后重启保持，Default 重置为模板值 `true`；注册失败不会写回其它值。
 - [ ] 抽屉 name/path/size 缺失、尺寸数组长度/类型错误、尺寸越界与无效 path 符合规则。
 - [ ] 环境变量展开后重复路径判断符合 Windows 大小写规则。
 - [ ] 缺少、有效、格式错误的抽屉 `overlay_color` 都按约定读取；颜色修改、路径修改、删除和重排只修改目标条目且保留其它抽屉字段。

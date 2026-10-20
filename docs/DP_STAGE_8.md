@@ -200,5 +200,14 @@ owned visibility: owner shown → owned Visible=True, IsWindowVisible=True；
   - 新增配置字段 `startup.toggle_hotkey_enabled`（Boolean，默认 `true`）：`SettingsKeys`、`SettingsSnapshot`（属性 + `Clone` + `FromModel` 回退 `true`）、`SettingsRepository.Update`/`GetEmbeddedStartupDefaults`、根目录模板 `Drawer-settings.toml` 与序列化段落说明均已同步。
   - 设置面板：Behavior 组新增第 4 项 `Enable Win+Shift+D`（索引 3），接入勾选状态、工作快照、预览事件（`ToggleHotkeyPreviewChanged`）、取消还原；`MainWindow` 的 `ApplyAcceptedSettings`/`RevertSettingsPreview`/`Settings_FormClosed`/Default 重置路径都会让注册状态与配置保持一致；注册失败时仅在面板显式打开该项时用 `UiMessages.ShowWarning` 提示一次，并保留用户选择（D1b）。
   - **已验证**：Debug 构建 0 警告 0 错误；`%TEMP%\windrawer-hotkey-harness` 临时 harness（链接真实源文件 + 嵌入真实模板）34 项通过——`toggle_hotkey_enabled` 缺失/真/假/字符串/整数的解析、模板默认 `true`、写盘内容与重载保持、Default 重置为 `true` 且保留 drawers/未知键并删除 `icon_size`、其它 startup 字段回归，以及真实 Win32 注册（成功、重复注册返回 1409、释放后可重新注册、零句柄拒绝）。
-  - **未验证**：快捷键在真实 UI 中的端到端手动回归——前台为其它应用时按 Win+Shift+D 是否切换、设置面板勾选/取消/保存/Default 的即时效果、被其它程序占用时的提示观感、句柄重建（如切换 `ShowInTaskbar`）后的重新注册、退出后组合键失效；Behavior 组新增第 4 项后的实际排版与高 DPI 显示也未人工确认。本文件不声称这些项已验收。
-  - 本次还准备了一个可复现的端到端脚本 `%TEMP%\windrawer-hotkey-e2e.ps1`（启动 Debug 版应用 → 检查注册日志 → 向主窗口投递 `WM_HOTKEY` 验证显示/隐藏 → 用 `WM_CLOSE` 优雅退出），但执行时本机已有一个 winDrawer 实例（`Z:\userScripts\winDrawer.exe`，旧构建）在运行，为避免干扰该实例而**未执行**。关闭正在运行的实例后可直接运行该脚本，或手工按 Win+Shift+D 验证。
+  - **真实运行证据（只读核对你在本机启动的 Debug 构建日志）**：`18:28:24.253 SyncHotkeyRegistration: Registered global shortcut Win+Shift+D.` —— `OnHandleCreated` 之后的注册在真实应用中成功；设置面板打开期间又出现两次同一注册日志（与“取消勾选 → 释放、重新勾选 → 注册”的预览路径一致）；`18:28:41` 的保存流程没有出现注册失败警告。
+  - **仍未验证**：真实按键（前台为其它应用时按 Win+Shift+D）的显示/隐藏效果、被占用时的提示观感、句柄重建后的重注册、退出后组合键失效，以及 Behavior 组新增第 4 项的实际排版与高 DPI 显示——本文件不声称这些项已验收。
+  - 端到端脚本 `%TEMP%\windrawer-hotkey-e2e.ps1`（启动 Debug 版应用 → 通过抽屉列表点击打开一个抽屉 → 投递 `WM_HOTKEY` 校验主窗口与抽屉同时隐藏/显示 → 用 `WM_CLOSE` 优雅退出）：执行时本机一直有 winDrawer 实例在运行（先是 `Z:\userScripts\winDrawer.exe`，之后是你启动的 `src\bin\Debug` 构建），为避免启动第二个实例而**未执行**；关闭正在运行的实例后可直接运行该脚本。
+
+- **8.2 已实施（统一显示/隐藏语义）**
+  - `src/Forms/MainWindow.Tray.cs`：`ToggleVisibility()` 改用 `IsMainWindowShown` 判定并分派到 `HideMainWindowAndDrawer()` / `ShowMainWindowAndDrawer()`；隐藏时先 `Hide()` 抽屉窗口再隐藏主窗口；显示时 `Show()` → `WindowState = Normal` → `PositionDrawerWindowNextToMainWindow()` → `drawerWindow.Show(this)` → `Activate()`。托盘 `Show/Hide` 菜单、托盘双击与 Win+Shift+D 共用这一条路径。
+  - 顺带补齐 D2 的一致性缺口：托盘的 **Settings** 入口改用 `EnsureMainWindowAndDrawerShown()`（已显示时只 `Activate()`，隐藏状态则先恢复主窗口与抽屉），否则从隐藏状态打开设置会让抽屉窗口“落单”。
+  - `src/Forms/MainWindow.Drawers.cs` 抽出 `PositionDrawerWindowNextToMainWindow()`（供“显示时复位”和“主窗口移动时跟随”共用）；`MainWindow.cs` 的 `MainWindow_LocationChanged` 改为只跟随可见抽屉，行为与改动前等价。
+  - `src/Infrastructure/TrayController.cs` 菜单文案 `Show/Hide` → `Show/Hide window and drawer`；`README.md` 的托盘、快捷键与运行说明同步为“主窗口 + 已打开的抽屉”。
+  - **已验证**：Debug（`-o %TEMP%\windrawer-build-82-debug`，因为运行中的实例锁定了 `src\bin\Debug`）与 Release 构建均 0 警告 0 错误；`%TEMP%\windrawer-border-probe` 探针确认 `Show() → Hide() → Show()` 只触发一次 `Shown`（因此重新显示不会重新枚举目录或重建缩略图，正是 8.2 验收的前提假设）。
+  - **未验证**：真实 UI 下的组合隐藏/显示（主窗口与抽屉一起隐藏、重新显示后位置是否重新吸附在右侧、滚动位置/选中项/缩略图是否保持、快速反复切换是否产生额外窗口或任务栏按钮、`AlwaysOnTop` 开启时的表现、托盘 Settings 从隐藏状态恢复抽屉、抽屉已关闭时只切换主窗口）——这些需要手工回归，或在你关闭当前实例后运行上述端到端脚本。

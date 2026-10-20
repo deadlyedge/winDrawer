@@ -24,7 +24,7 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
         {
             _trayMenu = new ContextMenuStrip();
 
-            var showHideItem = new ToolStripMenuItem("Show/Hide");
+            var showHideItem = new ToolStripMenuItem("Show/Hide window and drawer");
             showHideItem.Click += (_, _) =>
             {
                 DrawerLogger.LogInformation("Tray show/hide requested.");

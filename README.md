@@ -8,12 +8,12 @@ winDrawer is a small Windows Forms utility for keeping frequently used folders c
 - **Image thumbnails** – JPG/JPEG and PNG thumbnails appear as list icons; other items use Windows Shell icons.
 - **Newest-first list with lazy icons** – Directories and files are mixed and sorted by last-modified time (`LastWriteTimeUtc`, descending; ties by name then full path, unreadable timestamps last). Icons and thumbnails load only for the visible area plus a one-screen margin, so large folders appear immediately.
 - **Always on top** – Optionally keep the main window and the current drawer window above other windows; the option never applies to the settings panels.
-- **Global show/hide shortcut** – Press `Win+Shift+D` from any application to toggle the main window, exactly like the tray menu. The shortcut is registered per main-window handle and can be switched off with the **Enable Win+Shift+D** option in Settings; if another program already owns the combination, winDrawer keeps the option enabled, logs a warning and retries on the next start.
+- **Global show/hide shortcut** – Press `Win+Shift+D` from any application to hide or show the main window together with the drawer window that is open, exactly like the tray menu. The shortcut is registered per main-window handle and can be switched off with the **Enable Win+Shift+D** option in Settings; if another program already owns the combination, winDrawer keeps the option enabled, logs a warning and retries on the next start.
 - **Live theming** – Choose the theme color through the Windows color dialog, adjust window opacity separately, and preview changes before saving.
 - **Adjustable main window** – Set the main window height; the drawer list uses the remaining area and scrolls naturally.
 - **Persistent settings** – Settings are stored in `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`.
 - **Windows login startup** – Optionally register the app to start for the current user.
-- **System tray control** – The main window and auxiliary windows do not create taskbar buttons during normal operation. Use the tray icon to show/hide the main window, open settings, or exit; if tray initialization fails, the main window remains available from the taskbar. Exiting (from the tray menu or the settings panel) flushes pending settings and closes the windows gracefully instead of killing the process.
+- **System tray control** – The main window and auxiliary windows do not create taskbar buttons during normal operation. Use the tray icon (or `Win+Shift+D`) to hide or show the main window together with the drawer window that is open, to open settings, or to exit; if tray initialization fails, the main window remains available from the taskbar. Exiting (from the tray menu or the settings panel) flushes pending settings and closes the windows gracefully instead of killing the process.
 - **Structured diagnostics** – Execution flow and errors are written to `%USERPROFILE%\.config\winDrawer\Drawer.log` for easier troubleshooting. Debug-level entries are off by default (enable them with the `WINDRAWER_LOG_LEVEL` environment variable) and the log rotates to `Drawer.log.1` once it reaches 1 MB; unexpected errors are also reported once in a message box that points at this file.
 
 ## Getting Started
@@ -91,7 +91,7 @@ The main window launches without a border. When its position is unlocked, drag t
 7. Enable **Start with windows** to register startup for the current Windows user.
 8. Use **Open Settings TOML** to inspect or edit the active configuration in Notepad.
 
-The main window and auxiliary windows normally do not appear as taskbar buttons; use the system-tray menu to show/hide the main window, open Settings, or exit. If tray initialization fails, the main window remains available from the taskbar.
+The main window and auxiliary windows normally do not appear as taskbar buttons; use the system-tray menu (or `Win+Shift+D`) to hide or show the main window together with the open drawer window, open Settings, or exit. If tray initialization fails, the main window remains available from the taskbar.
 
 Drawer settings (right-click a drawer) edit the display name and the bound folder. The folder path is display-only: click it, or focus it and press Enter/Space, to open the same folder picker as **Browse**…, which sits on its own row below the path. **Save**, **Cancel** and **Delete** keep their previous behaviour; there is no separate close button — Escape or Alt+F4 cancels without submitting the draft. Both settings windows open at the main window position offset by (100, 100) and are clamped into the working area of the screen the main window is on; their own position is never saved.
 

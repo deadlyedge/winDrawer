@@ -87,6 +87,21 @@ namespace winDrawer
             _currentOpenDrawer = null;
         }
 
+        /// <summary>
+        /// Keeps the open drawer window glued to the right edge of the main window. Called when the
+        /// main window moves and when it is shown again after being hidden.
+        /// </summary>
+        private void PositionDrawerWindowNextToMainWindow()
+        {
+            var drawerWindow = _currentDrawerWindow;
+            if (drawerWindow is null || drawerWindow.IsDisposed || drawerWindow.WindowState != FormWindowState.Normal)
+            {
+                return;
+            }
+
+            drawerWindow.Location = new Point(Right, Top);
+        }
+
         private void OpenDrawer(DrawerDefinition drawer)
         {
             if (string.IsNullOrWhiteSpace(drawer.Path))

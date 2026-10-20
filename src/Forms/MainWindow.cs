@@ -500,9 +500,11 @@ namespace winDrawer
 
         private void MainWindow_LocationChanged(object? sender, EventArgs e)
         {
-            if (_currentDrawerWindow != null && _currentDrawerWindow.Visible && _currentDrawerWindow.WindowState == FormWindowState.Normal)
+            // A hidden drawer window is repositioned when it is shown again, so only a visible drawer
+            // needs to follow the main window here.
+            if (_currentDrawerWindow is { Visible: true })
             {
-                _currentDrawerWindow.Location = new Point(Right, Top);
+                PositionDrawerWindowNextToMainWindow();
             }
         }
 

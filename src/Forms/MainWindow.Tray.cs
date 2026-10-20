@@ -13,17 +13,7 @@ namespace winDrawer
                 ToggleVisibility,
                 () =>
                 {
-                    if (!Visible)
-                    {
-                        Show();
-                    }
-
-                    if (WindowState == FormWindowState.Minimized)
-                    {
-                        WindowState = FormWindowState.Normal;
-                    }
-
-                    Activate();
+                    EnsureMainWindowAndDrawerShown();
                     SettingsButton_Click(this, EventArgs.Empty);
                 },
                 () =>
@@ -39,6 +29,12 @@ namespace winDrawer
             }
         }
 
+        /// <summary>
+        /// Single entry point for the tray menu, the tray double-click and the Win+Shift+D shortcut.
+        /// Hiding and showing always cover the main window together with the drawer window that is
+        /// currently open, because an owned window is <em>not</em> hidden automatically when its
+        /// owner is hidden.
+        /// </summary>
         private void ToggleVisibility()
         {
             if (InvokeRequired)
@@ -47,18 +43,66 @@ namespace winDrawer
                 return;
             }
 
-            if (Visible && WindowState != FormWindowState.Minimized)
+            if (IsMainWindowShown)
             {
-                DrawerLogger.LogInformation("Hiding main window from tray request.");
-                Hide();
+                HideMainWindowAndDrawer();
             }
             else
             {
-                DrawerLogger.LogInformation("Showing main window from tray request.");
-                Show();
-                WindowState = FormWindowState.Normal;
-                Activate();
+                ShowMainWindowAndDrawer();
             }
+        }
+
+        /// <summary>True while the main window is on screen and not minimized.</summary>
+        private bool IsMainWindowShown => Visible && WindowState != FormWindowState.Minimized;
+
+        /// <summary>
+        /// Brings the main window and the open drawer window back on screen before another entry
+        /// point uses them. The tray's Settings command would otherwise show only the main window
+        /// and leave a hidden drawer orphaned behind the settings panel.
+        /// </summary>
+        private void EnsureMainWindowAndDrawerShown()
+        {
+            if (IsMainWindowShown)
+            {
+                Activate();
+                return;
+            }
+
+            ShowMainWindowAndDrawer();
+        }
+
+        private void HideMainWindowAndDrawer()
+        {
+            DrawerLogger.LogInformation("Hiding the main window and the open drawer window.");
+
+            var drawerWindow = _currentDrawerWindow;
+            if (drawerWindow is { IsDisposed: false, Visible: true })
+            {
+                drawerWindow.Hide();
+            }
+
+            Hide();
+        }
+
+        private void ShowMainWindowAndDrawer()
+        {
+            DrawerLogger.LogInformation("Showing the main window and the open drawer window.");
+
+            Show();
+            WindowState = FormWindowState.Normal;
+
+            // The main window can move while everything is hidden (for example through the settings
+            // panel's height preview), so glue the drawer back to it before showing it again.
+            PositionDrawerWindowNextToMainWindow();
+
+            var drawerWindow = _currentDrawerWindow;
+            if (drawerWindow is { IsDisposed: false })
+            {
+                drawerWindow.Show(this);
+            }
+
+            Activate();
         }
     }
 }

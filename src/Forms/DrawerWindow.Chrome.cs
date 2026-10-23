@@ -15,10 +15,17 @@ namespace winDrawer;
 /// and a small content-coloured strip inside the client area keeps the top edge (and the top corners)
 /// resizable, because points inside the client area are hit-tested by the list control rather than by
 /// this window.
+///
+/// Because the drawer's <c>Opacity</c> is normally below 100%, it is a layered window. In that mode
+/// user32 paints the non-client frame into the same surface as the client area, so the reclaimed strip
+/// is repainted after every <c>WM_NCPAINT</c>/<c>WM_NCACTIVATE</c>; without that the 13 px band came back
+/// as soon as the drawer was activated (showing the frame colour or the desktop behind it).
 /// </summary>
 public partial class DrawerWindow
 {
     private const int WmNcCalcSize = 0x0083;
+    private const int WmNcPaint = 0x0085;
+    private const int WmNcActivate = 0x0086;
     private const int WmNcHitTest = 0x0084;
     private const int HtClient = 1;
     private const int HtTop = 12;
@@ -44,6 +51,12 @@ public partial class DrawerWindow
                 ApplyCaptionlessTopInset(ref m);
                 return;
 
+            case WmNcPaint:
+            case WmNcActivate:
+                base.WndProc(ref m);
+                RepaintTopResizeGrip();
+                return;
+
             case WmNcHitTest:
                 base.WndProc(ref m);
                 if (m.Result.ToInt32() == HtClient && TryHitTopResizeGrip(m.LParam, out var hitResult))
@@ -67,9 +80,12 @@ public partial class DrawerWindow
     /// and must end as the <em>client</em> rectangle, and its <c>top</c> field sits at the same offset, so
     /// the same adjustment works for both.</para>
     ///
-    /// <para>Handling only the resize variant let the top band reappear whenever Windows recomputed the
-    /// frame without a resize — most visibly on focus changes — because <c>DefWindowProc</c> restored the
-    /// caption-less top inset and DWM painted that band in the window-frame colour.</para>
+    /// <para>Handling only the resize variant would let the top band reappear whenever Windows
+    /// recomputed the frame with the plain <c>RECT</c> variant (theme or DPI changes and other
+    /// frame recalculations): <c>DefWindowProc</c> restores the caption-less top inset and the
+    /// frame paints over the reclaimed pixels. Activation changes on this Windows build do not send
+    /// that variant; the layered-window repaint in <see cref="RepaintTopResizeGrip"/> covers
+    /// them.</para>
     ///
     /// <para>Left, right and bottom keep the values computed by the system.</para>
     /// </summary>
@@ -85,6 +101,32 @@ public partial class DrawerWindow
         base.WndProc(ref m);
         Marshal.WriteInt32(m.LParam, ClientRectTopOffset, windowTop);
         m.Result = IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Repaints the reclaimed strip after user32 painted the non-client frame.
+    ///
+    /// <para><c>Opacity</c> below 100% makes the window layered, and layered windows receive the
+    /// non-client frame paint in the same surface as the client area. Skipping this repaint left the
+    /// strip unpainted after activation changes, which looked like the old 13 px frame band coming
+    /// back. Repainting keeps only the normal window border above the content.</para>
+    /// </summary>
+    private void RepaintTopResizeGrip()
+    {
+        if (!IsHandleCreated || IsDisposed || _topResizeGripHeight <= 0)
+        {
+            return;
+        }
+
+        var width = ClientSize.Width;
+        var height = Math.Min(_topResizeGripHeight, ClientSize.Height);
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        Invalidate(new Rectangle(0, 0, width, height));
+        Update();
     }
 
     /// <summary>

@@ -219,6 +219,13 @@ owned visibility: owner shown → owned Visible=True, IsWindowVisible=True；
   - **已验证**：Debug（`-o %TEMP%\windrawer-build-83-debug`）与 Release 构建均 0 警告 0 错误；探针实测新行为客户区内缩为 `L=13 T=0 R=13 B=13`（改动前 `T=13`），窗口外框尺寸与改动前完全一致（788x609），`PrintWindow` 中顶部第 0 行起已是客户区像素（改动前顶部 13px 为非客户区），并且 WinForms 的 `ClientSize`（762x596）与真实客户区一致——不存在“`ClientSize` 与实际客户区相差一个顶部内缩”的漂移风险（尺寸持久化与 `OnShown` 使用的是窗口 `Size`，其值未变）。
   - **未验证**：真实应用中的观感与交互——顶部色带是否已完全不可见、缩放条光标是否为上边缘样式、从顶部/左上/右上拖动缩放是否生效、左/右/下边缘与 `MinimumSize` 是否照旧、贴靠/阴影/圆角是否正常、DPI 切换后缩放条厚度是否正确，以及“打开 → 缩放 → 关闭 → 重开”是否无尺寸漂移。本机为 200% DPI，100%/150% 未实测（非客户区度量随 DPI 等比缩放，本次只验证了几何变化本身）。
 
+- **8.3.1 已实施（激活后顶部宽条复现：分层窗口的非客户区绘制）**
+  - **复现与根因（真实 `DrawerWindow`，本机 200% DPI，`Opacity=0.95` 即分层窗口）**：`GetWindowRect/GetClientRect` 的客户区内缩在所有状态下都是 `L=13 T=0 R=13 B=13`，但屏幕截图在每次重新激活后显示顶部 13px：`y0-1` 为 DWM 激活边框强调色、`y2-12` 为系统窗框色，内容从 `y13` 开始；一次 `SWP_FRAMECHANGED`、最小化/还原或对客户区 `Invalidate+Update` 后该带消失。`WM_NCCALCSIZE` 只改变客户区几何，不能阻止这条绘制。
+  - **消息轨迹（真实窗体 WndProc 探针）**：激活变化时顺序为 `WM_NCPAINT → WM_NCACTIVATE → WM_ACTIVATE`；`Opacity < 100%` 使窗口成为分层窗口（`WS_EX_LAYERED`），USER32 把非客户区框画进与客户区相同的窗口表面，于是被并入客户区的顶部条在每次激活时被覆盖或留空（表现为窗框色或透出桌面）。仅抑制 `WM_NCPAINT`、或设置 `DWMWA_NCRENDERING_POLICY=DWMNCRP_DISABLED` 都不能消除该带（后者只去掉 DWM 边框与阴影，激活后 11px 带仍出现）。
+  - **实现**：`src/Forms/DrawerWindow.Chrome.cs` 在处理 `WM_NCPAINT` 与 `WM_NCACTIVATE` 时先走 `base.WndProc`，随后 `RepaintTopResizeGrip()` 同步重绘顶部 8 逻辑像素（`Invalidate(rect)` + `Update()`）；重绘发生在 NC 框绘制之后，因此内容色覆盖窗框色。`WM_NCCALCSIZE` 继续统一处理 `wParam=TRUE/FALSE` 两个变体（本机激活变化实测没有发送 `FALSE`，该分支用于主题/DPI/其它重算路径的防御）。
+  - **对照证据（同一真实窗体探针）**：修复前提交 `6c31862` 的合成 `WM_NCCALCSIZE(FALSE)` 使 `top` 从 80 变 93（`delta=+13`），修复后 `delta=0`、`TRUE` 也为 0；修复前重新激活后顶部为 `y0-1` 边框 + `y2-12` 窗框色 + `y13` 起内容，修复后所有状态均为 `y0-1` 正常 2px 边框 + `y2` 起内容，`T` 始终为 0。Debug/Release 完整构建均 0 警告 0 错误。
+  - **未验证**：100%/150% DPI 的像素表现、重绘是否会在低性能/高负载下产生可见闪烁、真实主窗口打开抽屉后的完整交互（探针直接实例化真实 `DrawerWindow`，未经过 `MainWindow`）、顶部/左上/右上拖动缩放、贴靠/阴影/圆角，以及连续快速切换激活状态的观感。
+
 - **8.4 已实施（右键菜单 + 三种排序 + 移除刷新按钮）**
   - 新增 `src/Drawers/DrawerSortMode.cs`：`NewestFirst`/`OldestFirst`/`NameAscending` 与 TOML 文本映射（`newest`/`oldest`/`name`，缺失、大小写变体、未知取值或错误类型一律按 `newest`）。
   - `DrawerItemEnumerator.Enumerate(folderPath, sortMode, token)` 与 `CompareItems(left, right, sortMode)` 按模式分派：三种模式都保持目录与文件混排；时间模式先比时间（不可读的排最后）、相同再比名称 `OrdinalIgnoreCase`、最后比完整路径 `Ordinal`，名称模式直接比名称再比路径。比较器仍是纯逻辑、不做文件系统 I/O。

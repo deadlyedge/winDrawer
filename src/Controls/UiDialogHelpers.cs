@@ -31,14 +31,17 @@ internal static class UiDialogHelpers
     /// </summary>
     public static int[] BuildColorDialogCustomColors(Color primary, Color? secondary = null)
     {
-        var colors = new List<int> { ToCustomColor(primary) };
-        colors.Add(ToCustomColor(secondary ?? AppConstants.Defaults.ThemeColor));
+        var colors = new List<int>
+        {
+          ToCustomColor(primary),
+          ToCustomColor(secondary ?? AppConstants.Defaults.ThemeColor)
+        };
         foreach (var preset in PresetColors)
         {
             colors.Add(ToCustomColor(preset));
         }
 
-        return colors.ToArray();
+        return [.. colors];
     }
 
     /// <summary>

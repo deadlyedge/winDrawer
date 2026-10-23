@@ -40,13 +40,8 @@ public partial class DrawerWindow
     {
         switch (m.Msg)
         {
-            case WmNcCalcSize when m.WParam != IntPtr.Zero:
-                // Let the system compute the frame, then reclaim the caption-less top band by starting
-                // the client area at the visible top edge. Left, right and bottom stay untouched.
-                var windowTop = Marshal.ReadInt32(m.LParam, ClientRectTopOffset);
-                base.WndProc(ref m);
-                Marshal.WriteInt32(m.LParam, ClientRectTopOffset, windowTop);
-                m.Result = IntPtr.Zero;
+            case WmNcCalcSize:
+                ApplyCaptionlessTopInset(ref m);
                 return;
 
             case WmNcHitTest:
@@ -61,6 +56,35 @@ public partial class DrawerWindow
                 base.WndProc(ref m);
                 return;
         }
+    }
+
+    /// <summary>
+    /// Reclaims the caption-less top band for both variants of <c>WM_NCCALCSIZE</c>.
+    ///
+    /// <para><c>wParam = TRUE</c> (resize/move) points <c>lParam</c> at <c>NCCALCSIZE_PARAMS</c>;
+    /// <c>wParam = FALSE</c> (activation, theme, DPI or any other frame recalculation) points it at a
+    /// plain <c>RECT</c>. In both variants the rectangle starts as the proposed <em>window</em> rectangle
+    /// and must end as the <em>client</em> rectangle, and its <c>top</c> field sits at the same offset, so
+    /// the same adjustment works for both.</para>
+    ///
+    /// <para>Handling only the resize variant let the top band reappear whenever Windows recomputed the
+    /// frame without a resize — most visibly on focus changes — because <c>DefWindowProc</c> restored the
+    /// caption-less top inset and DWM painted that band in the window-frame colour.</para>
+    ///
+    /// <para>Left, right and bottom keep the values computed by the system.</para>
+    /// </summary>
+    private void ApplyCaptionlessTopInset(ref Message m)
+    {
+        if (m.LParam == IntPtr.Zero)
+        {
+            base.WndProc(ref m);
+            return;
+        }
+
+        var windowTop = Marshal.ReadInt32(m.LParam, ClientRectTopOffset);
+        base.WndProc(ref m);
+        Marshal.WriteInt32(m.LParam, ClientRectTopOffset, windowTop);
+        m.Result = IntPtr.Zero;
     }
 
     /// <summary>

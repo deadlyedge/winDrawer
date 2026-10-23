@@ -48,7 +48,7 @@ internal static class DrawerItemImageLoader
         }
     }
 
-    private static Image GetShellIconImage(string path, bool isDirectory)
+    private static Bitmap GetShellIconImage(string path, bool isDirectory)
     {
         try
         {

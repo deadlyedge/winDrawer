@@ -45,13 +45,13 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
                 _exitAction();
             };
 
-            _trayMenu.Items.AddRange(new ToolStripItem[]
-            {
+            _trayMenu.Items.AddRange(
+            [
                 showHideItem,
                 settingsItem,
                 new ToolStripSeparator(),
                 exitItem
-            });
+            ]);
 
             _trayIcon = new NotifyIcon
             {

@@ -210,7 +210,7 @@ namespace winDrawer
             return new Size(size, size);
         }
 
-        private static Image ResizeIconToFit(Image source, Size maximumSize)
+        private static Bitmap ResizeIconToFit(Image source, Size maximumSize)
         {
             var scale = Math.Min(
                 1d,

@@ -47,9 +47,9 @@ internal sealed partial class SettingsRepository : IDisposable
 
     public void Update(SettingsSnapshot snapshot)
     {
-        if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+    ArgumentNullException.ThrowIfNull(snapshot);
 
-        lock (_writeLock)
+    lock (_writeLock)
         {
             var startup = EnsureTable(_root, SettingsKeys.Startup);
             startup[SettingsKeys.StartWithWindows] = snapshot.StartWithWindows;
@@ -178,7 +178,7 @@ internal sealed partial class SettingsRepository : IDisposable
     {
         if (!root.TryGetValue(SettingsKeys.Startup, out var value))
         {
-            startup = new TomlTable();
+            startup = [];
             return true;
         }
 

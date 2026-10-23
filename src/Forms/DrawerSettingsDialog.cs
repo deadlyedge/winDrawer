@@ -10,7 +10,7 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly TextBox _pathTextBox = new();
     private readonly UIPanel _colorPreview = new();
     private readonly ColorDialog _colorDialog = new();
-    private readonly List<Font> _ownedFonts = new();
+    private readonly List<Font> _ownedFonts = [];
     private readonly Font _inputFont = new("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
     private Font? _buttonFont;
     private Font? _titleFont;

@@ -104,23 +104,23 @@ internal sealed partial class SettingsRepository
         var metadata = new TomlPropertiesMetadata();
         metadata.SetProperty(firstKey, new TomlPropertyMetadata
         {
-            LeadingTrivia = new List<TomlSyntaxTriviaMetadata>
-            {
+            LeadingTrivia =
+            [
                 new(TokenKind.Comment, $"# {title}"),
                 new(TokenKind.NewLine, "\n"),
                 new(TokenKind.Comment, $"# {description}"),
                 new(TokenKind.NewLine, "\n")
-            }
+            ]
         });
         if (firstKey != lastKey)
         {
             metadata.SetProperty(lastKey, new TomlPropertyMetadata
             {
-                TrailingTriviaAfterEndOfLine = new List<TomlSyntaxTriviaMetadata>
-                {
+                TrailingTriviaAfterEndOfLine =
+                [
                     new(TokenKind.NewLine, "\n"),
                     // new(TokenKind.NewLine, "\n")
-                }
+                ]
             });
         }
 

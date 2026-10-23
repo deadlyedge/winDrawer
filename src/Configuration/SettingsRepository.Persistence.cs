@@ -174,7 +174,7 @@ internal sealed partial class SettingsRepository
                             }
                         }
 
-                        tcs?.TrySetCanceled();
+                        tcs?.TrySetCanceled(token);
                         break;
                     }
                     catch (Exception ex)
@@ -264,7 +264,7 @@ internal sealed partial class SettingsRepository
         {
             var settings = TomlSerializer.Deserialize<TomlTable>(File.ReadAllText(path));
             DrawerLogger.LogInformation($"Settings file loaded from '{path}'.");
-            return settings ?? new TomlTable();
+            return settings ?? [];
         }
         catch (TomlException ex)
         {

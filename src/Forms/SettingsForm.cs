@@ -14,7 +14,7 @@ public partial class SettingsForm : UIForm
 
     private SettingsSnapshot _originalSnapshot;
     private SettingsSnapshot _workingSnapshot;
-    private readonly List<Font> _ownedFonts = new();
+    private readonly List<Font> _ownedFonts = [];
     private Font? _buttonFont;
     private Font? _systemFont;
     private Font? _titleFont;
@@ -164,7 +164,7 @@ public partial class SettingsForm : UIForm
         windowHeightTrackBar.Minimum = AppConstants.Defaults.MainWindowHeightMin;
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
-        behaviorCheckBoxGroup.SelectedIndexes ??= new List<int>();
+        behaviorCheckBoxGroup.SelectedIndexes ??= [];
         behaviorCheckBoxGroup.AccessibleName = "Behavior options";
         behaviorCheckBoxGroup.AccessibleDescription = "Toggles for startup, window position lock, always-on-top and the Win+Shift+D shortcut.";
         FitBehaviorItemSize();
@@ -448,7 +448,7 @@ public partial class SettingsForm : UIForm
     }
     private void SetStartWithWindowsCheckBox(bool enabled)
     {
-        var selected = behaviorCheckBoxGroup.SelectedIndexes ?? new List<int>();
+        var selected = behaviorCheckBoxGroup.SelectedIndexes ?? [];
         selected.Remove(StartWithWindowsIndex);
         if (enabled)
         {
@@ -470,7 +470,7 @@ public partial class SettingsForm : UIForm
 
     private void SyncWorkingSnapshotFromUi()
     {
-        var selected = behaviorCheckBoxGroup.SelectedIndexes ?? new List<int>();
+        var selected = behaviorCheckBoxGroup.SelectedIndexes ?? [];
 
         _workingSnapshot.StartWithWindows = selected.Contains(StartWithWindowsIndex);
         _workingSnapshot.WindowLocked = selected.Contains(LockPositionIndex);

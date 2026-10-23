@@ -70,13 +70,13 @@ public sealed class SettingsSnapshot(
     {
         var startup = root.TryGetValue(SettingsKeys.Startup, out var startupObj) && startupObj is TomlTable st
             ? st
-            : new TomlTable();
+            : [];
         var drawers = root.TryGetValue(SettingsKeys.Drawers, out var drawersObj) && drawersObj is TomlTableArray drawerArray
             ? ParseDrawers(drawerArray)
             : [];
 
         var windowHeight = GetInt(startup, SettingsKeys.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax, AppConstants.Defaults.MainWindowHeightDefault);
-        var windowPositionArray = GetIntArray(startup, SettingsKeys.WindowPosition, new int[] { AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y });
+        var windowPositionArray = GetIntArray(startup, SettingsKeys.WindowPosition, [AppConstants.Defaults.WindowPosition.X, AppConstants.Defaults.WindowPosition.Y]);
         var windowColor = ThemePalette.TryParseHexColor(GetString(startup, SettingsKeys.WindowColor), out var parsedColor)
             ? parsedColor
             : AppConstants.Defaults.ThemeColor;
@@ -93,7 +93,7 @@ public sealed class SettingsSnapshot(
             toggleHotkeyEnabled: GetBoolean(startup, SettingsKeys.ToggleHotkeyEnabled, fallback: true));
     }
 
-    private static IReadOnlyList<DrawerDefinition> ParseDrawers(TomlTableArray entries)
+    private static List<DrawerDefinition> ParseDrawers(TomlTableArray entries)
     {
         var results = new List<DrawerDefinition>();
 

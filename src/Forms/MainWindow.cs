@@ -30,7 +30,7 @@ namespace winDrawer
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
         private ThemePalette _currentTheme;
-        private readonly List<DrawerDefinition> _currentDrawers = new();
+        private readonly List<DrawerDefinition> _currentDrawers = [];
         private DrawerWindow? _currentDrawerWindow;
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;

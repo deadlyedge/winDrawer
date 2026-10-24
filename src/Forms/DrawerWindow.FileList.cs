@@ -167,14 +167,15 @@ public partial class DrawerWindow
         {
             var folderPath = _drawer.Path;
             var sortMode = _drawer.SortMode;
-            var items = await Task.Run(() => DrawerItemEnumerator.Enumerate(folderPath, sortMode, cancellation.Token));
+            var maxItems = _settingsRepository.GetSnapshot().MaxDrawerItems;
+            var result = await Task.Run(() => DrawerItemEnumerator.Enumerate(folderPath, sortMode, maxItems, cancellation.Token));
 
             if (!IsCurrentFileListLoad(generation, cancellation))
             {
                 return;
             }
 
-            if (items == null)
+            if (result.Outcome == DrawerEnumerationOutcome.FolderMissing)
             {
                 fullPathLabel.Text = $"{folderPath} (missing)";
                 ShowListStatus("Folder not found or inaccessible");
@@ -182,6 +183,17 @@ public partial class DrawerWindow
                 return;
             }
 
+            if (result.Outcome == DrawerEnumerationOutcome.TooManyItems)
+            {
+                ShowListStatus(
+                    $"Too many items (more than {maxItems}). Open the folder in File Explorer.",
+                    "Use the folder path below to open it in File Explorer.");
+                DrawerLogger.LogInformation(
+                    $"Drawer '{_drawer.Name}' has more than {maxItems} items; its contents were not displayed.");
+                return;
+            }
+
+            var items = result.Items;
             ApplyDrawerItems(items);
 
             var directoryCount = items.Count(item => item.IsDirectory);

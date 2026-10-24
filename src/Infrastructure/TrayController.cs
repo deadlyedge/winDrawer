@@ -55,9 +55,14 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
 
             _trayIcon = new NotifyIcon
             {
-                ContextMenuStrip = _trayMenu,
                 Text = tooltipText
             };
+
+            // Do not assign ContextMenuStrip: NotifyIcon shows it through the internal
+            // ContextMenuStrip.ShowInTaskbar path, which can pick the wrong monitor when the
+            // taskbar is mirrored across displays or the monitors use different DPIs. Showing the
+            // menu ourselves uses the regular working-area-constrained ToolStripDropDown path.
+            _trayIcon.MouseUp += TrayIcon_MouseUp;
 
             ApplyIcon(iconPath, fallbackIcon);
             if (_trayIcon.Icon == null)
@@ -77,6 +82,88 @@ internal sealed class TrayController(Action toggleAction, Action openSettingsAct
             Dispose();
             return false;
         }
+    }
+
+    private void TrayIcon_MouseUp(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Right)
+        {
+            return;
+        }
+
+        ShowTrayMenu();
+    }
+
+    /// <summary>
+    /// Shows the tray menu on the display that contains the cursor. The menu is deliberately not
+    /// attached to <see cref="NotifyIcon.ContextMenuStrip"/>; see the comment in
+    /// <see cref="Initialize"/>.
+    /// </summary>
+    private void ShowTrayMenu()
+    {
+        var menu = _trayMenu;
+        if (menu == null)
+        {
+            return;
+        }
+
+        var cursor = Cursor.Position;
+        try
+        {
+            var screen = Screen.FromPoint(cursor);
+            var workingArea = screen.WorkingArea;
+            var anchor = new Point(
+                Math.Clamp(cursor.X, workingArea.Left, workingArea.Right - 1),
+                Math.Clamp(cursor.Y, workingArea.Top, workingArea.Bottom - 1));
+
+            menu.Show(anchor, GetTrayMenuDirection(screen, cursor));
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError("Failed to show the tray menu at the cursor position.", ex);
+            try
+            {
+                menu.Show(cursor);
+            }
+            catch (Exception fallbackException)
+            {
+                DrawerLogger.LogError("Fallback tray menu display failed.", fallbackException);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Opens the menu away from the taskbar edge the icon belongs to, so the menu never tries to
+    /// expand onto a neighbouring display.
+    /// </summary>
+    private static ToolStripDropDownDirection GetTrayMenuDirection(Screen screen, Point cursor)
+    {
+        var workingArea = screen.WorkingArea;
+
+        if (cursor.Y >= workingArea.Bottom)
+        {
+            return ToolStripDropDownDirection.AboveLeft;
+        }
+
+        if (cursor.Y < workingArea.Top)
+        {
+            return ToolStripDropDownDirection.BelowLeft;
+        }
+
+        if (cursor.X < workingArea.Left)
+        {
+            return ToolStripDropDownDirection.BelowRight;
+        }
+
+        if (cursor.X >= workingArea.Right)
+        {
+            return ToolStripDropDownDirection.BelowLeft;
+        }
+
+        // The tray is normally inside the working area only with auto-hide or a floating taskbar.
+        return cursor.Y > workingArea.Top + (workingArea.Height / 2)
+            ? ToolStripDropDownDirection.AboveLeft
+            : ToolStripDropDownDirection.BelowLeft;
     }
 
     private void ApplyIcon(string iconPath, Icon? fallbackIcon)

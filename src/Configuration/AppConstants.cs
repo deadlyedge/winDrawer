@@ -67,6 +67,9 @@ internal static class AppConstants
         public const int MainWindowHeightMin = 100;
         public const int MainWindowHeightDefault = 200;
         public const int MainWindowHeightMax = 1000;
+        public const int MaxDrawerItemsMin = 1;
+        public const int MaxDrawerItemsDefault = 200;
+        public const int MaxDrawerItemsMax = 10000;
         public const int MainWindowWidth = 200;
         public static readonly Color ThemeColor = Color.FromArgb(0, 5, 51);
         public const int ThemeOpacity = 95;

@@ -12,7 +12,8 @@ public sealed class SettingsSnapshot(
     IEnumerable<DrawerDefinition>? drawers = null,
     int windowHeight = winDrawer.AppConstants.Defaults.MainWindowHeightDefault,
     bool alwaysOnTop = false,
-    bool toggleHotkeyEnabled = true)
+    bool toggleHotkeyEnabled = true,
+    int maxDrawerItems = winDrawer.AppConstants.Defaults.MaxDrawerItemsDefault)
 {
     private readonly List<DrawerDefinition> _drawers = drawers != null
             ? [.. drawers]
@@ -26,6 +27,7 @@ public sealed class SettingsSnapshot(
     public int WindowHeight { get; set; } = Math.Clamp(windowHeight, winDrawer.AppConstants.Defaults.MainWindowHeightMin, winDrawer.AppConstants.Defaults.MainWindowHeightMax);
     public bool AlwaysOnTop { get; set; } = alwaysOnTop;
     public bool ToggleHotkeyEnabled { get; set; } = toggleHotkeyEnabled;
+    public int MaxDrawerItems { get; set; } = Math.Clamp(maxDrawerItems, winDrawer.AppConstants.Defaults.MaxDrawerItemsMin, winDrawer.AppConstants.Defaults.MaxDrawerItemsMax);
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public ThemePalette BuildThemePalette()
@@ -44,7 +46,8 @@ public sealed class SettingsSnapshot(
             drawers: _drawers,
             windowHeight: WindowHeight,
             alwaysOnTop: AlwaysOnTop,
-            toggleHotkeyEnabled: ToggleHotkeyEnabled);
+            toggleHotkeyEnabled: ToggleHotkeyEnabled,
+            maxDrawerItems: MaxDrawerItems);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -90,7 +93,8 @@ public sealed class SettingsSnapshot(
             drawers: drawers,
             windowHeight: windowHeight,
             alwaysOnTop: GetBoolean(startup, SettingsKeys.AlwaysOnTop),
-            toggleHotkeyEnabled: GetBoolean(startup, SettingsKeys.ToggleHotkeyEnabled, fallback: true));
+            toggleHotkeyEnabled: GetBoolean(startup, SettingsKeys.ToggleHotkeyEnabled, fallback: true),
+            maxDrawerItems: GetInt(startup, SettingsKeys.MaxDrawerItems, AppConstants.Defaults.MaxDrawerItemsMin, AppConstants.Defaults.MaxDrawerItemsMax, AppConstants.Defaults.MaxDrawerItemsDefault));
     }
 
     private static List<DrawerDefinition> ParseDrawers(TomlTableArray entries)

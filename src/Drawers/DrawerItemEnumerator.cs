@@ -2,6 +2,17 @@ using System.Security;
 
 namespace winDrawer;
 
+internal enum DrawerEnumerationOutcome
+{
+    Success,
+    FolderMissing,
+    TooManyItems
+}
+
+internal readonly record struct DrawerEnumerationResult(
+    DrawerEnumerationOutcome Outcome,
+    IReadOnlyList<DrawerItemInfo> Items);
+
 internal static class DrawerItemEnumerator
 {
     /// <summary>
@@ -10,18 +21,30 @@ internal static class DrawerItemEnumerator
     /// </summary>
     private static readonly DateTime MissingTimestamp = DateTime.FromFileTimeUtc(0);
 
-    public static List<DrawerItemInfo>? Enumerate(string folderPath, DrawerSortMode sortMode, CancellationToken cancellationToken)
+    public static DrawerEnumerationResult Enumerate(
+        string folderPath,
+        DrawerSortMode sortMode,
+        int maxItems,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!Directory.Exists(folderPath))
         {
-            return null;
+            return new(DrawerEnumerationOutcome.FolderMissing, []);
         }
 
+        var limit = Math.Max(1, maxItems);
         var items = new List<DrawerItemInfo>();
         foreach (var path in Directory.EnumerateFileSystemEntries(folderPath))
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Stop before reading metadata for the first entry over the limit: the drawer only needs
+            // to know that the folder is too large, not how many entries it has in total.
+            if (items.Count >= limit)
+            {
+                return new(DrawerEnumerationOutcome.TooManyItems, []);
+            }
 
             FileAttributes attributes;
             try
@@ -64,7 +87,7 @@ internal static class DrawerItemEnumerator
         cancellationToken.ThrowIfCancellationRequested();
         items.Sort((left, right) => CompareItems(left, right, sortMode));
         cancellationToken.ThrowIfCancellationRequested();
-        return items;
+        return new(DrawerEnumerationOutcome.Success, items);
     }
 
     /// <summary>

@@ -21,6 +21,7 @@ toggle_hotkey_enabled = true
 window_color = "#000533"
 window_opacity = 95
 window_height = 200
+max_drawer_items = 200
 window_position = [100, 100]
 
 [[drawers]]
@@ -44,6 +45,7 @@ path = "%USERPROFILE%\\Downloads"
 | `startup.always_on_top` | Boolean | `false` | 为 `true` 时把主窗口和当前抽屉内容窗口设为置顶（`Form.TopMost`）。设置面板本身不置顶；该选项不影响托盘入口、显示/隐藏、任务栏归属和窗口锁定。缺失或类型无效时按 `false` 处理。 |
 | `startup.toggle_hotkey_enabled` | Boolean | `true` | 为 `true` 时在启动时注册全局快捷键 Win+Shift+D（语义与托盘 `Show/Hide` 相同）。缺失或类型无效时按 `true` 处理。注册失败（例如组合键已被其它程序占用）不改变该值：应用只记录日志，并在下次启动或主窗口句柄重建时重试；在设置面板显式打开该项时失败会给出一次可见提示。 |
 | `startup.window_height` | Integer | `200` | 主窗口客户区高度，单位为 96 DPI 逻辑像素（DIP），支持范围 100–1000。屏幕空间不足时运行时高度会临时受工作区限制，但保存的期望值不变。缺失或类型无效时使用默认高度 200。 |
+| `startup.max_drawer_items` | Integer | `200` | 单个抽屉最多显示的条目数，支持范围 1–10000，超出范围时夹取。抽屉条目数超过该值时不再显示文件条目，只显示提示用户用资源管理器打开的状态；底栏文件夹路径仍可点击。缺失或类型无效时使用默认值 200。该字段不提供设置页面，可直接编辑 TOML；修改后在下一次打开或刷新抽屉时生效。 |
 | `startup.window_color` | `#RRGGBB` 字符串 | `#000533` | 主主题基础颜色；只接受 6 位 RGB 十六进制颜色。缺失或格式错误时使用默认颜色。 |
 | `startup.window_opacity` | Integer | `95` | 主窗口透明度百分比，支持 0–100；超范围值夹取，缺失或类型无效时使用默认值。 |
 | `startup.window_position` | 恰好 2 个整数的数组 | `[100, 100]` | 主窗口桌面位置 `[x, y]`。数组长度必须恰好为 2 且元素为整数；长度或类型错误时整组回退默认值。坐标单位与 DPI 转换以技术决策为准。 |
@@ -64,7 +66,7 @@ path = "%USERPROFILE%\\Downloads"
 1. 解析 TOML 后先验证类型，再转换为领域设置；UI 不直接消费原始 TOML 值。保存时序列化完整配置模型，确保 `[startup]`、`[[drawers]]` 表及其顺序均写入。
 2. 缺少 `[startup]` 时按默认值运行；缺字段使用上表默认值。
 3. 数值字段接受整数。是否兼容浮点/数字字符串不是格式要求；若为了兼容而接受，应添加测试，避免含糊转换。
-4. `startup.window_height` 缺失或类型无效时使用默认值 200；超出 100–1000 时夹取。`window_color` 必须为 `#RRGGBB`；`window_opacity` 必须为整数并夹取到 0–100；`window_position` 长度或元素类型错误时整组回退默认值，不能产生索引越界。
+4. `startup.window_height` 缺失或类型无效时使用默认值 200；超出 100–1000 时夹取。`startup.max_drawer_items` 缺失或类型无效时使用默认值 200，超出 1–10000 时夹取。`window_color` 必须为 `#RRGGBB`；`window_opacity` 必须为整数并夹取到 0–100；`window_position` 长度或元素类型错误时整组回退默认值，不能产生索引越界。
 5. `drawers` 只接受 TOML 标准 `[[drawers]]` 表数组；无效/缺少 `path` 的条目跳过并记录诊断；有效条目的空名称可从路径推导。`size` 只接受恰有两个整数的数组；缺少或无效的 `overlay_color` 按未设置处理。颜色仅接受 `#RRGGBB`，不读取旧的 `#AARRGGBB`。`sort_mode` 只接受字符串 `"newest"`/`"oldest"`/`"name"`（忽略大小写），其它取值或类型按 `"newest"` 处理。
 6. 对 `path` 先展开支持的 Windows 环境变量，再去除首尾空白；重复目录判断在 Windows 上忽略大小写。更改现有抽屉路径时，允许其原路径当前不存在；只有更换到另一条路径时，才要求目标目录存在。除非明确产品需求，不要对路径执行会改变其指向的规范化（例如擅自解析符号链接）。
 7. 目录当前不存在时仍可保留配置条目，以便其之后重新可用；UI 显示缺失状态。

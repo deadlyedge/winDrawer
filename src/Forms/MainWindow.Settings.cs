@@ -135,7 +135,8 @@ namespace winDrawer
                 drawers: _settingsSnapshot.Drawers,
                 windowHeight: resultSettings.WindowHeight,
                 alwaysOnTop: resultSettings.AlwaysOnTop,
-                toggleHotkeyEnabled: resultSettings.ToggleHotkeyEnabled);
+                toggleHotkeyEnabled: resultSettings.ToggleHotkeyEnabled,
+                maxDrawerItems: _settingsSnapshot.MaxDrawerItems);
             _settingsRepository.Update(_settingsSnapshot);
             // Saving is handled by the repository's background writer.
             ApplyMainWindowBounds(_settingsSnapshot);

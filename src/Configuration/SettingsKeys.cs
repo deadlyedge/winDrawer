@@ -14,6 +14,7 @@ internal static class SettingsKeys
     public const string AlwaysOnTop = "always_on_top";
     public const string ToggleHotkeyEnabled = "toggle_hotkey_enabled";
     public const string WindowHeight = "window_height";
+    public const string MaxDrawerItems = "max_drawer_items";
     public const string WindowPosition = "window_position";
     public const string WindowColor = "window_color";
     public const string WindowOpacity = "window_opacity";

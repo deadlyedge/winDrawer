@@ -57,6 +57,7 @@ internal sealed partial class SettingsRepository : IDisposable
             startup[SettingsKeys.AlwaysOnTop] = snapshot.AlwaysOnTop;
             startup[SettingsKeys.ToggleHotkeyEnabled] = snapshot.ToggleHotkeyEnabled;
             startup[SettingsKeys.WindowHeight] = Math.Clamp(snapshot.WindowHeight, AppConstants.Defaults.MainWindowHeightMin, AppConstants.Defaults.MainWindowHeightMax);
+            startup[SettingsKeys.MaxDrawerItems] = Math.Clamp(snapshot.MaxDrawerItems, AppConstants.Defaults.MaxDrawerItemsMin, AppConstants.Defaults.MaxDrawerItemsMax);
             startup[SettingsKeys.WindowPosition] = new TomlArray { snapshot.WindowPosition.X, snapshot.WindowPosition.Y };
             startup[SettingsKeys.WindowColor] = ThemePalette.FormatHexColor(snapshot.WindowColor);
             startup[SettingsKeys.WindowOpacity] = Math.Clamp(snapshot.WindowOpacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax);
@@ -81,7 +82,8 @@ internal sealed partial class SettingsRepository : IDisposable
             drawers: current.Drawers,
             windowHeight: defaults.WindowHeight,
             alwaysOnTop: defaults.AlwaysOnTop,
-            toggleHotkeyEnabled: defaults.ToggleHotkeyEnabled);
+            toggleHotkeyEnabled: defaults.ToggleHotkeyEnabled,
+            maxDrawerItems: defaults.MaxDrawerItems);
     }
 
     public bool ResetStartupToEmbeddedDefaults(TimeSpan timeout, out SettingsSnapshot? resetSnapshot, out string error)

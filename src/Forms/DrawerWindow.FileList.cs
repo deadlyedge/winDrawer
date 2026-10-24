@@ -56,6 +56,7 @@ public partial class DrawerWindow
     {
         UpdateStandardFolderIcon(e.DeviceDpiNew);
         UpdateTopResizeGrip(e.DeviceDpiNew);
+        UpdateFooterLayout(e.DeviceDpiNew);
         RefreshFileListForDpi(e.DeviceDpiNew);
     }
 

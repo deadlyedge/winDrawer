@@ -83,5 +83,17 @@ internal static class AppConstants
     {
         public static readonly Size WindowIconSize = new(32, 32);
         public static readonly Size TrayIconSize = new(16, 16);
+
+        /// <summary>
+        /// Drawer footer metrics in 96-DPI logical pixels. The drawer window uses
+        /// <c>AutoScaleMode.None</c>, so these values are scaled explicitly for the current DPI.
+        /// </summary>
+        internal static class DrawerFooter
+        {
+            public const int PaddingLeft = 12;
+            public const int PaddingRight = 8;
+            public const int IconTextGap = 8;
+            public const int FolderIconSize = 24;
+        }
     }
 }

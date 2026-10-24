@@ -40,7 +40,7 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
             drawerPathTableLayoutPanel = new TableLayoutPanel();
             openFolderIconPictureBox = new PictureBox();
-            fullPathLabel = new UILabel();
+            fullPathLabel = new EllipsisLabel();
             drawerButtonTableLayoutPanel = new FlowLayoutPanel();
             closeDrawerButton = new UIButton();
             mainTableLayoutPanel.SuspendLayout();
@@ -91,7 +91,7 @@ namespace winDrawer
             drawerContentsListView.HideSelection = false;
             drawerContentsListView.Location = new Point(0, 0);
             drawerContentsListView.Margin = new Padding(0);
-            drawerContentsListView.MultiSelect = false;
+            drawerContentsListView.MultiSelect = true;
             drawerContentsListView.Name = "drawerContentsListView";
             drawerContentsListView.ShowItemToolTips = true;
             drawerContentsListView.Size = new Size(762, 533);
@@ -123,7 +123,7 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.TagString = null;
             // drawerPathTableLayoutPanel
             drawerPathTableLayoutPanel.ColumnCount = 2;
-            drawerPathTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
+            drawerPathTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 32F));
             drawerPathTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             drawerPathTableLayoutPanel.Controls.Add(openFolderIconPictureBox, 0, 0);
             drawerPathTableLayoutPanel.Controls.Add(fullPathLabel, 1, 0);
@@ -131,42 +131,39 @@ namespace winDrawer
             drawerPathTableLayoutPanel.Dock = DockStyle.Fill;
             drawerPathTableLayoutPanel.Margin = new Padding(0);
             drawerPathTableLayoutPanel.Name = "drawerPathTableLayoutPanel";
+            // Left/right padding and the icon column are recomputed for the current DPI in
+            // DrawerWindow.UpdateFooterLayout; the values here only serve the designer.
+            drawerPathTableLayoutPanel.Padding = new Padding(12, 0, 8, 0);
             drawerPathTableLayoutPanel.RowCount = 1;
             drawerPathTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             drawerPathTableLayoutPanel.Size = new Size(485, 44);
             drawerPathTableLayoutPanel.TabIndex = 0;
-            drawerPathTableLayoutPanel.Cursor = Cursors.Hand;
             drawerPathTableLayoutPanel.AccessibleName = "Open drawer folder in File Explorer";
             drawerPathTableLayoutPanel.AccessibleDescription = "Click to open this folder in File Explorer.";
-            drawerToolTip.SetToolTip(drawerPathTableLayoutPanel, "Click to open folder in File Explorer");
             // openFolderIconPictureBox
-            openFolderIconPictureBox.AccessibleName = "Open folder in File Explorer";
-            openFolderIconPictureBox.AccessibleDescription = "Opens this drawer's folder in File Explorer.";
-            openFolderIconPictureBox.Cursor = Cursors.Hand;
+            // The icon is decorative: the container and the path text carry the accessible name.
+            openFolderIconPictureBox.AccessibleRole = AccessibleRole.None;
             openFolderIconPictureBox.Dock = DockStyle.Fill;
             openFolderIconPictureBox.Margin = new Padding(0);
             openFolderIconPictureBox.Name = "openFolderIconPictureBox";
-            openFolderIconPictureBox.Size = new Size(42, 44);
             openFolderIconPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             openFolderIconPictureBox.TabIndex = 0;
             openFolderIconPictureBox.TabStop = false;
-            drawerToolTip.SetToolTip(openFolderIconPictureBox, "Click to open folder in File Explorer");
             // fullPathLabel
+            // EllipsisLabel always renders a single line with a trailing ellipsis; the native
+            // Label.AutoEllipsis wraps long text into several lines when the row is tall enough.
+            fullPathLabel.AutoSize = false;
             fullPathLabel.Dock = DockStyle.Fill;
             fullPathLabel.Font = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             fullPathLabel.ForeColor = Color.FromArgb(224, 224, 224);
-            fullPathLabel.Location = new Point(45, 0);
+            fullPathLabel.Margin = new Padding(0);
             fullPathLabel.Name = "fullPathLabel";
-            fullPathLabel.Padding = new Padding(6, 0, 6, 0);
-            fullPathLabel.Size = new Size(444, 44);
+            fullPathLabel.Padding = new Padding(8, 0, 0, 0);
             fullPathLabel.TabIndex = 1;
             fullPathLabel.Text = "folderFullPath";
             fullPathLabel.TextAlign = ContentAlignment.MiddleLeft;
-            fullPathLabel.AutoEllipsis = true;
             fullPathLabel.AccessibleDescription = "Path of the drawer folder.";
             fullPathLabel.AccessibleName = "Open drawer folder in File Explorer";
-            fullPathLabel.Cursor = Cursors.Hand;
-            drawerToolTip.SetToolTip(fullPathLabel, "Click to open folder in File Explorer");
             //
             // drawerButtonTableLayoutPanel
             // 
@@ -226,7 +223,7 @@ namespace winDrawer
         private UITableLayoutPanel drawerHeaderTableLayoutPanel;
         private TableLayoutPanel drawerPathTableLayoutPanel;
         private PictureBox openFolderIconPictureBox;
-        private UILabel fullPathLabel;
+        private EllipsisLabel fullPathLabel;
         private FlowLayoutPanel drawerButtonTableLayoutPanel;
         private UIButton closeDrawerButton;
         private ScrollableListView drawerContentsListView;

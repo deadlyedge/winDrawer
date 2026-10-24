@@ -37,16 +37,38 @@ namespace winDrawer
             drawerContentsListView.MouseDoubleClick += DrawerContentsListView_MouseDoubleClick;
             InitializeFileList();
             InitializeDrawerContextMenu();
+            InitializeDragDrop();
 
             UpdateStandardFolderIcon(DeviceDpi);
             UpdateTopResizeGrip(DeviceDpi);
-            drawerPathTableLayoutPanel.Click += OpenFolderButton_Click;
-            openFolderIconPictureBox.Click += OpenFolderButton_Click;
-            fullPathLabel.Click += OpenFolderButton_Click;
+            UpdateFooterLayout(DeviceDpi);
+            InitializeFolderLink();
             closeDrawerButton.Click += (_, _) => Close();
 
             Size = _drawer.PreferredSize ?? Size;
             _lastPersistedSize = Size;
+        }
+
+        /// <summary>
+        /// Makes the folder icon, the path text and the gap between them behave as a single click
+        /// target: every part forwards to <see cref="OpenFolderButton_Click"/> and shares the same
+        /// cursor and tooltip, so the footer never looks like two separate controls.
+        /// </summary>
+        private void InitializeFolderLink()
+        {
+            drawerPathTableLayoutPanel.Click += OpenFolderButton_Click;
+            openFolderIconPictureBox.Click += OpenFolderButton_Click;
+            fullPathLabel.Click += OpenFolderButton_Click;
+
+            drawerPathTableLayoutPanel.Cursor = Cursors.Hand;
+            openFolderIconPictureBox.Cursor = Cursors.Hand;
+            fullPathLabel.Cursor = Cursors.Hand;
+
+            const string openHint = "Click to open folder in File Explorer";
+            drawerToolTip.SetToolTip(drawerPathTableLayoutPanel, openHint);
+            drawerToolTip.SetToolTip(openFolderIconPictureBox, openHint);
+            // The path label keeps showing the full path as its tooltip, which stays useful when the
+            // text is truncated; it is refreshed in InitializeWindow and ApplyDrawerDefinition.
         }
 
         protected override CreateParams CreateParams
@@ -203,10 +225,45 @@ namespace winDrawer
             previousImage?.Dispose();
         }
 
+        /// <summary>
+        /// Applies the DPI-scaled footer metrics. The window uses <c>AutoScaleMode.None</c>, so the
+        /// padding, icon column and text inset are recomputed explicitly instead of being auto-scaled
+        /// by WinForms. Without this the fixed 42 px icon column clipped the 24 DIP icon at 200%
+        /// scaling. The footer row keeps its fixed height so the close button, which is not scaled,
+        /// stays where it was.
+        /// </summary>
+        private void UpdateFooterLayout(int dpi)
+        {
+            var scale = Math.Max(1, dpi) / 96d;
+            var iconSize = GetFolderIconSize(dpi);
+
+            drawerPathTableLayoutPanel.Padding = new Padding(
+                ScaleLogicalPixels(AppConstants.Ui.DrawerFooter.PaddingLeft, scale),
+                0,
+                ScaleLogicalPixels(AppConstants.Ui.DrawerFooter.PaddingRight, scale),
+                0);
+
+            if (drawerPathTableLayoutPanel.ColumnStyles.Count > 0)
+            {
+                // The icon column is exactly the icon width, so no dead area appears left of the
+                // path; the gap to the text lives in the label padding and stays clickable.
+                drawerPathTableLayoutPanel.ColumnStyles[0].Width = iconSize.Width;
+            }
+
+            var iconTextGap = ScaleLogicalPixels(AppConstants.Ui.DrawerFooter.IconTextGap, scale);
+            fullPathLabel.Padding = new Padding(iconTextGap, 0, 0, 0);
+        }
+
+        private static int ScaleLogicalPixels(int logicalPixels, double scale)
+        {
+            return Math.Max(1, (int)Math.Round(logicalPixels * scale));
+        }
+
         private static Size GetFolderIconSize(int dpi)
         {
-            const int logicalSize = 24;
-            var size = Math.Max(1, (int)Math.Round(logicalSize * dpi / 96d));
+            var size = Math.Max(
+                1,
+                (int)Math.Round(AppConstants.Ui.DrawerFooter.FolderIconSize * dpi / 96d));
             return new Size(size, size);
         }
 

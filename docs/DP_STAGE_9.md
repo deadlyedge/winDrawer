@@ -153,7 +153,7 @@
 2. **底栏 hover 反馈**（9.1 第 5 步的可选部分）：是否需要在鼠标进入整块路径区域时加轻微主题高亮？默认只保留手型光标与 ToolTip。
 3. **拖入视觉提示**（9.3）：是否需要在拖动经过列表时显示整块高亮？默认只用系统光标效果。
 
-以上三点确定后即可按 9.1 → 9.4 顺序开始实施；未确认前不写代码。
+**当前状态：** 9.1–9.4 已按“默认方案”实施——第 1 项（D6）已开启 `MultiSelect = true`（要回到单选，只需把 `DrawerWindow.Designer.cs` 中该属性改回 `false`）；第 2、3 项（hover 高亮/拖入高亮）仍未实现，保持手型光标、ToolTip 与系统拖放光标。
 
 ## 实施状态
 
@@ -222,4 +222,15 @@
   - 探针位于 `C:\Users\Public\windrawer-drop-probe`，验证后已删除；日志保留在 `Z:\Temp\windrawer-drop-probe.log`。
 - **未验证（需人工）**：真实鼠标拖入（OLE 层的光标效果与 `DragEnter/DragOver` 节奏）、异盘拷贝、重名冲突对话框（替换/跳过/取消）、只读或被占用文件、超长路径、拖入后缩略图按当前排序出现、Shell 进度对话框期间的界面阻塞观感、把文件夹拖进自身子目录时的警告提示。
 - **已知取舍**：一次投放若同时包含 Move 与 Copy，`DragEventArgs.Effect` 只能回报单一效果（有 Move 就回报 `Move`），这是 WinForms 的限制；实际文件操作仍按分组执行。
+
+### 9.4 已落地（文档与回归）
+
+- **`README.md`**：简介、Highlights、Run 章节与项目结构均已同步——新增“Drag files in and out”“Clickable folder link”两条亮点；Run 章节说明拖出、拖入、同盘/异盘语义、Ctrl/Shift、自身子目录拒绝、仅接受真实文件系统条目，以及底栏入口的单行省略与完整路径 ToolTip；文件清单补充 `DrawerWindow.DragDrop.cs`、`EllipsisLabel.cs`、`DrawerDropPlanner.cs`、`ShellFileOperation.cs`。
+- **`docs/CONFIGURATION_FORMAT.md`**：本阶段**没有新增或修改任何 TOML 字段**；在第 5 节写入约束中补充说明拖入/拖出、底栏入口和排序菜单都是运行时交互，不写配置。
+- **`AGENTS.md`**：已在 9.3 同步产品约定（唯一例外：用户显式拖放、完全由 Windows Shell 执行的移动/拷贝）。
+- **构建验证**：Debug 与 Release 均走完整 `dotnet build`（未使用 `-t:Compile`），**0 警告 0 错误**。
+- **发布验证**：`dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true` 成功（退出码 0），产物写入 `Z:\Temp\windrawer-publish-94`（`winDrawer.exe` 约 4.8 MB + `winDrawer.pdb`）；本阶段未新增嵌入资源，模板/字体/图标仍由既有构建管线打包。
+- **自动化验证汇总**（临时探针，`%TEMP%`/`C:\Users\Public`，均已删除）：9.1 底栏度量与渲染（96/144/192 三档 + 真实窗口 700/600/530 宽度）；9.1.1 `EllipsisLabel` 与 `Label`/`UILabel` 的折行对照；9.2 拖出路径收集（多选、未选中项、去重、路径存在性）；9.3 规划器规则、真实 `IFileOperation` 移动+拷贝、窗口级拖入端到端。日志仍保留在 `Z:\Temp\windrawer-*.log` 与截图 `Z:\Temp\windrawer-stage91-footer-*.png`。
+- **手工 UI 回归：未执行。** 以下项目必须由你在真实应用里验收，本文档不声称已通过：真实鼠标拖出/拖入（含 OLE 光标）、异盘拷贝、重名冲突（替换/跳过/取消）、Esc 取消、只读/被占用文件、超长路径与长中文路径、拖放后缩略图与排序、多选手感；底栏在 100%/150%/200% DPI 下的对齐与截断、点击区域只触发一次、ToolTip、深浅主题与抽屉蒙版对比度、`MinimumSize (530, 320)`、`drawers[].size` 缩放往返；以及既有项（双击打开、F5/右键菜单三种排序、托盘与 Win+Shift+D 显隐、顶部缩放条、AlwaysOnTop、设置保存/取消/Default）。
+- **`docs/TODOs.md` 未改动**：两条待办（拖放、底栏入口）在人工验收通过并经你确认后再移除，不覆盖该文件当前的未提交改动。
 

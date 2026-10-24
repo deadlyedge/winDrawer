@@ -80,6 +80,7 @@ path = "%USERPROFILE%\\Downloads"
 - 仅由 settings repository 负责 TOML 序列化、备份和原子写入。
 - 设置文件默认位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；日志文件为同目录下的 `Drawer.log`。配置目录由应用在首次创建设置或写入日志时按需创建；日志路径或写入失败不会阻止应用运行。
 - 设置页的 **Open Settings TOML** 按钮使用 Windows Notepad 打开当前活动的 TOML 文件。
+- 抽屉的拖入/拖出、底栏文件夹入口和列表右键排序菜单都是运行时交互，不会新增或改写任何配置键；文件拖放只作用于磁盘文件，不写入设置。
 
 ## 6. 迁移与演进
 

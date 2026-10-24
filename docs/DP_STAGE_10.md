@@ -1,6 +1,6 @@
 # 阶段十建议：托盘菜单定位、抽屉容量上限与代码收敛
 
-> 状态：10.1、10.2 已实施；10.3 审查清单已出（见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)），等待逐项确认后继续。10.1 的特殊任务栏/跨屏场景仍需用户实测。
+> 状态：10.1、10.2、10.4–10.6 已完成；10.3 按用户要求暂缓，审查清单见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。10.1 的特殊任务栏/跨屏场景仍需用户实测。
 >
 > 本文件是阶段 10 的实施与验收依据。工作树中的 `docs/TODOs.md` 属于用户改动，本阶段只读取、不覆盖、不代为删除条目；完成后由用户自行更新。
 
@@ -296,4 +296,32 @@ internal readonly record struct DrawerEnumerationResult(
 - `DrawerWindow.FileList.cs`：超限时不创建文件条目，只显示 `Too many items (more than N). Open the folder in File Explorer.` 状态；底栏路径仍可打开资源管理器。
 - **已验证**：`%TEMP%` 临时 harness 16 项全部通过，覆盖 0/200/201/500 项、缺失目录、limit 0、名称排序、TOML 解析/夹取/类型错误、写回与重开读取。
 - Debug/Release 完整构建成功；未执行真实 UI 手工回归。
+
+## 13. 实施记录（10.4–10.6）
+
+### 10.4 白皮书
+
+- 新增 `docs/WHITEPAPER.md`：产品定位、运行模型、模块边界、配置与持久化、抽屉管线、窗口/DPI/主题、拖放、错误/日志、行为不变量、已知技术债和修改指南。
+- 内容与 10.1/10.2 后的代码一致；明确记录 `max_drawer_items` 的提前停止与“不显示部分条目”策略。
+
+### 10.5 README 与截图
+
+- README 由约 129 行精简到约 76 行；保留快速开始、抽屉/设置截图、`max_drawer_items`、配置路径、单文件发布和项目结构。
+- 新增截图：
+  - `docs/images/main-window.png`（400×640）
+  - `docs/images/drawer.png`（620×400，含 6 张演示图片缩略图）
+  - `docs/images/settings.png`（920×860；为截取完整内容临时加宽了设置窗口）
+- 截图使用 `C:\Users\Public\Documents\winDrawer-demo` 演示目录和演示 TOML；未包含真实用户名。
+- 用户配置备份/恢复校验：备份与恢复后的 SHA-256 均为 `99278D6D7306BC009537F658DB5DC8F8468B04662D35B16C1E4424C77F1B9BA4`；演示目录和临时配置已删除。
+- 截图过程中实际启动了应用，主窗口、抽屉、缩略图和设置页均正常显示，`WM_CLOSE` 后正常退出。
+
+### 10.6 回归与收尾
+
+- Debug 完整构建：0 警告 0 错误。
+- Release 完整构建：0 警告 0 错误。
+- `dotnet publish -c Release -o Z:\Temp\windrawer-publish-stage10`：退出码 0；产物为 `winDrawer.exe`（120,723,522 字节）、`winDrawer.pdb` 和 `assets/`。
+- README、白皮书、审查清单、阶段计划中的相对链接检查通过（missing=0）。
+- 10.2 后的临时 harness 16 项检查全部通过；此后仅修改文档和 README，未再改源码。
+- 未执行：托盘特殊任务栏/跨屏布局、抽屉右键排序/F5、拖入拖出、真实 >200 项目录的 UI 状态、DPI 切换、登录启动/Default 的完整手工回归。以上仍需在真实使用环境中验证，不能视为已通过。
+- `docs/TODOs.md` 未修改，由用户自行更新。
 

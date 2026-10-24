@@ -1,0 +1,122 @@
+# winDrawer 白皮书
+
+> 本文描述当前实现（阶段 10.1/10.2 之后），用于快速理解代码边界、数据流和必须保持的行为不变量。
+>
+> 这不是需求文档；具体配置字段见 [`CONFIGURATION_FORMAT.md`](CONFIGURATION_FORMAT.md)，阶段计划见 [`DP_STAGE_10.md`](DP_STAGE_10.md)。
+
+## 1. 产品定位
+
+winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选中后在独立抽屉窗口中显示该文件夹的**直接子项**。单击只选择，双击把条目交给 Windows Shell 执行默认 `open` 行为。它不尝试复刻资源管理器，也不在抽屉内递归或导航。
+
+明确的非目标：
+
+- 不实现文件删除、重命名、新建、复制/剪切/粘贴；
+- 不实现递归扫描、实时文件监控、搜索或子目录导航；
+- 不自建图片预览窗格、缩略图缓存服务或虚拟列表框架；
+- 不引入多项目分层、DI、MVVM 或新的 UI 框架。
+
+唯一会修改用户磁盘内容的行为，是用户在抽屉列表上显式拖放，且实际传输完全由 Windows Shell 执行。
+
+## 2. 运行模型
+
+- 单个 `net10.0-windows` WinForms 进程，STA UI 线程；`Program.Main` 调用 `Application.Run(MainWindow)`。
+- 主窗口是应用主窗体；正常运行时主窗口、抽屉窗口和设置窗口都不创建任务栏按钮，托盘是常驻入口。
+- `MainWindow` 同一时间只维护一个打开中的抽屉窗口；切换抽屉会关闭旧窗口。
+- 托盘菜单和设置面板的退出入口最终都走 `MainWindow.ShutdownApplication(reason)`，再通过 `Application.Exit()` 走常规 `FormClosing/FormClosed` 路径。
+- `MainWindow.OnFormClosed` 的释放顺序为：热键、品牌字体、托盘控制器、`SettingsRepository`；`ForceProcessExit()` 只在常规退出抛异常时作为最后兜底。
+- 托盘菜单由 `TrayController` 手动定位显示，不赋给 `NotifyIcon.ContextMenuStrip`。原因是 WinForms 的 `NotifyIcon` 内部会走 `ContextMenuStrip.ShowInTaskbar`，在多显示器/跨屏任务栏/混合 DPI 下可能选错屏幕；手动 `Show` 使用普通工作区约束路径。
+
+## 3. 模块边界
+
+| 位置 | 职责 |
+|---|---|
+| `Program.cs` | 启动、全局异常钩子、单次错误提示 |
+| `Forms/MainWindow.*` | 主窗口生命周期、抽屉列表、拖动重排、设置协调、托盘/热键、退出 |
+| `Forms/DrawerWindow.*` | 抽屉窗体、无标题栏边框、文件列表编排、右键排序、拖放、主题 |
+| `Forms/SettingsForm.*` | 主设置面板：行为、外观、透明度、高度、默认值 |
+| `Forms/DrawerSettingsDialog.cs` | 单个抽屉的名称、路径、专属颜色、删除 |
+| `Drawers/` | 直接子项枚举/排序/上限、条目元数据、Shell 图标与缩略图、拖放规划 |
+| `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
+| `Controls/` | `ScrollableListView`、省略号标签、按钮/菜单主题、颜色对话框 helper、消息框 |
+| `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation` |
+| `Theming/` | `#RRGGBB` 解析、主题派生色、品牌字体、Shell 图标 |
+
+依赖方向应保持为：窗体 → 业务/配置/基础设施；`Drawers/` 与 `Configuration/` 不反向依赖具体窗体。不要为了形式上的分层新增接口或工厂。
+
+## 4. 配置与持久化
+
+- 活动配置：`%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；日志同目录 `Drawer.log`。
+- 首次启动时，如果活动配置不存在，从程序集内嵌的根目录 `Drawer-settings.toml` 初始化；已存在的配置绝不被模板覆盖。
+- TOML 解析先验证类型，再生成 `SettingsSnapshot`；缺失字段使用默认值，未知字段在写回时保留。
+- 写入由 `SettingsRepository` 的后台 writer 合并/防抖；退出前通过 `SavePendingChanges`/`Dispose` flush。写入使用同目录临时文件再原子替换，失败不覆盖旧文件。
+- **Default** 按钮只重置 `[startup]`，保留 `drawers` 和未知键，并同步当前用户的登录启动状态；Save/Cancel 管理 Default 之后的草稿。
+- `startup.max_drawer_items`（Integer，默认 200，范围 1–10000）控制单个抽屉的最大条目数；不提供设置页面，直接编辑 TOML，下次打开或刷新抽屉时生效。
+- 抽屉字段：`name`、`path`、可选 `size`、`overlay_color`、`sort_mode`。抽屉顺序即 `[[drawers]]` 顺序。
+
+## 5. 抽屉内容管线
+
+1. `DrawerWindow` 显示后异步调用 `PopulateFileListAsync`，先显示“Loading...”状态。
+2. `DrawerItemEnumerator.Enumerate` 只枚举直接子项，读取名称、是否为目录、最后修改时间；使用 `DrawerEnumerationResult` 区分：
+   - `Success`：已按当前 `sort_mode` 排序；
+   - `FolderMissing`：显示缺失状态；
+   - `TooManyItems`：在发现第 `limit + 1` 项时立即停止，不读取其元数据、不排序。
+3. 超过 `max_drawer_items` 时不创建任何文件条目，只显示“Too many items...”状态；底栏路径仍可打开资源管理器。
+4. 未超限时，`ListView` 使用 `LargeIcon` 和 `ImageList`；目录与文件混排，排序由 `DrawerSortMode` 决定。
+5. 图标/缩略图按可视区加一屏预取范围延迟加载；滚动防抖，离开预取范围释放图像。加载批次用 generation + `CancellationTokenSource` 丢弃过期结果，避免旧目录/旧视口覆盖新状态。
+6. 图片缩略图失败时回退为 Shell 图标，不影响列表和双击打开；生成过程不得锁住源文件。
+7. 双击条目通过 `ProcessStartInfo { UseShellExecute = true }` 交给 Windows Shell。
+
+## 6. 窗口、DPI 与主题
+
+- 主窗口无系统边框，支持拖动；`window_locked = true` 时禁止拖动并隐藏移动光标。位置保存到 `window_position`，高度以 96 DPI 逻辑像素保存到 `window_height`，运行时按当前 DPI 换算并夹取到所在屏幕工作区。
+- 抽屉窗口通过移除 `WS_CAPTION` 隐藏标题栏，保留 `FormBorderStyle.Sizable` 的边缘缩放；底部提供文件夹路径入口、刷新和关闭按钮。窗口尺寸在调整结束/关闭时写回 `drawers[].size`。
+- 设置窗体与抽屉设置对话框每次打开时按主窗口位置偏移 `(100, 100)` 并夹取到主窗口所在屏幕工作区；它们的位置不持久化。
+- 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（0–100）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。
+- 抽屉专属颜色以 `overlay_color` 保存，固定以 70% 不透明度混合到抽屉背景，不提供单独 Alpha。未设置时不叠加。
+- 主窗口和设置页使用 WinForms 自动缩放；抽屉窗口使用 `AutoScaleMode.None`，在 `DpiChanged` 时显式重算图标尺寸、底栏布局、滚动条和图像列表。修改这些尺寸时必须同时验证 100%/150%/200% DPI。
+
+## 7. 拖放
+
+- 拖出：从 `ListView` 选中项收集路径，使用 `CF_HDROP` 交给资源管理器；用户可拖到资源管理器、桌面或其它文件夹。
+- 拖入：接受文件/文件夹拖放，使用 `IFileOperation` 执行；同盘移动、异盘拷贝，Ctrl 强制拷贝、Shift 强制移动。重名冲突、进度和撤销信息由 Windows Shell 提供。
+- 应用不自行实现文件传输、进度条、撤销或拖放视觉层；拖放完成后刷新抽屉，使排序/缩略图与磁盘一致。
+- 拖放是“显式用户操作 + Shell 执行”的唯一文件修改例外；不得扩展到删除、重命名、新建或粘贴。
+
+## 8. 错误处理与日志
+
+- 用户提示统一走 `UiMessages`；不要在窗体里直接调用 `MessageBox.Show`。
+- 预期错误（目录缺失、拒绝访问、Shell 打开失败、配置保存失败）应显示可理解提示并保持应用运行；单个条目读取失败可跳过并记录 Debug 日志。
+- 全局 UI 线程异常由 `Program` 记录并只显示一次带日志路径的提示；`AppDomain.UnhandledException` 只记录。
+- 日志统一走 `DrawerLogger`：默认 Information（挂调试器时 Debug），可由 `WINDRAWER_LOG_LEVEL` 覆盖；超过 1 MB 轮转为 `Drawer.log.1`。不要在逐项/逐帧热路径写 Debug，也不要在日志内部调用日志方法。
+
+## 9. 必须保持的不变量
+
+1. 抽屉只显示**直接子项**，不递归。
+2. 单击只选择；双击通过 Windows Shell 打开，不自行解析关联程序。
+3. 除用户显式拖放且由 Shell 执行外，不删除、移动、重命名或修改用户文件。
+4. 超过 `max_drawer_items` 时不显示部分条目，只显示状态；底栏路径仍可打开资源管理器。
+5. 缩略图生成不得锁住源文件；刷新、关闭、DPI 变化后图像/图标/`ImageList` 必须正确释放。
+6. 过期枚举/图像结果不得覆盖新结果；控件访问必须回到 UI 线程。
+7. 退出请求统一走 `ShutdownApplication`；不在其它位置直接 `Application.Exit()`、`Environment.Exit()` 或 `Process.Kill()`。
+8. 已存在的用户配置不被模板覆盖；保存失败不静默丢失旧文件；未知键尽可能保留。
+9. 主题颜色只接受 `#RRGGBB`，透明度单独保存；不恢复 HSLA 字段。
+10. 共用逻辑只保留一份：用户提示 `UiMessages`、按钮主题 `UiButtonTheming`、颜色对话框 `UiDialogHelpers`、路径比较 `PathComparison`、TOML 键名 `SettingsKeys`。
+
+## 10. 已知取舍与技术债
+
+- **托盘菜单位置**：WinForms `NotifyIcon` 的内部 `ShowInTaskbar` 路径在多显示器下不可靠，当前改为手动 `Show`；仍需在特殊任务栏布局中人工验证。
+- **文件列表**：`DrawerWindow.FileList.cs` 约 600 行，包含列表编排、视口图像加载、取消/代际和图像所有权。它是当前最复杂的文件，但拆分必须保持现有生命周期语义。
+- **配置写入**：后台 writer 的状态机偏重，但承担防抖、退出 flush、失败保留和原子写入；不建议为了行数牺牲可靠性。
+- **主题**：`ThemePalette` 通过 HSL 往返派生颜色，代码量较大且会轻微改变精确 RGB；修改前需接受视觉变化。
+- **抽屉列表**：主窗口使用 owner-draw 和拖动重排，行为直观但代码集中；没有 UI 自动化测试。
+- **测试**：仓库没有测试工程；纯逻辑使用 `%TEMP%` 下的临时 harness 验证，UI 行为依赖人工回归。
+- 更细的代码审查项和预计收益见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。
+
+## 11. 修改指南
+
+- 新增配置字段：先更新 `SettingsKeys`、`SettingsSnapshot`、`SettingsRepository.Update`、根目录模板、`CONFIGURATION_FORMAT.md`，再决定是否需要设置页控件；保存其他设置时必须保留未在设置页暴露的字段。
+- 新增抽屉行为：优先改 `Drawers/` 中的纯逻辑，再接到 `DrawerWindow`；保持枚举/排序/上限结果可区分，不要在窗体里复制文件系统逻辑。
+- 修改主题：同时检查主窗口、抽屉、设置窗体和右键菜单的普通/悬停/按下/禁用状态，以及深色/浅色背景对比度。
+- 修改窗口布局：验证 100%/150%/200% DPI、最小尺寸、工作区夹取、无标题栏缩放和退出时的资源释放。
+- 每次改动后执行完整 `dotnet build .\src\winDrawer.csproj`（Debug/Release），不要使用 `-t:Compile` 绕过资源生成；构建产物被占用时改用临时输出目录。
+

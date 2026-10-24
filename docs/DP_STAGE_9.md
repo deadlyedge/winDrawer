@@ -202,3 +202,24 @@
 - **未验证**：真实的 OLE 拖动过程无法自动化——把条目拖到资源管理器同盘/异盘的移动/拷贝效果、`Ctrl`/`Shift` 修饰键、Esc 取消后列表不变、Move 后自动刷新与缩略图重新加载、多选的手感、右键拖动（当前显式忽略）均需人工验收。`ItemDrag` 的事件订阅也未通过反射确认（`ListView` 的 `ItemDrag` 事件键不在其静态字段中，探针无法定位），只能由 `InitializeWindow → InitializeDragDrop()` 的代码路径保证；请在实际应用中拖动验证。
 - **未实现**：自定义拖影/拖动提示层、`Link`（快捷方式）、从抽屉拖到主窗口或另一个抽屉（当前同时只打开一个抽屉）。
 
+### 9.3 已落地（拖入）
+
+- **新增 `src/Drawers/DrawerDropPlanner.cs`**（纯逻辑，不访问文件系统）：
+  - `GetNormalizedPath`（`PathComparison.Normalize` + `Path.GetFullPath` + `Path.TrimEndingDirectorySeparator`，无效输入返回 `null`）、`GetVolumeRoot`、`IsSameVolume`、`IsSameOrChildPath`；
+  - `Plan(sourcePaths, destinationFolder, allowedEffects, modifierKeys)` 返回 `DrawerDropPlan(MovePaths, CopyPaths, Rejection)` 与 `AllowedEffect`（用于拖动中的光标）；
+  - 规则：同卷 Move / 异卷 Copy；`Ctrl` 强制 Copy、`Shift` 强制 Move（两者同时按下或无修饰键时回到卷默认）；期望效果不在 `allowedEffects` 中则改用另一种，两者都不允许 → `NoAllowedEffect`；源已在目标目录内 → 跳过（no-op）；目标等于或位于某个被拖动目录内部 → 整个 drop 拒绝（`DestinationInsideSource`）；按 `OrdinalIgnoreCase` 去重。
+- **新增 `src/Infrastructure/ShellFileOperation.cs`**：`IFileOperation` COM 互操作。
+  - 按 `shobjidl_core.h` 顺序声明全部成员（含未使用的占位），避免 vtable 偏移；`SetOperationFlags(FOF_ALLOWUNDO)` + `SetOwnerWindow`；
+  - 用 `SHCreateItemFromParsingName` 取 `IShellItem`，逐个 `MoveItem` / `CopyItem` 入队，最后**一次** `PerformOperations()`，再 `GetAnyOperationsAborted()`；
+  - `ERROR_CANCELLED` / `COPYENGINE_E_USER_CANCELLED` 识别为用户取消，其余负 HRESULT 作为失败返回；所有 `IShellItem` 与 `IFileOperation` 在 `finally` 中 `FinalReleaseComObject`（容错）。
+- **`src/Forms/DrawerWindow.DragDrop.cs` 拖入绑定**：仅 `drawerContentsListView.AllowDrop = true`（不把整个窗体设为投放目标）；`DragEnter` 检查目标目录并解析一次 `CF_HDROP` 路径（`File.Exists`/`Directory.Exists` 过滤，虚拟条目丢弃），`DragOver` 只在数据对象变化时重新解析、但每次都按当前修饰键重算计划（避免每次鼠标移动都做文件系统 I/O）；`DragDrop` 不信任缓存，重新读取并校验；目标目录不可用或拒绝原因需要提示时走 `UiMessages`；执行完成后一律 `RefreshDrawerAsync()`（取消也可能留下部分改动）；一次投放写一条 `LogInformation`，失败写 `LogError`。
+- **`AGENTS.md` 已同步**：产品约定改为“应用自身不主动改动用户文件；唯一例外是用户在抽屉列表上显式拖放、且完全由 Windows Shell 执行的移动/拷贝”。
+- **已验证（构建）**：Debug 与 Release 完整 `dotnet build` 均 **0 警告 0 错误**。
+- **已验证（临时探针，26 项全部 PASS，关联真实源文件/真实 COM）**：
+  - 规划器：`C:\Foo\Bar` → 根 `C:\`；盘符大小写同一卷；`C:` vs `D:` 不同卷；UNC 同共享同卷、不同共享不同卷；自身/子目录判定正确，`C:\Foobar` 不被当作 `C:\Foo` 的子目录，父目录也不是自身子目录的子目录；同卷默认 Move、异卷默认 Copy；Ctrl 强制 Copy、Shift 强制 Move；仅允许 Copy / 仅允许 Move 时正确回退；无允许效果 → `NoAllowedEffect`；源已在目标目录 → `NoSources`；目标位于被拖动目录内 → `DestinationInsideSource`；重复源合并；混合批次拆成 1 个 Move + 1 个 Copy。
+  - `IFileOperation`：真实临时目录中一次调用同时执行 1 个 Move + 1 个 Copy，返回 `HRESULT=0x00000000`、未取消，文件确实被移动/拷贝（验证了 vtable 顺序与 COM 释放）。
+  - 窗口级端到端：反射调用真实 `DrawerWindow` 的 `DragDrop` 处理器（`DataObject` + `FileDrop`），同卷投放回报 `DragDropEffects.Move`，文件被移入抽屉目录，随后列表自动刷新并显示该条目。
+  - 探针位于 `C:\Users\Public\windrawer-drop-probe`，验证后已删除；日志保留在 `Z:\Temp\windrawer-drop-probe.log`。
+- **未验证（需人工）**：真实鼠标拖入（OLE 层的光标效果与 `DragEnter/DragOver` 节奏）、异盘拷贝、重名冲突对话框（替换/跳过/取消）、只读或被占用文件、超长路径、拖入后缩略图按当前排序出现、Shell 进度对话框期间的界面阻塞观感、把文件夹拖进自身子目录时的警告提示。
+- **已知取舍**：一次投放若同时包含 Move 与 Copy，`DragEventArgs.Effect` 只能回报单一效果（有 Move 就回报 `Move`），这是 WinForms 的限制；实际文件操作仍按分组执行。
+

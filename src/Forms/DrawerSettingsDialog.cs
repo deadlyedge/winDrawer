@@ -16,7 +16,7 @@ internal sealed class DrawerSettingsDialog : Form
     private Font? _titleFont;
     private readonly TableLayoutPanel _layoutPanel = new();
     private readonly TableLayoutPanel _headerPanel = new();
-    private readonly UILabel _titleLabel = new();
+    private readonly Label _titleLabel = new();
     private readonly UIGroupBox _detailsGroup = new();
     private readonly UIGroupBox _overlayGroup = new();
     private readonly UIButton _browseButton = new();
@@ -24,7 +24,7 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly UIButton _saveButton = new();
     private readonly UIButton _deleteButton = new();
     private readonly UIButton _cancelButton = new();
-    private readonly UILabel _overlayInfoLabel = new();
+    private readonly Label _overlayInfoLabel = new();
     private readonly TableLayoutPanel _fieldsPanel = new();
     private readonly FlowLayoutPanel _colorPanel = new();
     private readonly FlowLayoutPanel _footerPanel = new();
@@ -156,6 +156,8 @@ internal sealed class DrawerSettingsDialog : Form
 
         _titleLabel.Text = $"Drawer settings: {_nameTextBox.Text}";
         _titleLabel.Dock = DockStyle.Fill;
+        _titleLabel.AutoSize = false;
+        _titleLabel.BackColor = Color.Transparent;
         _titleLabel.TextAlign = ContentAlignment.MiddleLeft;
         _titleLabel.Cursor = Cursors.SizeAll;
         _titleLabel.MouseDown += Header_MouseDown;

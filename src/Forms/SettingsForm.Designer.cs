@@ -33,22 +33,22 @@ partial class SettingsForm
     private void InitializeComponent()
     {
         ComponentResourceManager resources = new ComponentResourceManager(typeof(SettingsForm));
-        mainTableLayoutPanel = new UITableLayoutPanel();
-        headerTableLayoutPanel = new UITableLayoutPanel();
-        headerSettings = new UILabel();
-        settingsTableLayoutPanel = new UITableLayoutPanel();
-        windowHeightTableLayoutPanel = new UITableLayoutPanel();
-        windowHeightLabel = new UILabel();
+        mainTableLayoutPanel = new TableLayoutPanel();
+        headerTableLayoutPanel = new TableLayoutPanel();
+        headerSettings = new Label();
+        settingsTableLayoutPanel = new TableLayoutPanel();
+        windowHeightTableLayoutPanel = new TableLayoutPanel();
+        windowHeightLabel = new Label();
         windowHeightTrackBar = new UITrackBar();
-        windowHeightValueLabel = new UILabel();
+        windowHeightValueLabel = new Label();
         behaviorCheckBoxGroup = new UICheckBoxGroup();
         visualGroupBox = new UIGroupBox();
         generalGroupBox = new UIGroupBox();
         generalFlowPanel = new FlowLayoutPanel();
-        visualTableLayoutPanel = new UITableLayoutPanel();
-        opacityValueLabel = new UILabel();
+        visualTableLayoutPanel = new TableLayoutPanel();
+        opacityValueLabel = new Label();
         opacityTrackBar = new UITrackBar();
-        opacityLabel = new UILabel();
+        opacityLabel = new Label();
         previewPanel = new UIPanel();
         footerGroupBox = new UIGroupBox();
         shutDownButton = new UIButton();
@@ -81,7 +81,6 @@ partial class SettingsForm
         mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
         mainTableLayoutPanel.Size = new Size(783, 649);
         mainTableLayoutPanel.TabIndex = 1;
-        mainTableLayoutPanel.TagString = null;
         // 
         // headerTableLayoutPanel
         // 
@@ -92,11 +91,11 @@ partial class SettingsForm
         headerTableLayoutPanel.Dock = DockStyle.Fill;
         headerTableLayoutPanel.Location = new Point(3, 3);
         headerTableLayoutPanel.Name = "headerTableLayoutPanel";
+        headerTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         headerTableLayoutPanel.RowCount = 1;
         headerTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         headerTableLayoutPanel.Size = new Size(777, 44);
         headerTableLayoutPanel.TabIndex = 0;
-        headerTableLayoutPanel.TagString = null;
         // 
         // headerSettings
         // 
@@ -105,6 +104,8 @@ partial class SettingsForm
         headerSettings.ForeColor = Color.White;
         headerSettings.Location = new Point(3, 0);
         headerSettings.Name = "headerSettings";
+        headerSettings.AutoSize = false;
+        headerSettings.BackColor = Color.Transparent;
         headerSettings.Size = new Size(303, 44);
         headerSettings.TabIndex = 0;
         headerSettings.Text = "winDrawer settings";
@@ -121,6 +122,7 @@ partial class SettingsForm
         settingsTableLayoutPanel.Dock = DockStyle.Fill;
         settingsTableLayoutPanel.Location = new Point(3, 53);
         settingsTableLayoutPanel.Name = "settingsTableLayoutPanel";
+        settingsTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         settingsTableLayoutPanel.RowCount = 4;
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 66F));
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 176F));
@@ -128,7 +130,6 @@ partial class SettingsForm
         settingsTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
         settingsTableLayoutPanel.Size = new Size(777, 442);
         settingsTableLayoutPanel.TabIndex = 2;
-        settingsTableLayoutPanel.TagString = null;
         //
         // windowHeightTableLayoutPanel
         //
@@ -147,10 +148,11 @@ partial class SettingsForm
         windowHeightTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         windowHeightTableLayoutPanel.Size = new Size(777, 60);
         windowHeightTableLayoutPanel.TabIndex = 3;
-        windowHeightTableLayoutPanel.TagString = null;
         windowHeightLabel.Dock = DockStyle.Fill;
         windowHeightLabel.ForeColor = Color.FromArgb(224, 224, 224);
         windowHeightLabel.Name = "windowHeightLabel";
+        windowHeightLabel.AutoSize = false;
+        windowHeightLabel.BackColor = Color.Transparent;
         windowHeightLabel.TabIndex = 0;
         windowHeightLabel.Text = "Window height (100–1000 DIP)";
         windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -168,6 +170,8 @@ partial class SettingsForm
         windowHeightValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
         windowHeightValueLabel.Location = new Point(701, 0);
         windowHeightValueLabel.Name = "windowHeightValueLabel";
+        windowHeightValueLabel.AutoSize = false;
+        windowHeightValueLabel.BackColor = Color.Transparent;
         windowHeightValueLabel.Size = new Size(73, 60);
         windowHeightValueLabel.TabIndex = 2;
         windowHeightValueLabel.Text = "400";
@@ -257,18 +261,20 @@ partial class SettingsForm
         visualTableLayoutPanel.Dock = DockStyle.Fill;
         visualTableLayoutPanel.Location = new Point(32, 64);
         visualTableLayoutPanel.Name = "visualTableLayoutPanel";
+        visualTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         visualTableLayoutPanel.RowCount = 2;
         visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
         visualTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
         visualTableLayoutPanel.Size = new Size(693, 200);
         visualTableLayoutPanel.TabIndex = 0;
-        visualTableLayoutPanel.TagString = null;
         //
         // opacityValueLabel
         //
         opacityValueLabel.Dock = DockStyle.Fill;
         opacityValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
         opacityValueLabel.Name = "opacityValueLabel";
+        opacityValueLabel.AutoSize = false;
+        opacityValueLabel.BackColor = Color.Transparent;
         opacityValueLabel.TabIndex = 11;
         opacityValueLabel.Text = "95%";
         opacityValueLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -287,6 +293,8 @@ partial class SettingsForm
         opacityLabel.Dock = DockStyle.Fill;
         opacityLabel.ForeColor = Color.FromArgb(224, 224, 224);
         opacityLabel.Name = "opacityLabel";
+        opacityLabel.AutoSize = false;
+        opacityLabel.BackColor = Color.Transparent;
         opacityLabel.TabIndex = 3;
         opacityLabel.Text = "Window opacity";
         opacityLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -394,22 +402,22 @@ partial class SettingsForm
 
     #endregion
 
-    private Sunny.UI.UITableLayoutPanel mainTableLayoutPanel;
-    private Sunny.UI.UITableLayoutPanel headerTableLayoutPanel;
-    private Sunny.UI.UILabel headerSettings;
-    private Sunny.UI.UITableLayoutPanel settingsTableLayoutPanel;
-    private Sunny.UI.UITableLayoutPanel windowHeightTableLayoutPanel;
-    private Sunny.UI.UILabel windowHeightLabel;
+    private TableLayoutPanel mainTableLayoutPanel;
+    private TableLayoutPanel headerTableLayoutPanel;
+    private Label headerSettings;
+    private TableLayoutPanel settingsTableLayoutPanel;
+    private TableLayoutPanel windowHeightTableLayoutPanel;
+    private Label windowHeightLabel;
     private Sunny.UI.UITrackBar windowHeightTrackBar;
-    private Sunny.UI.UILabel windowHeightValueLabel;
+    private Label windowHeightValueLabel;
     private Sunny.UI.UICheckBoxGroup behaviorCheckBoxGroup;
     private Sunny.UI.UIGroupBox visualGroupBox;
     private Sunny.UI.UIGroupBox generalGroupBox;
     private System.Windows.Forms.FlowLayoutPanel generalFlowPanel;
-    private Sunny.UI.UITableLayoutPanel visualTableLayoutPanel;
-    private Sunny.UI.UILabel opacityValueLabel;
+    private TableLayoutPanel visualTableLayoutPanel;
+    private Label opacityValueLabel;
     private Sunny.UI.UITrackBar opacityTrackBar;
-    private Sunny.UI.UILabel opacityLabel;
+    private Label opacityLabel;
     private Sunny.UI.UIPanel previewPanel;
     private Sunny.UI.UIGroupBox footerGroupBox;
     private Sunny.UI.UIButton cancelButton;

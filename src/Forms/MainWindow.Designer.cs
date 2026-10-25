@@ -32,9 +32,9 @@ namespace winDrawer
         /// </summary>
         private void InitializeComponent()
         {
-            mainTableLayoutPanel = new UITableLayoutPanel();
-            headerTableLayoutPanel = new UITableLayoutPanel();
-            logoLabel = new UILabel();
+            mainTableLayoutPanel = new TableLayoutPanel();
+            headerTableLayoutPanel = new TableLayoutPanel();
+            logoLabel = new Label();
             settingsButton = new UIButton();
             drawerListBox = new UIListBox();
             addDrawerButton = new UIButton();
@@ -59,7 +59,6 @@ namespace winDrawer
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
             mainTableLayoutPanel.Size = new Size(413, 400);
             mainTableLayoutPanel.TabIndex = 0;
-            mainTableLayoutPanel.TagString = null;
             // 
             // headerTableLayoutPanel
             // 
@@ -76,7 +75,6 @@ namespace winDrawer
             headerTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             headerTableLayoutPanel.Size = new Size(407, 44);
             headerTableLayoutPanel.TabIndex = 0;
-            headerTableLayoutPanel.TagString = null;
             // 
             // logoLabel
             // 
@@ -86,8 +84,9 @@ namespace winDrawer
             logoLabel.ForeColor = SystemColors.ButtonFace;
             logoLabel.Location = new Point(3, 0);
             logoLabel.Name = "logoLabel";
+            logoLabel.AutoSize = false;
+            logoLabel.BackColor = Color.Transparent;
             logoLabel.Size = new Size(278, 44);
-            logoLabel.Style = UIStyle.Custom;
             logoLabel.TabIndex = 0;
             logoLabel.Text = "winDrawer";
             logoLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -182,9 +181,9 @@ namespace winDrawer
 
         #endregion
 
-        private Sunny.UI.UITableLayoutPanel mainTableLayoutPanel;
-        private Sunny.UI.UITableLayoutPanel headerTableLayoutPanel;
-        private Sunny.UI.UILabel logoLabel;
+        private TableLayoutPanel mainTableLayoutPanel;
+        private TableLayoutPanel headerTableLayoutPanel;
+        private Label logoLabel;
         private Sunny.UI.UIButton settingsButton;
         private Sunny.UI.UIListBox drawerListBox;
         private Sunny.UI.UIButton addDrawerButton;

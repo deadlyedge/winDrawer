@@ -166,6 +166,7 @@
 - 现状：约 88 处引用，集中在 `SettingsForm.Designer.cs`（40 处）、`DrawerSettingsDialog.cs`（13 处）、`MainWindow.Designer.cs`（12 处）、`DrawerWindow.Designer.cs`（9 处）。
 - 判断：移除依赖 ≠ 减少代码。原生控件需要自己实现主题、圆角、滚动条和布局，代码量可能增加；SunnyUI 也是当前视觉的一部分。
 - 建议：不作为 10.3 的默认项；除非目标是“减少第三方依赖”而不是“减少行数”。
+- 详细评估见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
 - 风险：高。
 
 ### C2 改用虚拟列表/重写缩略图管线

@@ -32,12 +32,12 @@ namespace winDrawer
         {
             components = new Container();
             drawerToolTip = new ToolTip(components);
-            mainTableLayoutPanel = new UITableLayoutPanel();
+            mainTableLayoutPanel = new TableLayoutPanel();
             drawerContentsHostPanel = new Panel();
             drawerContentsListView = new ScrollableListView();
             drawerContentsScrollBar = new UIScrollBar();
             drawerImageList = new ImageList(components);
-            drawerHeaderTableLayoutPanel = new UITableLayoutPanel();
+            drawerHeaderTableLayoutPanel = new TableLayoutPanel();
             drawerPathTableLayoutPanel = new TableLayoutPanel();
             openFolderIconPictureBox = new PictureBox();
             fullPathLabel = new EllipsisLabel();
@@ -68,7 +68,6 @@ namespace winDrawer
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             mainTableLayoutPanel.Size = new Size(762, 583);
             mainTableLayoutPanel.TabIndex = 0;
-            mainTableLayoutPanel.TagString = null;
             //
             // drawerContentsHostPanel
             //
@@ -120,7 +119,6 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             drawerHeaderTableLayoutPanel.Size = new Size(756, 44);
             drawerHeaderTableLayoutPanel.TabIndex = 0;
-            drawerHeaderTableLayoutPanel.TagString = null;
             // drawerPathTableLayoutPanel
             drawerPathTableLayoutPanel.ColumnCount = 2;
             drawerPathTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 32F));
@@ -218,9 +216,9 @@ namespace winDrawer
 
         #endregion
 
-        private UITableLayoutPanel mainTableLayoutPanel;
+        private TableLayoutPanel mainTableLayoutPanel;
         private Panel drawerContentsHostPanel;
-        private UITableLayoutPanel drawerHeaderTableLayoutPanel;
+        private TableLayoutPanel drawerHeaderTableLayoutPanel;
         private TableLayoutPanel drawerPathTableLayoutPanel;
         private PictureBox openFolderIconPictureBox;
         private EllipsisLabel fullPathLabel;

@@ -2,6 +2,8 @@
 
 > 状态：阶段 6.1–6.6 已实施；阶段 6.7 的文档更新、配置 smoke checks、Release 构建和单文件发布验证已完成。阶段 6.4–6.6 用户反馈基本正常，长期使用回归继续进行。
 >
+> **后续 UI 状态：** SunnyUI 已在后续迁移中完全移除。阶段 6 描述的 Lobster 按钮、圆角/状态色和设置页控件为当时实现；当前按钮为原生扁平 `Button`（主操作 10F、其他 9.5F），设置页使用原生 GroupBox/TrackBar/CheckBox，抽屉滚动条为 `ThemedScrollBar`。具体见 [`WHITEPAPER.md`](WHITEPAPER.md)。
+>
 > 本计划承接 [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) 已完成的抽屉管理、主题和窗口体验工作，将 [`TODOs.md`](TODOs.md) 中的待办收敛为可实施、可验收的阶段。实施时以用户最新明确要求为准；若与现有开发约定冲突，先记录并更新相应文档。
 
 ## 1. 目标
@@ -15,7 +17,7 @@
 
 ## 2. 已核实的现状与关键决策
 
-- 项目使用 `net10.0-windows`、WinForms、SunnyUI 和 Tomlyn，继续保持单项目结构，不引入新的 UI 框架。
+- 项目使用 `net10.0-windows`、WinForms 和 Tomlyn，继续保持单项目结构，不引入新的 UI 框架；SunnyUI 已在后续迁移中移除。
 - 根目录实际配置名为 `Drawer-settings.toml`（大小写以仓库文件为准），作为新用户首次运行模板；模板不得包含真实用户路径或个人抽屉配置。
 - 当前活动用户设置位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`。首次创建逻辑在 `SettingsRepository.LoadOrCreateTable`；用户配置不存在时从程序集内嵌的根目录模板初始化。
 - 根目录配置应被当作**新用户的初始化模板**，而不是每次启动时覆盖用户设置的来源。若活动设置已经存在，保持其内容、注释、抽屉顺序和用户数据不变。
@@ -29,7 +31,7 @@
 - 阶段 6.3 已按用户确认实现：Default 从嵌入模板立即重置受支持的 startup 选项，需用户确认并同步 Windows 登录启动注册；Save/Cancel 管理后续草稿，Cancel 不撤销已确认的 Default。所有写盘都会删除废弃的 `icon_size`，其它未知 startup 键仍予保留。主设置窗体点外不关闭；按钮使用 Lobster，其他文本使用系统字体；按钮语义色统一为保存绿、取消/退出红、其他蓝。
 - 抽屉设置标题使用英文 `Drawer settings: {drawer name}`；独立的 `Overlay color` 区域使用可点击色块，色块内显示英文提示和当前 `#RRGGBB`（未设置时显示 `No overlay`），点击后打开系统颜色对话框；区域内说明蒙版固定以 70% 混合且仅影响当前抽屉。
 - `Lobster-Regular.ttf` 作为程序集内嵌资源通过固定资源名加载，并以 `PrivateFontCollection.AddMemoryFont` 在内存中创建字体；主窗口品牌标题/按钮及主设置、抽屉设置的标题和非图标按钮（包括 Save、Cancel、Delete）统一使用该应用内字体。关闭图标使用 Segoe MDL2 Assets；其他标签、输入框和说明文字使用 Segoe UI。字体字节缓冲区和字体集合维持到进程退出，控件使用的派生 Font 在各窗体关闭时释放；资源缺失或加载失败时清晰回退 Segoe UI，不依赖字体是否安装在 Windows。
-- `DrawerWindow` 通过移除 `WS_CAPTION` 隐藏标题栏，Designer 仍设置 `FormBorderStyle.Sizable`；底部刷新/关闭按钮使用 Segoe MDL2 Assets 字形，主题代码为普通、悬停、按下和禁用状态设置对比前景/背景。收紧外层和底部布局边距不得移除 `WS_THICKFRAME`，实际窗口边框及多 DPI 效果仍须运行时确认。
+- `DrawerWindow` 通过移除 `WS_CAPTION` 隐藏标题栏，Designer 仍设置 `FormBorderStyle.Sizable`；底部刷新/关闭按钮使用 Segoe MDL2 Assets 字形。阶段 6 当时为主题代码设置普通、悬停、按下和禁用状态的前景/背景；后续原生按钮迁移后，悬停/按下由 `FlatAppearance` 处理，禁用状态使用 WinForms 原生绘制。收紧外层和底部布局边距不得移除 `WS_THICKFRAME`，实际窗口边框及多 DPI 效果仍须运行时确认。
 - 主窗口、抽屉窗口、主设置窗体和抽屉设置对话框正常情况下均显式设置 `ShowInTaskbar = false`；托盘初始化失败时主窗口恢复任务栏按钮，以免失去界面入口。正常情况下仍保留主窗口启动显示及托盘菜单的显示/隐藏、设置和退出入口；不把本需求解释成“应用启动后必须隐藏主窗口”。
 
 ## 3. 产品行为与数据安全约定

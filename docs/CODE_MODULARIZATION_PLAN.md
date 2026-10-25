@@ -2,7 +2,7 @@
 
 > 目的：先把文件列表与抽屉窗口相关职责拆成易读、可分别验证的小模块，再开始实施 [`DP_STAGE_7.md`](DP_STAGE_7.md) 的阶段 7.1/7.2。本文是拆分方案，不表示代码已按此结构修改。
 >
-> 范围：优先处理 `DrawerWindow` 的文件列表管线。继续使用当前单个 WinForms 项目、BCL 和 SunnyUI；不新增项目、不引入 MVVM、依赖注入框架或大型缓存层。`docs/TODOs.md` 和 `docs/DP_STAGE_7.md` 中已有的工作均应保留。
+> 范围：优先处理 `DrawerWindow` 的文件列表管线。继续使用当前单个 WinForms 项目、BCL 和项目内轻量控件；SunnyUI 已在后续迁移中移除。不新增项目、不引入 MVVM、依赖注入框架或大型缓存层。`docs/TODOs.md` 和 `docs/DP_STAGE_7.md` 中已有的工作均应保留。
 >
 > **实施状态（本次已落地）：** 步骤 A–D 已按本方案完成——`DrawerWindow` 改为 partial 并新增 `DrawerWindow.FileList.cs`（列表编排、视口延迟加载、ImageList 所有权），业务逻辑拆到 `Drawers/DrawerItemInfo.cs`、`Drawers/DrawerItemEnumerator.cs`、`Drawers/DrawerItemImageLoader.cs`，`ScrollableListView` 增加 `TryGetVisibleItemRange`。排序采用已确认的“目录与文件全体混排、`LastWriteTimeUtc` 降序”契约，并已同步 [`DP_STAGE_7.md`](DP_STAGE_7.md)。时间排序、枚举降级、缩略图回退与源文件解锁、可见范围查询已用 `%TEMP%` 下的临时 smoke harness 验证（22 项通过）；大目录滚动、深浅主题、DPI 切换和双击打开等人工 UI 回归尚未执行。
 >
@@ -16,7 +16,7 @@
 
 - 应用只有一个 `net10.0-windows` WinForms 项目；SDK 默认包含项目目录中的 C# 文件，不需要为新增 `.cs` 文件手动登记项目文件。
 - 目前已有 `Configuration`、`Theming` 子目录；主界面、抽屉窗体、托盘控制器和字体管理仍在单项目内。
-- `ScrollableListView` 已是独立控件，负责 Win32 ListView 滚动范围、隐藏横向滚动条和 `ViewportChanged` 通知；它不是目录业务模型。
+- `ScrollableListView` 已是独立控件，负责 Win32 ListView 滚动范围、抑制横向滚动条、处理视口变化和 `ViewportChanged` 通知；当前实现保留原生垂直滚动条用于滚轮/滚动信息，但通过加宽 ListView 将其裁剪到宿主外侧；它不是目录业务模型。
 
 ### 1.2 `DrawerWindow` 的职责集中
 
@@ -129,7 +129,7 @@ src/
 
 ### 3.6 `ScrollableListView.cs`：原生视口与滚动
 
-继续只负责 ListView 的 Win32 滚动、横向滚动条抑制及视口通知。若阶段 7.2 需要 `TryGetVisibleItemRange`，该方法可加在此类中，但要保证：
+继续只负责 ListView 的 Win32 滚动、横向滚动条抑制、视口通知和（当前实现下的）原生垂直条裁剪配合。若阶段 7.2 需要 `TryGetVisibleItemRange`，该方法可加在此类中，但要保证：
 
 - 仅在 ListView 已创建句柄、未 Dispose、尺寸非零时查询。
 - 图标视图应处理项目之间空白、图标排布方向和 DPI；不应假设连续索引区间在所有 ListView 布局模式下都等价于几何可视区。

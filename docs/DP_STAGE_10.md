@@ -1,6 +1,8 @@
 # 阶段十建议：托盘菜单定位、抽屉容量上限与代码收敛
 
-> 状态：10.1、10.2、10.4–10.6 已完成；10.3 按用户要求暂缓，审查清单见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。10.1 的特殊任务栏/跨屏场景仍需用户实测。
+> 状态：10.1、10.2、10.4–10.6 已完成；10.3 的代码清理按用户要求暂缓，审查清单见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。10.1 的特殊任务栏/跨屏场景仍需用户实测。
+>
+> **后续更新：** SunnyUI 已在独立的 `test/sunnyui-simple-controls` 分支全量移除并合并入主分支；该迁移不属于 10.3 的代码清理，10.3 的 A/B 组清理仍未全部实施。迁移过程见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
 >
 > 本文件是阶段 10 的实施与验收依据。工作树中的 `docs/TODOs.md` 属于用户改动，本阶段只读取、不覆盖、不代为删除条目；完成后由用户自行更新。
 
@@ -12,7 +14,7 @@
   2. 限制抽屉最大条目数，超出时停止显示并告知用户使用资源管理器；
   3. 精简 README，并提供工作流程截图；
   4. 审查/优化代码结构、函数命名，尝试减少代码量，并提供白皮书。
-- 当前构建目标为 `net10.0-windows`，单个 WinForms 项目；继续使用 BCL、WinForms、SunnyUI、Tomlyn，不引入新框架。
+- 当前构建目标为 `net10.0-windows`，单个 WinForms 项目；阶段 10 当时使用 BCL、WinForms、SunnyUI、Tomlyn；SunnyUI 已在后续迁移中移除，当前依赖为 BCL、WinForms 和 Tomlyn。
 
 ## 2. 已确认的决策
 
@@ -164,7 +166,7 @@ internal readonly record struct DrawerEnumerationResult(
 - 合并设置窗体与抽屉设置窗体重复的颜色预览、按钮样式、浏览路径逻辑；
 - 精简 `DrawerWindow.FileList.cs` 的图像缓存/状态流程；
 - 简化 `SettingsRepository` 中不必要的分层或重复表操作；
-- 评估是否移除 SunnyUI 依赖、改用原生 WinForms 控件（高风险，需单独确认）；
+- ~~评估是否移除 SunnyUI 依赖、改用原生 WinForms 控件（高风险，需单独确认）~~：已在后续迁移中完成，见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)；
 - 评估 `ThemePalette` 是否可以减少派生色层级；
 - 统一必要的注释语言与命名，不重写无关代码。
 
@@ -277,7 +279,7 @@ internal readonly record struct DrawerEnumerationResult(
 - 托盘菜单的跨屏修复只能在用户特殊布局中最终确认；本阶段按源码和定位规则实现，不做烟测。
 - 手动 `Show` 可能出现焦点/关闭行为差异；预留隐藏 `NativeWindow` 的方案，但不在首次实现中提前加入。
 - 严格超限不显示条目会让 201 项的文件夹只能通过底栏路径打开；这是用户确认的行为。
-- 10.3 的重构范围需讨论确认；SunnyUI 移除属于高风险候选，不默认实施。
+- 10.3 的代码清理范围仍需讨论确认；SunnyUI 移除已在后续独立迁移中完成，不再作为 10.3 候选。
 - 截图抓取依赖交互式桌面与用户退出正在运行的实例。
 
 ## 12. 实施记录（10.1–10.2）
@@ -326,4 +328,15 @@ internal readonly record struct DrawerEnumerationResult(
 - 10.2 后的临时 harness 16 项检查全部通过；此后仅修改文档和 README，未再改源码。
 - 未执行：托盘特殊任务栏/跨屏布局、抽屉右键排序/F5、拖入拖出、真实 >200 项目录的 UI 状态、DPI 切换、登录启动/Default 的完整手工回归。以上仍需在真实使用环境中验证，不能视为已通过。
 - `docs/TODOs.md` 未修改，由用户自行更新。
+
+
+## 14. 后续 UI 迁移记录（不属于 10.3）
+
+- SunnyUI 3.9.8 已从项目文件和源码中移除；当前 UI 仅使用 WinForms 原生控件与项目内轻量控件。
+- 新增/保留的 UI 控件：`DrawerListBox`（抽屉列表 owner-draw）、`ThemedScrollBar`（细自绘滚动条）、`ColorPreviewPanel`（颜色预览）、`BehaviorCheckBoxGroup`（行为复选框组）、`ScrollableListView`（列表滚动/视口通知）。
+- 按钮改为原生扁平 `Button`；主操作使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。
+- 设置窗体/抽屉设置对话框改为原生 `Form`、`GroupBox`、`TrackBar`、`CheckBox`、`Label`。
+- 抽屉内容区通过“加宽 ListView + 裁剪原生垂直条 + `ThemedScrollBar` 覆盖”隐藏系统滚动条，同时保留原生滚轮和 `GetScrollInfo`。
+- 迁移过程的逐批记录、视觉变化、构建验证和待人工回归项见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
+- 10.3 的 A/B 组代码清理仍未全部实施；不要把本次迁移等同于 10.3 完成。
 

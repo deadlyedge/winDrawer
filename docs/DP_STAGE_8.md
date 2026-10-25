@@ -1,5 +1,7 @@
 # 阶段八建议：快捷键与显示/隐藏语义、顶部边带、抽屉右键菜单
 
+> **后续状态：** 本文是 SunnyUI 迁移前的实施记录；文中 `UICheckBoxGroup` 已被 `BehaviorCheckBoxGroup` 取代，SunnyUI 依赖已完全移除。当前 UI 架构见 [`WHITEPAPER.md`](WHITEPAPER.md)。
+
 我检查了当前实现、TODO 和工作树状态。`git status --short` 只有 `M docs/TODOs.md`（未提交的用户改动，内容正是这几条待办）；我保留了该文件原样，没有改动任何源码。
 
 本阶段按你的确认收敛范围：**新增“启用 Win+Shift+D”设置项（D1，被占用时警告但保留用户选择 = D1b，默认 `true` = D1c）**、**托盘与快捷键都同时隐藏/显示主窗口与已打开的抽屉（D2）**、**排序模式持久化到 TOML（D3）**、**右键菜单用 WinForms `ContextMenuStrip` + 主题色（D4）**、**菜单与排序文案用英文、TOML 取值小写（D9）**、**“按名称”保持目录与文件混排（D8）**；**文件拖入/拖出整体推迟到阶段九（D5–D7 暂不实施）**。

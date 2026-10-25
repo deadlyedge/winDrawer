@@ -18,8 +18,10 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 ## 技术与架构约定
 
 - 这是 Windows-only 的桌面项目；优先沿用单个 WinForms 应用项目和 BCL/WinForms 原生控件，不要仅为“现代架构”引入多项目分层、复杂 MVVM、依赖注入框架或微服务式结构。
+- SunnyUI 已完全移除；不要再引入。当前 UI 使用原生控件和项目内轻量控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`。按钮颜色统一走 `UiButtonTheming`；主操作使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。
 - 使用实施时 Microsoft 官方最新的 GA LTS .NET Windows 版本；当前计划目标是 `net10.0-windows`。实施前核实官方支持周期和 SDK，安装最新 servicing patch；不使用 preview 或 STS。
 - 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。主题设置页只保留颜色预览和独立的透明度滑块；点击颜色预览打开 Windows/WinForms 系统颜色控件（优先 `ColorDialog`）。不要保留 H/S/L 或 HSLA 调色控件，也不要重新实现每个文件一套自绘卡片布局。
+- 抽屉内容区的原生 `ListView` 垂直滚动条用于滚轮/`GetScrollInfo`，但必须通过加宽 ListView 裁剪到宿主外侧，并由 `ThemedScrollBar` 覆盖可见区域；不要恢复可见的系统滚动条，也不要改回移除 `WS_VSCROLL` 后手动处理滚轮的旧方案。
 - 文件和文件夹的 Shell 操作必须委托给 Windows：使用合适的 Shell 执行方式（例如 `ProcessStartInfo.UseShellExecute = true`），不要自行解析关联程序或拼接命令行。
 - 当前代码已有 `Theming/ShellIcon.cs`、`Drawers/` 的直接子项枚举与排序、`Forms/DrawerWindow.cs` 与 `Forms/DrawerWindow.FileList.cs` 的列表/图像管线、`Forms/MainWindow.cs` 的抽屉列表与托盘协调，以及 `Configuration/SettingsRepository.*` 的 TOML 处理。优先精简、复用并添加测试；避免未经用户确认就换 UI 框架、配置格式或重写整个应用。
 - 主题设置页仅显示当前颜色预览与独立透明度滑块（百分比 0–100）；点击颜色预览打开系统颜色对话框。颜色统一以 `#RRGGBB` 保存到 `startup.window_color`，透明度单独保存到 `startup.window_opacity`；不再持久化 HSLA。抽屉专属颜色沿用 `#RRGGBB`，蒙版强度仍固定为 70%。颜色选择、透明度和实时预览须遵循保存/取消语义。

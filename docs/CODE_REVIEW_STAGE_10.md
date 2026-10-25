@@ -1,8 +1,10 @@
 # 阶段 10 代码审查清单
 
-> 目的：为 10.3 的逐项讨论提供依据。本文只记录审查结果，**不代表已修改代码**。
+> 目的：为 10.3 的逐项讨论提供依据。本文最初只记录审查结果；后续 SunnyUI 迁移已在独立测试分支完成并合并。
 >
 > 审查范围：`src/` 下全部手写 C#（不含 Designer 生成代码），以及 10.1/10.2 新增/修改的代码。工作树中的 `docs/TODOs.md` 为用户改动，本文未修改它。
+>
+> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A/B 组代码清理项仍按原审查清单讨论，不代表已全部实施。
 
 ## 1. 当前规模
 
@@ -161,13 +163,13 @@
 
 ## 4. C 组：高风险或收益不明确，不建议默认实施
 
-### C1 移除 SunnyUI 依赖
+### C1 移除 SunnyUI 依赖（已完成）
 
-- 现状：约 88 处引用，集中在 `SettingsForm.Designer.cs`（40 处）、`DrawerSettingsDialog.cs`（13 处）、`MainWindow.Designer.cs`（12 处）、`DrawerWindow.Designer.cs`（9 处）。
-- 判断：移除依赖 ≠ 减少代码。原生控件需要自己实现主题、圆角、滚动条和布局，代码量可能增加；SunnyUI 也是当前视觉的一部分。
-- 建议：不作为 10.3 的默认项；除非目标是“减少第三方依赖”而不是“减少行数”。
-- 详细评估见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
-- 风险：高。
+- 迁移前现状：约 88 处引用，集中在 `SettingsForm.Designer.cs`、`DrawerSettingsDialog.cs`、`MainWindow.Designer.cs`、`DrawerWindow.Designer.cs`。
+- 原判断：移除依赖 ≠ 减少代码；原生控件需要自己实现主题、滚动条和布局，且会改变视觉。该判断仍适用于评估“是否值得为减行数重写 UI”。
+- 实施结果：按独立测试分支完成全量移除；当前 SunnyUI 源码/包引用为 0，新增 `DrawerListBox`、`ThemedScrollBar`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup` 等项目内控件。
+- 详细过程、视觉变化和回归项见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
+- 风险：高；视觉/DPI/滚动行为仍需持续人工回归。
 
 ### C2 改用虚拟列表/重写缩略图管线
 
@@ -194,7 +196,7 @@
 | B3 | 拆分抽屉列表绘制/重排 | 0 行 | 中 | 仅当当前难维护 |
 | B4 | 简化配置 writer | 减少 80–120 行 | 高 | 不建议 |
 | B5 | 简化 ThemePalette | 减少 50–80 行 | 高 | 需接受视觉变化 |
-| C1 | 移除 SunnyUI | 可能增加 | 高 | 不建议默认做 |
+| C1 | 移除 SunnyUI | 已实施；代码量可能增加 | 高 | 已完成，见迁移记录 |
 
 结论：**安全清理的现实收益约 120–180 行（约 1.5–2%）**，不是“减半”。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
 
@@ -212,5 +214,5 @@
 1. A1–A9 是否全部纳入？还是只选 A1/A2/A3？
 2. 是否接受“总代码量不降、但可读性提升”的 B1/B2？
 3. 是否愿意讨论“删功能”以显著减少代码量？如果愿意，哪些功能可以放弃（拖放、主题派生、抽屉颜色、热键、托盘常驻等）？
-4. B4/B5/C1 是否明确暂缓？
+4. B4/B5 是否明确暂缓？（C1 已随 SunnyUI 迁移完成。）
 

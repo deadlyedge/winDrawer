@@ -1,8 +1,8 @@
 # winDrawer 白皮书
 
-> 本文描述当前实现（阶段 10.1/10.2 之后），用于快速理解代码边界、数据流和必须保持的行为不变量。
+> 本文描述当前实现（SunnyUI 移除后），用于快速理解代码边界、数据流和必须保持的行为不变量。
 >
-> 这不是需求文档；具体配置字段见 [`CONFIGURATION_FORMAT.md`](CONFIGURATION_FORMAT.md)，阶段计划见 [`DP_STAGE_10.md`](DP_STAGE_10.md)。
+> 这不是需求文档；具体配置字段见 [`CONFIGURATION_FORMAT.md`](CONFIGURATION_FORMAT.md)，阶段计划见 [`DP_STAGE_10.md`](DP_STAGE_10.md)，UI 栈迁移记录见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
 
 ## 1. 产品定位
 
@@ -20,6 +20,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 ## 2. 运行模型
 
 - 单个 `net10.0-windows` WinForms 进程，STA UI 线程；`Program.Main` 调用 `Application.Run(MainWindow)`。
+- UI 只依赖 WinForms 与项目内轻量控件，不再引用 SunnyUI；当前自有控件为 `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup` 和 `EllipsisLabel`。
 - 主窗口是应用主窗体；正常运行时主窗口、抽屉窗口和设置窗口都不创建任务栏按钮，托盘是常驻入口。
 - `MainWindow` 同一时间只维护一个打开中的抽屉窗口；切换抽屉会关闭旧窗口。
 - 托盘菜单和设置面板的退出入口最终都走 `MainWindow.ShutdownApplication(reason)`，再通过 `Application.Exit()` 走常规 `FormClosing/FormClosed` 路径。
@@ -37,7 +38,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 | `Forms/DrawerSettingsDialog.cs` | 单个抽屉的名称、路径、专属颜色、删除 |
 | `Drawers/` | 直接子项枚举/排序/上限、条目元数据、Shell 图标与缩略图、拖放规划 |
 | `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
-| `Controls/` | `ScrollableListView`、省略号标签、按钮/菜单主题、颜色对话框 helper、消息框 |
+| `Controls/` | `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、按钮/菜单主题、颜色对话框 helper、消息框 |
 | `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation` |
 | `Theming/` | `#RRGGBB` 解析、主题派生色、品牌字体、Shell 图标 |
 
@@ -73,6 +74,9 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 设置窗体与抽屉设置对话框每次打开时按主窗口位置偏移 `(100, 100)` 并夹取到主窗口所在屏幕工作区；它们的位置不持久化。
 - 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（0–100）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。
 - 抽屉专属颜色以 `overlay_color` 保存，固定以 70% 不透明度混合到抽屉背景，不提供单独 Alpha。未设置时不叠加。
+- 按钮使用原生 `Button` 的 `FlatStyle.Flat`：`Cancel`/`Save` 使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。不再使用 SunnyUI 的圆角、`TipsFont` 或独立状态前景色。
+- 设置窗体和抽屉设置对话框使用原生 `Form`/`GroupBox`/`TrackBar`/`CheckBox`/`Label`；颜色预览由 `ColorPreviewPanel` 自绘，行为选项由 `BehaviorCheckBoxGroup` 提供两列布局。
+- 抽屉内容区保留原生 `ListView` 垂直滚动条用于 `GetScrollInfo`、滚轮和原生滚动平滑度，但把 `ListView` 加宽到宿主客户区之外，让原生条被父面板裁掉；`ThemedScrollBar` 只在可见侧绘制约 3px 轨道，并覆盖原生条的约 18px 区域。该裁剪关系是刻意的，不要恢复可见的系统滚动条。
 - 主窗口和设置页使用 WinForms 自动缩放；抽屉窗口使用 `AutoScaleMode.None`，在 `DpiChanged` 时显式重算图标尺寸、底栏布局、滚动条和图像列表。修改这些尺寸时必须同时验证 100%/150%/200% DPI。
 
 ## 7. 拖放
@@ -109,6 +113,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - **配置写入**：后台 writer 的状态机偏重，但承担防抖、退出 flush、失败保留和原子写入；不建议为了行数牺牲可靠性。
 - **主题**：`ThemePalette` 通过 HSL 往返派生颜色，代码量较大且会轻微改变精确 RGB；修改前需接受视觉变化。
 - **抽屉列表**：主窗口使用 owner-draw 和拖动重排，行为直观但代码集中；没有 UI 自动化测试。
+- **滚动条**：`DrawerWindow.FileList.PositionDrawerScrollBar` 通过加宽 ListView 裁剪原生垂直条，`ThemedScrollBar` 负责可见轨道和拖动。这个组合依赖原生滚动信息、图标视图和 DPI，布局或滚动逻辑改动后必须做 100%/150%/200% 手工回归。
 - **测试**：仓库没有测试工程；纯逻辑使用 `%TEMP%` 下的临时 harness 验证，UI 行为依赖人工回归。
 - 更细的代码审查项和预计收益见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。
 
@@ -118,5 +123,6 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 新增抽屉行为：优先改 `Drawers/` 中的纯逻辑，再接到 `DrawerWindow`；保持枚举/排序/上限结果可区分，不要在窗体里复制文件系统逻辑。
 - 修改主题：同时检查主窗口、抽屉、设置窗体和右键菜单的普通/悬停/按下/禁用状态，以及深色/浅色背景对比度。
 - 修改窗口布局：验证 100%/150%/200% DPI、最小尺寸、工作区夹取、无标题栏缩放和退出时的资源释放。
+- UI 控件：优先复用项目内 `DrawerListBox`、`ThemedScrollBar`、`ColorPreviewPanel` 和 `BehaviorCheckBoxGroup`；不要再引入 SunnyUI 或为单个小效果新增大型 UI 框架。按钮颜色统一走 `UiButtonTheming`。
 - 每次改动后执行完整 `dotnet build .\src\winDrawer.csproj`（Debug/Release），不要使用 `-t:Compile` 绕过资源生成；构建产物被占用时改用临时输出目录。
 

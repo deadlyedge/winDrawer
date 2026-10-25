@@ -2,6 +2,8 @@
 
 > 目的：在阶段 7.6 收尾后对 `src/` 做一次整体代码质量审查，记录结论与可执行的优化建议。
 > 性质：**本次审查只读代码并运行既有验证手段，未修改任何产品行为**；下列条目均给出来源与证据，供后续按优先级决定是否实施。
+>
+> **后续状态：** 本文是迁移前快照。SunnyUI 已完全移除，`UIButton`/`Radius`/SunnyUI 技术选型和相关行号描述不再代表当前实现；`UiButtonTheming` 现在作用于原生 `Button`。当前 UI 架构见 [`WHITEPAPER.md`](WHITEPAPER.md)，迁移记录见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
 
 ## 1. 审查范围与方法
 
@@ -149,7 +151,7 @@
 
 ## 5. 建议保持不动的部分
 
-- 单个 WinForms 项目 + BCL/SunnyUI + Tomlyn 的技术选型；不引入 DI、MVVM、多项目分层。
+- 单个 WinForms 项目 + BCL/Tomlyn 的技术选型；SunnyUI 已在后续迁移中移除，不引入 DI、MVVM、多项目分层。
 - `ScrollableListView` 的原生滚动/视口实现，以及"全量轻量元数据 + 视口图像延迟加载"的列表管线（token + generation 双保险、图像所有权清晰）。
 - 配置层行为：原子写入（临时文件 + 覆盖移动）、损坏 TOML 不覆盖原文、未知键保留、Default 重置语义。
 - 已完成的分部文件与目录分层（当前最大文件 589 行；`SettingsRepository` 5 文件、`MainWindow` 5 文件、`DrawerWindow` 2 文件）。

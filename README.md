@@ -74,12 +74,16 @@ The single-file build is written under the project's `bin\Release\...\publish` f
 - `src/Forms/` – Main window, drawer window, settings windows.
 - `src/Drawers/` – Direct-child enumeration, sorting, item limits, icons/thumbnails, drop planning.
 - `src/Configuration/` – TOML model and persistence.
-- `src/Controls/` – Reusable WinForms controls and UI helpers.
+- `src/Controls/` – Native WinForms controls and project-local controls: `DrawerListBox`, `ThemedScrollBar`, `ColorPreviewPanel`, `BehaviorCheckBoxGroup`, `ScrollableListView`, and UI helpers.
 - `src/Theming/` – Theme palette, branding font, Shell icons.
 - `src/Infrastructure/` – Logging, tray, startup registration, hotkey, Shell file operations.
-- `docs/` – Configuration format, plans, white paper, screenshots.
+- `docs/` – [Documentation index](docs/INDEX.md), configuration format, plans, white paper, screenshots, and the [SunnyUI removal record](docs/SUNNYUI_REMOVAL_IMPACT.md).
 
-Screenshots use demo folders and images.
+Screenshots use demo folders and images. They were captured before the native-control migration; the layout is still representative, but button/scrollbar chrome now uses native and project-local controls.
+
+## UI implementation
+
+winDrawer uses native WinForms controls plus a few small project-local controls. It no longer depends on SunnyUI. Buttons are native flat buttons with theme colours; `Cancel`/`Save` use the full branding size, while other buttons use a slightly smaller size to avoid clipping the Lobster font. The drawer content scrollbar is a thin custom overlay; the native ListView scrollbar is intentionally retained for scrolling but clipped outside the visible host area.
 
 ## License
 

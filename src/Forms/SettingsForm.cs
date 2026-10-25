@@ -1,11 +1,10 @@
 using System.Diagnostics;
-using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
 namespace winDrawer;
 
-public partial class SettingsForm : UIForm
+public partial class SettingsForm : Form
 {
     private const int StartWithWindowsIndex = 0;
     private const int LockPositionIndex = 1;
@@ -30,6 +29,10 @@ public partial class SettingsForm : UIForm
         InitializeComponent();
         DoubleBuffered = true;
         ShowInTaskbar = false;
+        FormBorderStyle = FormBorderStyle.None;
+        ControlBox = false;
+        MaximizeBox = false;
+        MinimizeBox = false;
 
         ConfigureFonts();
         ConfigureControls();
@@ -104,7 +107,7 @@ public partial class SettingsForm : UIForm
     private void ConfigureFonts()
     {
         _systemFont = CreateOwnedFont("Segoe UI", 9F);
-        _buttonFont = BrandingFont.Create(10.5F);
+        _buttonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
         _titleFont = BrandingFont.Create(13F);
         _ownedFonts.Add(_buttonFont);
         _ownedFonts.Add(_titleFont);
@@ -163,10 +166,8 @@ public partial class SettingsForm : UIForm
         windowHeightTrackBar.Minimum = AppConstants.Defaults.MainWindowHeightMin;
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
-        behaviorCheckBoxGroup.SelectedIndexes ??= [];
         behaviorCheckBoxGroup.AccessibleName = "Behavior options";
         behaviorCheckBoxGroup.AccessibleDescription = "Toggles for startup, window position lock, always-on-top and the Win+Shift+D shortcut.";
-        FitBehaviorItemSize();
 
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
@@ -177,33 +178,6 @@ public partial class SettingsForm : UIForm
         previewPanel.AccessibleName = "Theme color preview. Activate to choose a color.";
         previewPanel.AccessibleDescription = "Click to change the color. The RGB color code is shown in the preview.";
         CancelButton = cancelButton;
-    }
-
-    /// <summary>
-    /// SunnyUI draws one uniform item rectangle per behavior option and uses that same rectangle for
-    /// the hover highlight and the click hit test, while the text is drawn inside it after the check
-    /// box offset. The designer value only fits the options at 100% scaling, so widen the items to the
-    /// longest option text measured with the active font; the highlight then always covers the option.
-    /// </summary>
-    private void FitBehaviorItemSize()
-    {
-        var longestTextWidth = 0;
-        foreach (var item in behaviorCheckBoxGroup.Items)
-        {
-            var text = item?.ToString() ?? string.Empty;
-            longestTextWidth = Math.Max(longestTextWidth, TextRenderer.MeasureText(text, behaviorCheckBoxGroup.Font).Width);
-        }
-
-        const int checkBoxTextGap = 10; // SunnyUI draws the text at CheckBoxSize + 10.
-        const int trailingMargin = 12;
-        var requiredWidth = behaviorCheckBoxGroup.CheckBoxSize + checkBoxTextGap + longestTextWidth + trailingMargin;
-        if (requiredWidth <= behaviorCheckBoxGroup.ItemSize.Width)
-        {
-            return;
-        }
-
-        behaviorCheckBoxGroup.ItemSize = new Size(requiredWidth, behaviorCheckBoxGroup.ItemSize.Height);
-        DrawerLogger.LogDebug($"Behavior option width widened to {requiredWidth} px for the longest option text.");
     }
 
     private void WireEvents()

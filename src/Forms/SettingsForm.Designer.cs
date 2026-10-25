@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
-using Sunny.UI;
 
 #nullable disable
 
@@ -32,25 +31,24 @@ partial class SettingsForm
 
     private void InitializeComponent()
     {
-        ComponentResourceManager resources = new ComponentResourceManager(typeof(SettingsForm));
         mainTableLayoutPanel = new TableLayoutPanel();
         headerTableLayoutPanel = new TableLayoutPanel();
         headerSettings = new Label();
         settingsTableLayoutPanel = new TableLayoutPanel();
         windowHeightTableLayoutPanel = new TableLayoutPanel();
         windowHeightLabel = new Label();
-        windowHeightTrackBar = new UITrackBar();
+        windowHeightTrackBar = new TrackBar();
         windowHeightValueLabel = new Label();
-        behaviorCheckBoxGroup = new UICheckBoxGroup();
-        visualGroupBox = new UIGroupBox();
-        generalGroupBox = new UIGroupBox();
+        behaviorCheckBoxGroup = new BehaviorCheckBoxGroup();
+        visualGroupBox = new GroupBox();
+        generalGroupBox = new GroupBox();
         generalFlowPanel = new FlowLayoutPanel();
         visualTableLayoutPanel = new TableLayoutPanel();
         opacityValueLabel = new Label();
-        opacityTrackBar = new UITrackBar();
+        opacityTrackBar = new TrackBar();
         opacityLabel = new Label();
-        previewPanel = new UIPanel();
-        footerGroupBox = new UIGroupBox();
+        previewPanel = new ColorPreviewPanel();
+        footerGroupBox = new GroupBox();
         shutDownButton = new Button();
         defaultSettingsButton = new Button();
         openSettingsTomlButton = new Button();
@@ -158,9 +156,11 @@ partial class SettingsForm
         windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
         //
         windowHeightTrackBar.Dock = DockStyle.Fill;
-        windowHeightTrackBar.FillColor = Color.FromArgb(64, 64, 64);
         windowHeightTrackBar.MinimumSize = new Size(1, 1);
         windowHeightTrackBar.Name = "windowHeightTrackBar";
+        windowHeightTrackBar.AutoSize = false;
+        windowHeightTrackBar.BackColor = Color.FromArgb(64, 64, 64);
+        windowHeightTrackBar.TickStyle = TickStyle.None;
         windowHeightTrackBar.Size = new Size(510, 60);
         windowHeightTrackBar.TabIndex = 1;
         //
@@ -179,32 +179,21 @@ partial class SettingsForm
         // 
         // behaviorCheckBoxGroup
         // 
-        behaviorCheckBoxGroup.CheckBoxSize = 32;
-        behaviorCheckBoxGroup.ColumnCount = 2;
-        behaviorCheckBoxGroup.ColumnInterval = 200;
         behaviorCheckBoxGroup.Dock = DockStyle.Fill;
-        behaviorCheckBoxGroup.FillColor = Color.FromArgb(64, 64, 64);
+        behaviorCheckBoxGroup.BackColor = Color.FromArgb(64, 64, 64);
         behaviorCheckBoxGroup.ForeColor = Color.FromArgb(224, 224, 224);
-        behaviorCheckBoxGroup.HoverColor = Color.Gray;
-        behaviorCheckBoxGroup.Items.AddRange(new object[] { "Start with Windows", "Lock position", "Always on top", "Enable Win+Shift+D" });
-        behaviorCheckBoxGroup.ItemSize = new Size(170, 34);
         behaviorCheckBoxGroup.Margin = new Padding(10);
         behaviorCheckBoxGroup.MinimumSize = new Size(1, 1);
         behaviorCheckBoxGroup.Name = "behaviorCheckBoxGroup";
-        behaviorCheckBoxGroup.Padding = new Padding(0, 32, 0, 0);
-        behaviorCheckBoxGroup.RowInterval = 12;
-        behaviorCheckBoxGroup.SelectedIndexes = (List<int>)resources.GetObject("behaviorCheckBoxGroup.SelectedIndexes");
         behaviorCheckBoxGroup.Size = new Size(757, 106);
-        behaviorCheckBoxGroup.StartPos = new Point(12, 40);
         behaviorCheckBoxGroup.TabIndex = 0;
         behaviorCheckBoxGroup.Text = "Behavior";
-        behaviorCheckBoxGroup.TextAlignment = ContentAlignment.MiddleLeft;
         // 
         // visualGroupBox
         // 
         visualGroupBox.Controls.Add(visualTableLayoutPanel);
         visualGroupBox.Dock = DockStyle.Fill;
-        visualGroupBox.FillColor = Color.FromArgb(64, 64, 64);
+        visualGroupBox.BackColor = Color.FromArgb(64, 64, 64);
         visualGroupBox.ForeColor = Color.FromArgb(224, 224, 224);
         visualGroupBox.Location = new Point(10, 136);
         visualGroupBox.Margin = new Padding(10);
@@ -214,13 +203,12 @@ partial class SettingsForm
         visualGroupBox.Size = new Size(757, 296);
         visualGroupBox.TabIndex = 1;
         visualGroupBox.Text = "Appearance";
-        visualGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         //
         // generalGroupBox
         //
         generalGroupBox.Controls.Add(generalFlowPanel);
         generalGroupBox.Dock = DockStyle.Fill;
-        generalGroupBox.FillColor = Color.FromArgb(64, 64, 64);
+        generalGroupBox.BackColor = Color.FromArgb(64, 64, 64);
         generalGroupBox.ForeColor = Color.FromArgb(224, 224, 224);
         generalGroupBox.Location = new Point(10, 350);
         generalGroupBox.Margin = new Padding(10);
@@ -230,7 +218,6 @@ partial class SettingsForm
         generalGroupBox.Size = new Size(757, 112);
         generalGroupBox.TabIndex = 2;
         generalGroupBox.Text = "General";
-        generalGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         //
         // generalFlowPanel
         //
@@ -282,9 +269,11 @@ partial class SettingsForm
         // opacityTrackBar
         //
         opacityTrackBar.Dock = DockStyle.Fill;
-        opacityTrackBar.FillColor = Color.FromArgb(64, 64, 64);
         opacityTrackBar.MinimumSize = new Size(1, 1);
         opacityTrackBar.Name = "opacityTrackBar";
+        opacityTrackBar.AutoSize = false;
+        opacityTrackBar.BackColor = Color.FromArgb(64, 64, 64);
+        opacityTrackBar.TickStyle = TickStyle.None;
         opacityTrackBar.Size = new Size(510, 60);
         opacityTrackBar.TabIndex = 6;
         //
@@ -316,16 +305,14 @@ partial class SettingsForm
         footerGroupBox.Controls.Add(cancelButton);
         footerGroupBox.Controls.Add(saveButton);
         footerGroupBox.Dock = DockStyle.Fill;
-        footerGroupBox.FillColor = Color.FromArgb(64, 64, 64);
+        footerGroupBox.BackColor = Color.FromArgb(64, 64, 64);
         footerGroupBox.Location = new Point(4, 503);
         footerGroupBox.Margin = new Padding(0);
         footerGroupBox.MinimumSize = new Size(1, 1);
         footerGroupBox.Name = "footerGroupBox";
         footerGroupBox.Padding = new Padding(0);
-        footerGroupBox.RectSides = ToolStripStatusLabelBorderSides.None;
         footerGroupBox.TabIndex = 3;
         footerGroupBox.Text = null;
-        footerGroupBox.TextAlignment = ContentAlignment.MiddleLeft;
         // 
         // shutDownButton
         // 
@@ -382,10 +369,7 @@ partial class SettingsForm
         ClientSize = new Size(783, 826);
         Controls.Add(mainTableLayoutPanel);
         Name = "SettingsForm";
-        RectColor = Color.Transparent;
-        ShowTitle = false;
         Text = "";
-        ZoomScaleRect = new Rectangle(0, 0, 783, 826);
         mainTableLayoutPanel.ResumeLayout(false);
         headerTableLayoutPanel.ResumeLayout(false);
         settingsTableLayoutPanel.ResumeLayout(false);
@@ -403,18 +387,18 @@ partial class SettingsForm
     private TableLayoutPanel settingsTableLayoutPanel;
     private TableLayoutPanel windowHeightTableLayoutPanel;
     private Label windowHeightLabel;
-    private Sunny.UI.UITrackBar windowHeightTrackBar;
+    private TrackBar windowHeightTrackBar;
     private Label windowHeightValueLabel;
-    private Sunny.UI.UICheckBoxGroup behaviorCheckBoxGroup;
-    private Sunny.UI.UIGroupBox visualGroupBox;
-    private Sunny.UI.UIGroupBox generalGroupBox;
+    private BehaviorCheckBoxGroup behaviorCheckBoxGroup;
+    private GroupBox visualGroupBox;
+    private GroupBox generalGroupBox;
     private System.Windows.Forms.FlowLayoutPanel generalFlowPanel;
     private TableLayoutPanel visualTableLayoutPanel;
     private Label opacityValueLabel;
-    private Sunny.UI.UITrackBar opacityTrackBar;
+    private TrackBar opacityTrackBar;
     private Label opacityLabel;
-    private Sunny.UI.UIPanel previewPanel;
-    private Sunny.UI.UIGroupBox footerGroupBox;
+    private ColorPreviewPanel previewPanel;
+    private GroupBox footerGroupBox;
     private Button cancelButton;
     private Button saveButton;
     private Button defaultSettingsButton;

@@ -74,6 +74,7 @@ internal static class AppConstants
         public static readonly Color ThemeColor = Color.FromArgb(0, 5, 51);
         public const int ThemeOpacity = 95;
         public const float LogoFontSize = 14f;
+        public const float ButtonFontSize = 10f;
     }
 
     internal static class Theme

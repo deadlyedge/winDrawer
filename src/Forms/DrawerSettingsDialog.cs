@@ -1,4 +1,3 @@
-using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -8,7 +7,7 @@ internal sealed class DrawerSettingsDialog : Form
 {
     private readonly TextBox _nameTextBox = new();
     private readonly TextBox _pathTextBox = new();
-    private readonly UIPanel _colorPreview = new();
+    private readonly ColorPreviewPanel _colorPreview = new();
     private readonly ColorDialog _colorDialog = new();
     private readonly List<Font> _ownedFonts = [];
     private readonly Font _inputFont = new("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -17,8 +16,8 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly TableLayoutPanel _layoutPanel = new();
     private readonly TableLayoutPanel _headerPanel = new();
     private readonly Label _titleLabel = new();
-    private readonly UIGroupBox _detailsGroup = new();
-    private readonly UIGroupBox _overlayGroup = new();
+    private readonly GroupBox _detailsGroup = new();
+    private readonly GroupBox _overlayGroup = new();
     private readonly Button _browseButton = new();
     private readonly Button _clearColorButton = new();
     private readonly Button _saveButton = new();
@@ -114,7 +113,7 @@ internal sealed class DrawerSettingsDialog : Form
 
     private void ConfigureBrandFont()
     {
-        _buttonFont = BrandingFont.Create(10.5F);
+        _buttonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
         _titleFont = BrandingFont.Create(13F);
         _ownedFonts.Add(_buttonFont);
         _ownedFonts.Add(_titleFont);
@@ -320,11 +319,9 @@ internal sealed class DrawerSettingsDialog : Form
         _headerPanel.BackColor = Color.FromArgb(64, 64, 64);
         _titleLabel.ForeColor = Color.White;
 
-        _detailsGroup.FillColor = Color.FromArgb(64, 64, 64);
-        _detailsGroup.RectColor = Color.FromArgb(96, 96, 96);
+        _detailsGroup.BackColor = Color.FromArgb(64, 64, 64);
         _detailsGroup.ForeColor = Color.FromArgb(224, 224, 224);
-        _overlayGroup.FillColor = Color.FromArgb(64, 64, 64);
-        _overlayGroup.RectColor = Color.FromArgb(96, 96, 96);
+        _overlayGroup.BackColor = Color.FromArgb(64, 64, 64);
         _overlayGroup.ForeColor = Color.FromArgb(224, 224, 224);
 
         _overlayInfoLabel.ForeColor = Color.FromArgb(192, 192, 192);

@@ -334,3 +334,32 @@
 
 功能行为保持不变：点击、主题色、hover/press 背景色、字体、无障碍名称和对话框默认按钮均沿用原有逻辑。
 
+
+## 13. 第三批试装记录：窗体、分组、滑块与复选框
+
+分支：`test/sunnyui-simple-controls`
+
+| 项目 | 结果 |
+|---|---|
+| 按钮字体 | `10.5F` → `10F`，减少花体字基线在按钮底部被裁切的程度 |
+| `UIForm` → `Form` | `SettingsForm` 使用无边框原生 Form，保留自定义拖动/保存/取消逻辑 |
+| `UIGroupBox` → `GroupBox` | 设置页与抽屉设置对话框改为原生分组框 |
+| `UIPanel` → `ColorPreviewPanel` | 新增轻量自绘面板，保留 `FillColor`/`RectColor`/文字预览 API |
+| `UITrackBar` → `TrackBar` | 使用原生滑块，设置 `TickStyle=None` 和深色背景 |
+| `UICheckBoxGroup` → `BehaviorCheckBoxGroup` | 新增原生 CheckBox 两列分组，保留 `SelectedIndexes`/`ValueChanged` API |
+| SunnyUI 类型引用 | 约 22 → 4 |
+| 仍保留的 SunnyUI 类型 | 仅 `UIListBox`、`UIScrollBar` |
+| `using Sunny.UI` | 仅剩 `MainWindow.Designer.cs`、`DrawerWindow.Designer.cs` |
+| Debug/Release 构建 | 均成功，使用临时输出目录避开被运行实例锁定的 `bin` |
+
+接受的外观变化：
+
+- 设置页分组框由圆角/自绘边框变为原生 GroupBox 边框；
+- 滑块由 SunnyUI 自绘样式变为原生 TrackBar；
+- 行为复选框由 SunnyUI 绘制变为原生 CheckBox，保留两列布局；
+- 设置窗口不再有 SunnyUI 的窗口阴影/圆角外观。
+
+功能行为保持不变：设置保存/取消/Default、颜色预览、透明度/高度即时预览、四个行为项、无障碍名称和窗体拖动逻辑均沿用原有事件路径。
+
+尚未完成：`UIListBox` 与 `UIScrollBar` 仍是下一批高风险项；本批次也尚未做实际窗口视觉/DPI 手工验收。
+

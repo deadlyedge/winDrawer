@@ -233,8 +233,8 @@ namespace winDrawer
             try
             {
                 logoFont = BrandingFont.Create(AppConstants.Defaults.LogoFontSize);
-                settingsButtonFont = BrandingFont.Create(10.5F);
-                addDrawerButtonFont = BrandingFont.Create(10.5F);
+                settingsButtonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
+                addDrawerButtonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
                 var loadedFamily = BrandingFont.LoadedFamilyName;
                 if (string.IsNullOrEmpty(loadedFamily))
                 {
@@ -252,8 +252,8 @@ namespace winDrawer
                 addDrawerButtonFont?.Dispose();
                 DrawerLogger.LogWarning($"Unable to apply the embedded branding font. {ex.Message}");
                 logoFont = BrandingFont.CreateFallback(AppConstants.Defaults.LogoFontSize);
-                settingsButtonFont = BrandingFont.CreateFallback(10.5F);
-                addDrawerButtonFont = BrandingFont.CreateFallback(10.5F);
+                settingsButtonFont = BrandingFont.CreateFallback(AppConstants.Defaults.ButtonFontSize);
+                addDrawerButtonFont = BrandingFont.CreateFallback(AppConstants.Defaults.ButtonFontSize);
             }
 
             _logoFont = logoFont;

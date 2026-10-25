@@ -170,7 +170,7 @@ internal sealed class DrawerSettingsDialog : Form
         _detailsGroup.Font = _inputFont;
         _detailsGroup.Dock = DockStyle.Fill;
         _detailsGroup.Margin = new Padding(18, 5, 18, 6);
-        _detailsGroup.Padding = new Padding(18, 38, 18, 10);
+        _detailsGroup.Padding = new Padding(18, 32, 18, 10);
         _detailsGroup.Controls.Add(_fieldsPanel);
 
         _fieldsPanel.Dock = DockStyle.Fill;
@@ -258,7 +258,7 @@ internal sealed class DrawerSettingsDialog : Form
         _overlayGroup.Font = _inputFont;
         _overlayGroup.Dock = DockStyle.Fill;
         _overlayGroup.Margin = new Padding(18, 0, 18, 4);
-        _overlayGroup.Padding = new Padding(14, 34, 14, 8);
+        _overlayGroup.Padding = new Padding(14, 30, 14, 8);
         var overlayContentPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,

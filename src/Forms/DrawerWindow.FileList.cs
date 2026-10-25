@@ -75,7 +75,6 @@ public partial class DrawerWindow
     private void UpdateDrawerScrollBarDpi(int dpi)
     {
         var scale = Math.Max(1, dpi) / 96f;
-        drawerContentsScrollBar.FillWidth = Math.Max(6, (int)Math.Round(10 * scale));
         drawerContentsScrollBar.Width = Math.Max(18, (int)Math.Round(18 * scale));
         drawerContentsScrollBar.AccessibleName = "Scroll folder contents";
         drawerContentsScrollBar.AccessibleRole = AccessibleRole.ScrollBar;
@@ -120,7 +119,7 @@ public partial class DrawerWindow
             return;
         }
 
-        if (!drawerContentsListView.TryGetVerticalScrollInfo(out var maximumPosition, out var position, out _) ||
+        if (!drawerContentsListView.TryGetVerticalScrollInfo(out var maximumPosition, out var position, out var viewportSize) ||
             maximumPosition <= 0)
         {
             drawerContentsScrollBar.Visible = false;
@@ -128,8 +127,13 @@ public partial class DrawerWindow
             return;
         }
 
-        drawerContentsScrollBar.Maximum = maximumPosition;
-        drawerContentsScrollBar.Value = position;
+        var largeChange = Math.Max(1, viewportSize);
+        drawerContentsScrollBar.LargeChange = largeChange;
+        drawerContentsScrollBar.Maximum = Math.Max(largeChange, maximumPosition + largeChange - 1);
+        drawerContentsScrollBar.Value = Math.Clamp(
+            position,
+            0,
+            drawerContentsScrollBar.Maximum - drawerContentsScrollBar.LargeChange + 1);
         drawerContentsScrollBar.Visible = true;
         PositionDrawerScrollBar();
         drawerContentsScrollBar.BringToFront();

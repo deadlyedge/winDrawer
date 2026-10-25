@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
-using Sunny.UI;
 
 namespace winDrawer
 {
@@ -35,7 +34,7 @@ namespace winDrawer
             mainTableLayoutPanel = new TableLayoutPanel();
             drawerContentsHostPanel = new Panel();
             drawerContentsListView = new ScrollableListView();
-            drawerContentsScrollBar = new UIScrollBar();
+            drawerContentsScrollBar = new VScrollBar();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new TableLayoutPanel();
             drawerPathTableLayoutPanel = new TableLayoutPanel();
@@ -223,7 +222,7 @@ namespace winDrawer
         private FlowLayoutPanel drawerButtonTableLayoutPanel;
         private Button closeDrawerButton;
         private ScrollableListView drawerContentsListView;
-        private UIScrollBar drawerContentsScrollBar;
+        private VScrollBar drawerContentsScrollBar;
         private ImageList drawerImageList;
         private ToolTip drawerToolTip;
     }

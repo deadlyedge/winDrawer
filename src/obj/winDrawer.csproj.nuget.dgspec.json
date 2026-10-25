@@ -58,10 +58,6 @@
               "version": "[10.0.13, )",
               "autoReferenced": true
             },
-            "SunnyUI": {
-              "target": "Package",
-              "version": "[3.9.8, )"
-            },
             "Tomlyn": {
               "target": "Package",
               "version": "[2.10.1, )"

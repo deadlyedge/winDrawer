@@ -71,7 +71,7 @@ namespace winDrawer
                 background = drawerListBox.ItemSelectBackColor;
                 foreground = drawerListBox.ItemSelectForeColor;
             }
-            else if ((e.State & DrawItemState.HotLight) == DrawItemState.HotLight)
+            else if (drawerListBox.HoveredIndex == e.Index)
             {
                 background = drawerListBox.HoverColor;
             }

@@ -60,7 +60,7 @@ namespace winDrawer
             drawerListBox.DragDrop += DrawerListBox_DragDrop;
             drawerListBox.AllowDrop = true;
             drawerListBox.DrawItem += DrawerListBox_DrawItem;
-            drawerListBox.ListBox.DrawMode = DrawMode.OwnerDrawFixed;
+            drawerListBox.DrawMode = DrawMode.OwnerDrawFixed;
             drawerListBox.Controls.Add(_drawerInsertionMarker);
             _drawerInsertionMarker.BringToFront();
 
@@ -487,10 +487,8 @@ namespace winDrawer
             drawerListBox.FillColor = theme.ContentBackground;
             drawerListBox.ForeColor = theme.TextPrimary;
             drawerListBox.HoverColor = theme.CardBackground;
-            drawerListBox.RectColor = theme.Border;
+            drawerListBox.ItemSelectBackColor = theme.Accent;
             drawerListBox.ItemSelectForeColor = theme.AccentText;
-            drawerListBox.ScrollBarBackColor = theme.ContentBackground;
-            drawerListBox.ScrollBarColor = theme.Border;
 
             if (_currentDrawerWindow != null && !_currentDrawerWindow.IsDisposed)
             {

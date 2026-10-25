@@ -8,34 +8,6 @@
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "SunnyUI/3.9.8": {
-        "type": "package",
-        "dependencies": {
-          "SunnyUI.Common": "3.9.8"
-        },
-        "compile": {
-          "lib/net10.0-windows7.0/SunnyUI.dll": {}
-        },
-        "runtime": {
-          "lib/net10.0-windows7.0/SunnyUI.dll": {}
-        },
-        "frameworkReferences": [
-          "Microsoft.WindowsDesktop.App.WindowsForms"
-        ]
-      },
-      "SunnyUI.Common/3.9.8": {
-        "type": "package",
-        "compile": {
-          "lib/net10.0/SunnyUI.Common.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net10.0/SunnyUI.Common.dll": {
-            "related": ".xml"
-          }
-        }
-      },
       "Tomlyn/2.10.1": {
         "type": "package",
         "compile": {
@@ -58,34 +30,6 @@
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
-        }
-      },
-      "SunnyUI/3.9.8": {
-        "type": "package",
-        "dependencies": {
-          "SunnyUI.Common": "3.9.8"
-        },
-        "compile": {
-          "lib/net10.0-windows7.0/SunnyUI.dll": {}
-        },
-        "runtime": {
-          "lib/net10.0-windows7.0/SunnyUI.dll": {}
-        },
-        "frameworkReferences": [
-          "Microsoft.WindowsDesktop.App.WindowsForms"
-        ]
-      },
-      "SunnyUI.Common/3.9.8": {
-        "type": "package",
-        "compile": {
-          "lib/net10.0/SunnyUI.Common.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net10.0/SunnyUI.Common.dll": {
-            "related": ".xml"
-          }
         }
       },
       "Tomlyn/2.10.1": {
@@ -157,45 +101,6 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "SunnyUI/3.9.8": {
-      "sha512": "yIowhP78oPy577Q3wDAvVY0StFDfm0cIF1eLMQeouyuJK8MwKXS7vKuG4VfRVzzqyQ0QzlOJdR2o4cO+H4hKAQ==",
-      "type": "package",
-      "path": "sunnyui/3.9.8",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "LICENSE",
-        "README.md",
-        "SunnyUI.png",
-        "lib/net10.0-windows7.0/SunnyUI.dll",
-        "lib/net40/SunnyUI.dll",
-        "lib/net472/SunnyUI.dll",
-        "lib/net8.0-windows7.0/SunnyUI.dll",
-        "sunnyui.3.9.8.nupkg.sha512",
-        "sunnyui.nuspec"
-      ]
-    },
-    "SunnyUI.Common/3.9.8": {
-      "sha512": "7iGm3BFHbuXUY19w5DHPfD9w1d7XDy59EddvrsZ1SfvERhPtNvHNnFxkVx8ZIiAtC7IlxXW66UwmtTEiON3iEA==",
-      "type": "package",
-      "path": "sunnyui.common/3.9.8",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "SunnyUI.png",
-        "lib/net10.0/SunnyUI.Common.dll",
-        "lib/net10.0/SunnyUI.Common.xml",
-        "lib/net40/SunnyUI.Common.dll",
-        "lib/net40/SunnyUI.Common.xml",
-        "lib/net472/SunnyUI.Common.dll",
-        "lib/net472/SunnyUI.Common.xml",
-        "lib/net8.0/SunnyUI.Common.dll",
-        "lib/net8.0/SunnyUI.Common.xml",
-        "sunnyui.common.3.9.8.nupkg.sha512",
-        "sunnyui.common.nuspec"
-      ]
-    },
     "Tomlyn/2.10.1": {
       "sha512": "ykjOY3IpYmC4SpPcAZRTl/w2jTmhPMDydHq8xcV7tTBAQ22nKBsOkPqauIrZlMjHm03cmKfV23UOPscKp+J4Og==",
       "type": "package",
@@ -221,7 +126,6 @@
   "projectFileDependencyGroups": {
     "net10.0-windows": [
       "Microsoft.NET.ILLink.Tasks >= 10.0.13",
-      "SunnyUI >= 3.9.8",
       "Tomlyn >= 2.10.1"
     ]
   },
@@ -282,10 +186,6 @@
             "target": "Package",
             "version": "[10.0.13, )",
             "autoReferenced": true
-          },
-          "SunnyUI": {
-            "target": "Package",
-            "version": "[3.9.8, )"
           },
           "Tomlyn": {
             "target": "Package",

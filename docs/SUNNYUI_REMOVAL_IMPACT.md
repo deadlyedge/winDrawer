@@ -3,6 +3,8 @@
 > 目的：评估从当前 winDrawer 中移除 SunnyUI（`SunnyUI` 3.9.8）的技术影响、工作量、风险和可选路线。
 >
 > 本文是评估文档，不代表已实施移除。当前工作树中的 `docs/TODOs.md` 与近期阶段文档保持不变。
+>
+> **后续更新**：已在 `test/sunnyui-simple-controls` 分支完成全量移除；第 11–14 节记录实际试装结果，第 1–10 节保留为移除前的评估依据。
 
 ## 1. 结论摘要
 
@@ -362,4 +364,43 @@
 功能行为保持不变：设置保存/取消/Default、颜色预览、透明度/高度即时预览、四个行为项、无障碍名称和窗体拖动逻辑均沿用原有事件路径。
 
 尚未完成：`UIListBox` 与 `UIScrollBar` 仍是下一批高风险项；本批次也尚未做实际窗口视觉/DPI 手工验收。
+
+
+## 14. 第四批试装记录：列表与滚动条（SunnyUI 已完全移除）
+
+分支：`test/sunnyui-simple-controls`
+
+| 项目 | 结果 |
+|---|---|
+| `UIListBox` → `DrawerListBox` | 原生 owner-draw ListBox，保留 hover、选中色、拖放和抽屉插入标记 |
+| `UIScrollBar` → `VScrollBar` | 原生垂直滚动条，重新计算 `LargeChange`/`Maximum`/`Value` |
+| SunnyUI 类型引用 | **0** |
+| `using Sunny.UI` | **0** |
+| `winDrawer.csproj` | 已删除 `SunnyUI 3.9.8` 包引用 |
+| 构建产物 | Debug/Release 输出中不再包含 `SunnyUI.dll` |
+| Debug/Release 构建 | 均成功 |
+| 设置页显示区域 | 适当减小原生 GroupBox 的上下 Padding，给内容多留高度 |
+
+接受的外观变化：
+
+- 抽屉列表滚动条由 SunnyUI 自绘样式变为 Windows 原生滚动条；
+- 列表边框和 hover 绘制细节以原生 ListBox 为准；
+- 设置页 GroupBox 的标题/边框改为原生外观。
+
+仍需人工验证：
+
+- 长列表滚动、拖放重排和插入标记；
+- 抽屉内容窗口的滚动范围、滚轮、缩略图加载和 DPI；
+- 设置页各分组在 100%/150%/200% DPI 下是否仍有高度裁切；
+- 主窗口/抽屉列表 hover 与选中颜色。
+
+### 迁移结论
+
+SunnyUI 已从源码和包引用中完全移除。当前项目只依赖 WinForms 原生控件和项目内轻量控件：
+
+- `DrawerListBox`
+- `ColorPreviewPanel`
+- `BehaviorCheckBoxGroup`
+
+后续维护重点是这些自绘/自绘容器控件的行为回归，而不是第三方 UI 库升级。
 

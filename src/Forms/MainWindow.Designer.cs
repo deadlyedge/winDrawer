@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Windows.Forms;
-using Sunny.UI;
 
 namespace winDrawer
 {
@@ -36,7 +35,7 @@ namespace winDrawer
             headerTableLayoutPanel = new TableLayoutPanel();
             logoLabel = new Label();
             settingsButton = new Button();
-            drawerListBox = new UIListBox();
+            drawerListBox = new DrawerListBox();
             addDrawerButton = new Button();
             mainTableLayoutPanel.SuspendLayout();
             headerTableLayoutPanel.SuspendLayout();
@@ -116,14 +115,6 @@ namespace winDrawer
             drawerListBox.Margin = new Padding(4, 0, 4, 0);
             drawerListBox.MinimumSize = new Size(1, 1);
             drawerListBox.Name = "drawerListBox";
-            drawerListBox.Opacity = 100;
-            drawerListBox.Padding = new Padding(2);
-            drawerListBox.RectColor = Color.DimGray;
-            drawerListBox.ScrollBarBackColor = Color.DarkSalmon;
-            drawerListBox.ScrollBarColor = Color.DimGray;
-            drawerListBox.ScrollBarHandleWidth = 10;
-            drawerListBox.ScrollBarStyleInherited = false;
-            drawerListBox.ShowText = false;
             drawerListBox.Size = new Size(405, 300);
             drawerListBox.TabIndex = 2;
             drawerListBox.Text = "drawerListBox";
@@ -161,7 +152,7 @@ namespace winDrawer
         private TableLayoutPanel headerTableLayoutPanel;
         private Label logoLabel;
         private Button settingsButton;
-        private Sunny.UI.UIListBox drawerListBox;
+        private DrawerListBox drawerListBox;
         private Button addDrawerButton;
     }
 }

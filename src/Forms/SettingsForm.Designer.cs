@@ -199,7 +199,7 @@ partial class SettingsForm
         visualGroupBox.Margin = new Padding(10);
         visualGroupBox.MinimumSize = new Size(1, 1);
         visualGroupBox.Name = "visualGroupBox";
-        visualGroupBox.Padding = new Padding(32, 64, 32, 32);
+        visualGroupBox.Padding = new Padding(24, 48, 24, 24);
         visualGroupBox.Size = new Size(757, 296);
         visualGroupBox.TabIndex = 1;
         visualGroupBox.Text = "Appearance";
@@ -214,7 +214,7 @@ partial class SettingsForm
         generalGroupBox.Margin = new Padding(10);
         generalGroupBox.MinimumSize = new Size(1, 1);
         generalGroupBox.Name = "generalGroupBox";
-        generalGroupBox.Padding = new Padding(24, 40, 24, 12);
+        generalGroupBox.Padding = new Padding(24, 36, 24, 12);
         generalGroupBox.Size = new Size(757, 112);
         generalGroupBox.TabIndex = 2;
         generalGroupBox.Text = "General";

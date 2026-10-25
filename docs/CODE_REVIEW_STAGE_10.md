@@ -4,25 +4,28 @@
 >
 > 审查范围：`src/` 下全部手写 C#（不含 Designer 生成代码），以及 10.1/10.2 新增/修改的代码。工作树中的 `docs/TODOs.md` 为用户改动，本文未修改它。
 >
-> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A/B 组代码清理项仍按原审查清单讨论，不代表已全部实施。
+> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A 组低风险清理已于 2026-10 完成，实施结果见第 2 节；B/C 组仍按原审查清单讨论，不代表已实施。
 
 ## 1. 当前规模
 
-- 46 个 C# 文件，约 8,958 行；其中 Designer 约 846 行，手写代码约 8,112 行。
+- 53 个 C# 文件，约 8,461 行；其中 Designer 约 770 行，手写代码约 7,691 行。
 - 最大文件：
-  - `DrawerWindow.FileList.cs` 604 行
-  - `SettingsForm.cs` 542 行
-  - `DrawerSettingsDialog.cs` 525 行
-  - `MainWindow.cs` 514 行
-  - `SettingsForm.Designer.cs` 420 行
-  - `DrawerWindow.cs` 379 行
-  - `MainWindow.DrawerList.cs` 371 行
-  - `SettingsRepository.Drawers.cs` 353 行
-  - `SettingsRepository.Persistence.cs` 338 行
+  - `DrawerWindow.FileList.cs` 532 行
+  - `MainWindow.cs` 443 行
+  - `SettingsForm.Designer.cs` 396 行
+  - `DrawerSettingsDialog.cs` 381 行
+  - `SettingsForm.cs` 359 行
+  - `MainWindow.DrawerList.cs` 331 行
+  - `TrayController.cs` 320 行
+  - `SettingsRepository.Persistence.cs` 304 行
+  - `DrawerWindow.cs` 297 行
+  - `ThemedScrollBar.cs` 295 行
 
-需要先说明一个判断：这 9,000 行里真正“重复、可机械删除”的部分有限。大量代码来自 WinForms 布局、DPI、主题派生、延迟缩略图、拖放、配置原子写入和托盘生命周期。**仅靠重构很难把代码量减半；若目标是大幅缩减，更有效的是减少功能/配置项，而不是继续抽象。**
+需要先说明一个判断：这 8,500 行里真正“重复、可机械删除”的部分有限。大量代码来自 WinForms 布局、DPI、主题派生、延迟缩略图、拖放、配置原子写入和托盘生命周期。**仅靠重构很难把代码量减半；若目标是大幅缩减，更有效的是减少功能/配置项，而不是继续抽象。**
 
-## 2. A 组：低风险，建议优先讨论
+## 2. A 组：低风险（已实施）
+
+> **实施状态（2026-10）：** A1–A9 已全部完成，Debug/Release 完整构建通过（0 警告 0 错误）。已有文件净减少 162 行；新增 `DialogFontSet`、`FormDragBehavior`、`DpiScale` 三个共享类共 131 行，整体净减少约 31 行。收益主要在统一规则和删除重复，而不是行数。下列“位置”仍是实施前的行号快照，实际落点见每条“实施结果”。
 
 ### A1 两个设置窗体的品牌字体生命周期重复
 
@@ -33,6 +36,7 @@
 - 建议：提取一个很小的 `DialogFontSet`（系统字体、按钮字体、标题字体 + `Dispose` + `ApplyTo(Control)`）。不引入基类，不改变控件布局。
 - 预计减少：约 35–45 行；风险：低。
 - 讨论点：是否接受新增一个约 60 行的小类，换取两个窗体各减少约 20 行，并统一释放顺序。
+- 实施结果：已新增 `Controls/DialogFontSet.cs`（49 行）。两个窗体各持有一个 `_fonts`，统一提供常规/主按钮/紧凑按钮/标题字体；`Dispose` 由该对象统一释放，`SettingsForm.Designer.Dispose` 改为调用 `_fonts.Dispose()`。
 
 ### A2 按钮配色/圆角/光标重复
 
@@ -45,6 +49,7 @@
 - 建议：在 `UiButtonTheming` 增加按语义角色（Primary/Secondary/Danger）设置颜色的方法，或增加 `ApplyDialogButton`；`DrawerWindow` 的关闭/刷新按钮保留特殊处理。
 - 预计减少：约 20–30 行；风险：低。
 - 讨论点：语义色是否要成为唯一入口，还是只合并设置窗体的两处。
+- 实施结果：`UiButtonTheming` 新增 `ApplyPrimaryPalette` / `ApplySecondaryPalette` / `ApplyDangerPalette`（可选 `handCursor`）。两个设置窗体删除各自的配色包装 `ConfigureButton` / `ConfigureButtonStyle`（`DrawerSettingsDialog` 中设置文字和尺寸的布局 `ConfigureButton` 保留）；`DrawerWindow` 的关闭按钮仍保留专用红色处理。
 
 ### A3 颜色对话框配置与调用重复
 
@@ -56,6 +61,7 @@
 - 建议：在 `UiDialogHelpers` 增加 `ShowColorDialog(owner, initial, secondary)`，返回 `Color?`；调用方只处理结果。保留 `HandleActivationKey`。
 - 预计减少：约 25–35 行；风险：低。
 - 讨论点：是否接受 helper 内部创建/释放 `ColorDialog`；这比当前 `DrawerSettingsDialog` 长期持有一个对话框更简单。
+- 实施结果：`UiDialogHelpers.ShowColorDialog(owner, initial, secondary)` 统一设置 `AllowFullOpen/FullOpen/AnyColor/SolidColorOnly` 与自定义色，并在每次调用内创建/释放对话框。`DrawerSettingsDialog` 的长期 `_colorDialog` 字段和两处配置方法已删除。
 
 ### A4 无边框设置窗体的拖动逻辑重复
 
@@ -66,6 +72,7 @@
 - 建议：只对设置窗体提取 `FormDragBehavior`（绑定 header 控件）；主窗口拖动有锁定语义，不纳入。
 - 预计减少：约 30–40 行；风险：低到中（鼠标捕获和 DPI 行为需手工验证）。
 - 讨论点：是否值得为两个窗体引入一个行为类；如果只保留一处，优先保留 `SettingsForm` 的简单实现。
+- 实施结果：已新增 `Controls/FormDragBehavior.cs`（61 行），两个设置窗体通过 `FormDragBehavior.Attach(this, header...)` 绑定。拖动偏移改用屏幕坐标，避免标题控件不在客户区原点时跳动；鼠标捕获在抬起时释放。主窗口因锁定状态和位置持久化语义仍保留自己的实现。
 
 ### A5 DPI 缩放散落
 
@@ -78,6 +85,7 @@
 - 建议：增加 `DpiScale.Pixels(logical, dpi)` / `DpiScale.Factor(dpi)` 两个小方法。
 - 预计减少：约 10–15 行；风险：低。
 - 讨论点：收益主要是“统一规则”，不是行数；是否纳入本轮。
+- 实施结果：已新增 `Infrastructure/DpiScale.cs`（21 行），替换主窗口、抽屉窗口、滚动条和抽屉设置中的 DPI 取整。剩余 `Math.Round` 只用于比例（滚动条/图像缩放）和颜色计算，不再承担 DPI 换算。
 
 ### A6 平凡包装/转发方法
 
@@ -88,6 +96,7 @@
 - 建议：删除包装，调用点直接用目标方法；`RefreshDrawerAsync` 统一命名为 `PopulateFileListAsync` 或反向重命名。
 - 预计减少：约 10–15 行；风险：低。
 - 讨论点：是否保留 `RefreshDrawerAsync` 作为语义名称（“用户刷新”）而把 `PopulateFileListAsync` 改名，避免两个名字。
+- 实施结果：已删除 `DrawerWindow.BlendColor`；`RefreshDrawerAsync` 的所有调用点（F5、右键刷新、排序、拖放后刷新）统一为 `PopulateFileListAsync`；`SettingsForm.ConfigureButton` 已随 A2 删除。
 
 ### A7 主窗口清空选择状态的重复分支
 
@@ -96,6 +105,7 @@
 - 建议：统一为一个本地方法，必要时 `BeginInvoke` 一次；或直接使用 `BeginInvoke`（窗体句柄已存在）。
 - 预计减少：约 10–15 行；风险：低。
 - 讨论点：是否要保留同步路径以避免关闭时的竞态；需要确认事件触发上下文。
+- 实施结果：已提取 `ClearDrawerListSelection()`，保留 `InvokeRequired` 的 `BeginInvoke` 分支和同步分支，并用 `try/finally` 复位 `_suppressSelectionChange`。
 
 ### A8 透明度范围硬编码
 
@@ -103,6 +113,7 @@
 - 建议：改用常量。
 - 预计减少：0 行；风险：无；属于一致性修正。
 - 讨论点：是否纳入“顺手清理”。
+- 实施结果：`SettingsSnapshot.WindowOpacity` 已改用 `AppConstants.Theme.OpacityMin` / `OpacityMax`。
 
 ### A9 命名与注释一致性
 
@@ -113,6 +124,7 @@
 - 建议：只重命名确实容易混淆的成员；不批量翻译注释。
 - 预计减少：0 行；风险：低。
 - 讨论点：是否把 `ApplySettings` 改为 `ApplySettingsSnapshot`，把 `ApplySnapshot` 合并进去；这会触及主窗口多处调用，需单独确认。
+- 实施结果：`ApplySnapshot` 已合并进 `ApplySettingsSnapshot`（先保存快照，再应用 UI），主窗口与设置面板的 6 处调用已更新；`MainWindow.cs` 中被点名的中文注释已改为英文；`SettingsForm.ApplySnapshotToUi` 保留，因为它是窗体内部的 UI 同步，不属于同一职责。其余中文注释未批量翻译。
 
 ## 3. B 组：中等风险，先讨论再决定
 
@@ -188,9 +200,9 @@
 
 ## 5. 预估收益汇总
 
-| 组 | 内容 | 预计行数变化 | 风险 | 建议 |
+| 组 | 内容 | 实际/预计行数变化 | 风险 | 建议 |
 |---|---|---:|---|---|
-| A1–A9 | 字体/按钮/颜色/拖动/DPI/包装/重复分支/一致性 | 约减少 120–180 行 | 低 | 优先讨论 |
+| A1–A9 | 字体/按钮/颜色/拖动/DPI/包装/重复分支/一致性 | 已有文件净减少 162 行；新增共享类 131 行，整体约减少 31 行 | 低 | 已完成 |
 | B1 | 拆分抽屉设置布局 | 约减少 30–50 行 | 中 | 可做，需 UI 回归 |
 | B2 | 提取图像缓存 | 文件减少约 200 行，总量持平 | 中高 | 按“可维护性”决定 |
 | B3 | 拆分抽屉列表绘制/重排 | 0 行 | 中 | 仅当当前难维护 |
@@ -198,21 +210,21 @@
 | B5 | 简化 ThemePalette | 减少 50–80 行 | 高 | 需接受视觉变化 |
 | C1 | 移除 SunnyUI | 已实施；代码量可能增加 | 高 | 已完成，见迁移记录 |
 
-结论：**安全清理的现实收益约 120–180 行（约 1.5–2%）**，不是“减半”。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
+结论：A 组安全清理已完成，已有文件减少 162 行，但三个共享 helper 新增 131 行，整体只减少约 31 行；收益主要是统一规则和单一入口，而不是缩小代码库。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
 
 ## 6. 建议的逐项讨论顺序
 
-1. A1 字体、A2 按钮、A3 颜色对话框（三处最明确的重复）
-2. A4 拖动、A5 DPI、A6 包装、A7 重复分支
-3. A8/A9 一致性
-4. B1 布局拆分
-5. B2 图像缓存（只在你认为文件列表难维护时）
-6. 其余 B/C 项逐项确认“做/不做”
+1. ~~A1–A9~~（已完成，见第 2 节）
+2. B1 布局拆分
+3. B2 图像缓存（只在你认为文件列表难维护时）
+4. 其余 B/C 项逐项确认“做/不做”
 
-## 7. 待你确认的问题
+## 7. 状态与待确认问题
 
-1. A1–A9 是否全部纳入？还是只选 A1/A2/A3？
+1. A1–A9 已全部实施；A9 采用合并 `ApplySettingsSnapshot` 的低风险方案，未做批量注释翻译。A4 的鼠标捕获/DPI 行为仍需人工回归。
 2. 是否接受“总代码量不降、但可读性提升”的 B1/B2？
 3. 是否愿意讨论“删功能”以显著减少代码量？如果愿意，哪些功能可以放弃（拖放、主题派生、抽屉颜色、热键、托盘常驻等）？
 4. B4/B5 是否明确暂缓？（C1 已随 SunnyUI 迁移完成。）
+
+验证：A 组改动已完成 Debug 与 Release 的完整 `dotnet build`，均为 0 警告 0 错误；未执行 UI 自动化测试，设置窗体拖动、颜色对话框和抽屉列表刷新仍需手工回归。
 

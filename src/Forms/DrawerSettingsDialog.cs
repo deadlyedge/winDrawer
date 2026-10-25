@@ -8,12 +8,7 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly TextBox _nameTextBox = new();
     private readonly TextBox _pathTextBox = new();
     private readonly ColorPreviewPanel _colorPreview = new();
-    private readonly ColorDialog _colorDialog = new();
-    private readonly List<Font> _ownedFonts = [];
-    private readonly Font _inputFont = new("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-    private Font? _buttonFont;
-    private Font? _compactButtonFont;
-    private Font? _titleFont;
+    private readonly DialogFontSet _fonts = new();
     private readonly TableLayoutPanel _layoutPanel = new();
     private readonly TableLayoutPanel _headerPanel = new();
     private readonly Label _titleLabel = new();
@@ -29,8 +24,6 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly FlowLayoutPanel _colorPanel = new();
     private readonly FlowLayoutPanel _footerPanel = new();
     private Color? _selectedColor;
-    private bool _isDragging;
-    private Point _dragOffset;
 
     public DrawerSettingsDialog(DrawerDefinition drawer)
     {
@@ -47,10 +40,8 @@ internal sealed class DrawerSettingsDialog : Form
         MinimumSize = new Size(540, 480);
         DoubleBuffered = true;
 
-        ConfigureColorDialog(_colorDialog);
-
-        ConfigureBrandFont();
         ConfigureLayout(drawer);
+        _fonts.ApplyTo(this);
         ApplyStyle();
         ApplyBrandFonts();
     }
@@ -94,42 +85,22 @@ internal sealed class DrawerSettingsDialog : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
-        {
-            _colorDialog.Dispose();
-        }
-
         base.Dispose(disposing);
 
         if (disposing)
         {
-            foreach (var font in _ownedFonts)
-            {
-                font.Dispose();
-            }
-
-            _inputFont.Dispose();
+            _fonts.Dispose();
         }
-    }
-
-    private void ConfigureBrandFont()
-    {
-        _buttonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
-        _compactButtonFont = BrandingFont.Create(AppConstants.Defaults.CompactButtonFontSize);
-        _titleFont = BrandingFont.Create(13F);
-        _ownedFonts.Add(_buttonFont);
-        _ownedFonts.Add(_compactButtonFont);
-        _ownedFonts.Add(_titleFont);
     }
 
     private void ApplyBrandFonts()
     {
-        _titleLabel.Font = _titleFont!;
+        _titleLabel.Font = _fonts.Title;
         foreach (var button in GetButtons())
         {
             button.Font = ReferenceEquals(button, _saveButton) || ReferenceEquals(button, _cancelButton)
-                ? _buttonFont!
-                : _compactButtonFont!;
+                ? _fonts.PrimaryButton
+                : _fonts.CompactButton;
         }
     }
 
@@ -163,16 +134,8 @@ internal sealed class DrawerSettingsDialog : Form
         _titleLabel.AutoSize = false;
         _titleLabel.BackColor = Color.Transparent;
         _titleLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _titleLabel.Cursor = Cursors.SizeAll;
-        _titleLabel.MouseDown += Header_MouseDown;
-        _titleLabel.MouseMove += Header_MouseMove;
-        _titleLabel.MouseUp += Header_MouseUp;
-        _headerPanel.MouseDown += Header_MouseDown;
-        _headerPanel.MouseMove += Header_MouseMove;
-        _headerPanel.MouseUp += Header_MouseUp;
 
         _detailsGroup.Text = "Drawer details";
-        _detailsGroup.Font = _inputFont;
         _detailsGroup.Dock = DockStyle.Fill;
         _detailsGroup.Margin = new Padding(18, 5, 18, 6);
         _detailsGroup.Padding = new Padding(18, 32, 18, 10);
@@ -230,6 +193,8 @@ internal sealed class DrawerSettingsDialog : Form
         _layoutPanel.Controls.Add(_footerPanel, 0, 3);
         Controls.Add(_layoutPanel);
 
+        FormDragBehavior.Attach(this, _titleLabel, _headerPanel);
+
         AcceptButton = _saveButton;
         CancelButton = _cancelButton;
     }
@@ -260,7 +225,6 @@ internal sealed class DrawerSettingsDialog : Form
     private void ConfigureOverlayGroup()
     {
         _overlayGroup.Text = "Overlay color";
-        _overlayGroup.Font = _inputFont;
         _overlayGroup.Dock = DockStyle.Fill;
         _overlayGroup.Margin = new Padding(18, 0, 18, 4);
         _overlayGroup.Padding = new Padding(14, 30, 14, 8);
@@ -287,7 +251,6 @@ internal sealed class DrawerSettingsDialog : Form
 
         _colorPreview.Size = new Size(240, 84);
         _colorPreview.MinimumSize = new Size(1, 1);
-        _colorPreview.Font = _inputFont;
         _colorPreview.Margin = new Padding(0, 0, 12, 0);
         _colorPreview.Padding = new Padding(8, 4, 8, 4);
         _colorPreview.TextAlignment = ContentAlignment.MiddleCenter;
@@ -306,7 +269,6 @@ internal sealed class DrawerSettingsDialog : Form
         _colorPanel.Controls.Add(_clearColorButton);
 
         _overlayInfoLabel.Text = "Overlay uses a fixed 70% blend and affects this drawer only.";
-        _overlayInfoLabel.Font = _inputFont;
         _overlayInfoLabel.Dock = DockStyle.Fill;
         _overlayInfoLabel.AutoSize = false;
         _overlayInfoLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -332,10 +294,8 @@ internal sealed class DrawerSettingsDialog : Form
         _overlayInfoLabel.ForeColor = Color.FromArgb(192, 192, 192);
         _nameTextBox.BackColor = Color.FromArgb(56, 56, 56);
         _nameTextBox.ForeColor = Color.FromArgb(224, 224, 224);
-        _nameTextBox.Font = _inputFont;
         _pathTextBox.BackColor = Color.FromArgb(56, 56, 56);
         _pathTextBox.ForeColor = Color.FromArgb(224, 224, 224);
-        _pathTextBox.Font = _inputFont;
         _fieldsPanel.BackColor = Color.FromArgb(64, 64, 64);
         _colorPanel.BackColor = Color.FromArgb(64, 64, 64);
         _footerPanel.BackColor = Color.FromArgb(64, 64, 64);
@@ -349,21 +309,14 @@ internal sealed class DrawerSettingsDialog : Form
 
             label.ForeColor = Color.FromArgb(224, 224, 224);
             label.BackColor = Color.Transparent;
-            label.Font = _inputFont;
         }
 
-        ConfigureButtonStyle(_browseButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
-        ConfigureButtonStyle(_clearColorButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
-        ConfigureButtonStyle(_saveButton, Color.SeaGreen, Color.MediumSeaGreen, Color.DarkGreen);
-        ConfigureButtonStyle(_deleteButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
-        ConfigureButtonStyle(_cancelButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
+        UiButtonTheming.ApplySecondaryPalette(_browseButton, handCursor: true);
+        UiButtonTheming.ApplySecondaryPalette(_clearColorButton, handCursor: true);
+        UiButtonTheming.ApplyPrimaryPalette(_saveButton, handCursor: true);
+        UiButtonTheming.ApplySecondaryPalette(_deleteButton, handCursor: true);
+        UiButtonTheming.ApplyDangerPalette(_cancelButton, handCursor: true);
         UpdateColorPreview();
-    }
-
-    private static void ConfigureButtonStyle(Button button, Color fill, Color hover, Color pressed)
-    {
-        UiButtonTheming.ApplyColorPalette(button, fill, hover, pressed, Color.White);
-        button.Cursor = Cursors.Hand;
     }
 
     private IEnumerable<Button> GetButtons()
@@ -411,37 +364,6 @@ internal sealed class DrawerSettingsDialog : Form
         };
     }
 
-    private void Header_MouseDown(object? sender, MouseEventArgs e)
-    {
-        if (e.Button != MouseButtons.Left)
-        {
-            return;
-        }
-
-        _isDragging = true;
-        ((Control)sender!).Capture = true;
-        var screenPoint = ((Control)sender!).PointToScreen(e.Location);
-        _dragOffset = new Point(screenPoint.X - Left, screenPoint.Y - Top);
-    }
-
-    private void Header_MouseMove(object? sender, MouseEventArgs e)
-    {
-        if (_isDragging)
-        {
-            var screenPoint = ((Control)sender!).PointToScreen(e.Location);
-            Location = new Point(screenPoint.X - _dragOffset.X, screenPoint.Y - _dragOffset.Y);
-        }
-    }
-
-    private void Header_MouseUp(object? sender, MouseEventArgs e)
-    {
-        if (e.Button == MouseButtons.Left)
-        {
-            _isDragging = false;
-            ((Control)sender!).Capture = false;
-        }
-    }
-
     private void BrowseButton_Click(object? sender, EventArgs e)
     {
         using var dialog = new FolderBrowserDialog
@@ -478,12 +400,10 @@ internal sealed class DrawerSettingsDialog : Form
 
     private void ChooseColorButton_Click(object? sender, EventArgs e)
     {
-        _colorDialog.Color = _selectedColor ?? AppConstants.Defaults.ThemeColor;
-        _colorDialog.CustomColors = UiDialogHelpers.BuildColorDialogCustomColors(_colorDialog.Color, _selectedColor);
-
-        if (_colorDialog.ShowDialog(this) == DialogResult.OK)
+        var currentColor = _selectedColor ?? AppConstants.Defaults.ThemeColor;
+        if (UiDialogHelpers.ShowColorDialog(this, currentColor, _selectedColor) is { } color)
         {
-            SetSelectedColor(_colorDialog.Color);
+            SetSelectedColor(color);
         }
     }
 
@@ -516,13 +436,5 @@ internal sealed class DrawerSettingsDialog : Form
         _colorPreview.ForeColor = ThemePalette.GetReadableTextColor(blendedColor);
         _colorPreview.AccessibleDescription = $"Overlay color {ThemePalette.FormatHexColor(color)}. Click to change color.";
         _colorPreview.Text = $"Click to change color{Environment.NewLine}{ThemePalette.FormatHexColor(color)}";
-    }
-
-    private static void ConfigureColorDialog(ColorDialog dialog)
-    {
-        dialog.AllowFullOpen = true;
-        dialog.FullOpen = true;
-        dialog.AnyColor = true;
-        dialog.SolidColorOnly = true;
     }
 }

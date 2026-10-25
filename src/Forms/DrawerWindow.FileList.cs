@@ -47,12 +47,6 @@ public partial class DrawerWindow
         ShowListStatus("Loading...");
     }
 
-    /// <summary>User-requested refresh from the context menu or the F5 shortcut.</summary>
-    private Task RefreshDrawerAsync()
-    {
-        return PopulateFileListAsync();
-    }
-
     private void DrawerWindow_DpiChanged(object? sender, DpiChangedEventArgs e)
     {
         UpdateStandardFolderIcon(e.DeviceDpiNew);
@@ -75,9 +69,9 @@ public partial class DrawerWindow
 
     private void UpdateDrawerScrollBarDpi(int dpi)
     {
-        var scale = Math.Max(1, dpi) / 96f;
-        drawerContentsScrollBar.FillWidth = Math.Max(2, (int)Math.Round(3 * scale));
-        drawerContentsScrollBar.Width = Math.Max(17, (int)Math.Round(18 * scale));
+        var scale = DpiScale.Factor(dpi);
+        drawerContentsScrollBar.FillWidth = Math.Max(2, DpiScale.Pixels(3, scale));
+        drawerContentsScrollBar.Width = Math.Max(17, DpiScale.Pixels(18, scale));
         drawerContentsScrollBar.AccessibleName = "Scroll folder contents";
         drawerContentsScrollBar.AccessibleRole = AccessibleRole.ScrollBar;
         PositionDrawerScrollBar();
@@ -90,8 +84,8 @@ public partial class DrawerWindow
             return;
         }
 
-        var scale = Math.Max(1, DeviceDpi) / 96f;
-        var nativeScrollBarWidth = Math.Max(17, (int)Math.Round(17 * scale));
+        var scale = DpiScale.Factor(DeviceDpi);
+        var nativeScrollBarWidth = Math.Max(17, DpiScale.Pixels(17, scale));
         var scrollBarWidth = drawerContentsScrollBar.Width;
         var viewportWidth = Math.Max(1, drawerContentsHostPanel.ClientSize.Width - scrollBarWidth);
         var listWidth = drawerContentsHostPanel.ClientSize.Width + nativeScrollBarWidth;
@@ -160,7 +154,7 @@ public partial class DrawerWindow
     private static Size GetImageSize(int dpi)
     {
         const int logicalImageSize = 48;
-        var scaledSize = Math.Max(1, (int)Math.Round(logicalImageSize * dpi / 96d));
+        var scaledSize = DpiScale.Pixels(logicalImageSize, dpi);
         return new Size(scaledSize, scaledSize);
     }
 

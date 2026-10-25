@@ -22,7 +22,7 @@ public sealed class SettingsSnapshot(
     public bool StartWithWindows { get; set; } = startWithWindows;
     public bool WindowLocked { get; set; } = windowLocked;
     public Color WindowColor { get; set; } = Color.FromArgb(windowColor.R, windowColor.G, windowColor.B);
-    public int WindowOpacity { get; set; } = Math.Clamp(windowOpacity, 0, 100);
+    public int WindowOpacity { get; set; } = Math.Clamp(windowOpacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax);
     public Point WindowPosition { get; set; } = windowPosition;
     public int WindowHeight { get; set; } = Math.Clamp(windowHeight, winDrawer.AppConstants.Defaults.MainWindowHeightMin, winDrawer.AppConstants.Defaults.MainWindowHeightMax);
     public bool AlwaysOnTop { get; set; } = alwaysOnTop;

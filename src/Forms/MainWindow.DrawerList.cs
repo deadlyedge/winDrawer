@@ -260,7 +260,7 @@ namespace winDrawer
             var markerY = rawInsertionIndex < _currentDrawers.Count
                 ? drawerListBox.GetItemRectangle(rawInsertionIndex).Top
                 : drawerListBox.GetItemRectangle(_currentDrawers.Count - 1).Bottom;
-            var markerHeight = Math.Max(2, (int)Math.Round(3 * DeviceDpi / 96d));
+            var markerHeight = Math.Max(2, DpiScale.Pixels(3, DeviceDpi));
             _drawerInsertionMarker.SetBounds(4, markerY - markerHeight / 2, Math.Max(1, drawerListBox.ClientSize.Width - 8), markerHeight);
             _drawerInsertionMarker.BackColor = _currentTheme.Accent;
             _drawerInsertionMarker.Visible = true;
@@ -328,7 +328,7 @@ namespace winDrawer
                     return;
                 }
 
-                ApplySnapshot(_settingsRepository.GetSnapshot());
+                ApplySettingsSnapshot(_settingsRepository.GetSnapshot());
             }
             catch (Exception ex)
             {

@@ -300,7 +300,7 @@ internal sealed class ThemedScrollBar : Control
         var trackBounds = GetTrackBounds();
         var contentExtent = (double)_maximum + _largeChange;
         var ratio = contentExtent <= 0 ? 1 : _largeChange / contentExtent;
-        var minimumThumbHeight = Math.Max(18, (int)Math.Round(24 * DeviceDpi / 96d));
+        var minimumThumbHeight = Math.Max(18, DpiScale.Pixels(24, DeviceDpi));
         var thumbHeight = Math.Clamp(
             (int)Math.Round(trackBounds.Height * ratio),
             Math.Min(minimumThumbHeight, trackBounds.Height),

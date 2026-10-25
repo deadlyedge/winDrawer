@@ -13,13 +13,7 @@ public partial class SettingsForm : Form
 
     private SettingsSnapshot _originalSnapshot;
     private SettingsSnapshot _workingSnapshot;
-    private readonly List<Font> _ownedFonts = [];
-    private Font? _buttonFont;
-    private Font? _compactButtonFont;
-    private Font? _systemFont;
-    private Font? _titleFont;
-    private bool _isDragging;
-    private Point _dragOffset;
+    private readonly DialogFontSet _fonts = new();
     private bool _allowClose;
 
     public SettingsForm(SettingsSnapshot snapshot)
@@ -35,7 +29,7 @@ public partial class SettingsForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
 
-        ConfigureFonts();
+        _fonts.ApplyTo(this);
         ConfigureControls();
         ConfigureButtonPalette();
         ApplySnapshotToUi();
@@ -105,66 +99,20 @@ public partial class SettingsForm : Form
         WindowHeightPreviewChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void ConfigureFonts()
-    {
-        _systemFont = CreateOwnedFont("Segoe UI", 9F);
-        _buttonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
-        _compactButtonFont = BrandingFont.Create(AppConstants.Defaults.CompactButtonFontSize);
-        _titleFont = BrandingFont.Create(13F);
-        _ownedFonts.Add(_buttonFont);
-        _ownedFonts.Add(_compactButtonFont);
-        _ownedFonts.Add(_titleFont);
-        ApplyFontToControls(this);
-    }
-
     private void ApplyBrandFonts()
     {
-        headerSettings.Font = _titleFont!;
-        cancelButton.Font = _buttonFont!;
-        saveButton.Font = _buttonFont!;
-    }
-
-    private void ApplyFontToControls(Control parent)
-    {
-        foreach (Control control in parent.Controls)
-        {
-            if (control is Button button)
-            {
-                button.Font = IsPrimaryButton(button) ? _buttonFont! : _compactButtonFont!;
-            }
-            else
-            {
-                control.Font = _systemFont!;
-            }
-
-            ApplyFontToControls(control);
-        }
-    }
-
-    private bool IsPrimaryButton(Button button)
-    {
-        return ReferenceEquals(button, cancelButton) || ReferenceEquals(button, saveButton);
-    }
-
-    private Font CreateOwnedFont(string familyName, float size)
-    {
-        var font = new Font(familyName, size, FontStyle.Regular, GraphicsUnit.Point);
-        _ownedFonts.Add(font);
-        return font;
+        headerSettings.Font = _fonts.Title;
+        cancelButton.Font = _fonts.PrimaryButton;
+        saveButton.Font = _fonts.PrimaryButton;
     }
 
     private void ConfigureButtonPalette()
     {
-        ConfigureButton(saveButton, Color.SeaGreen, Color.MediumSeaGreen, Color.DarkGreen);
-        ConfigureButton(cancelButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
-        ConfigureButton(shutDownButton, Color.Firebrick, Color.IndianRed, Color.DarkRed);
-        ConfigureButton(defaultSettingsButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
-        ConfigureButton(openSettingsTomlButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
-    }
-
-    private static void ConfigureButton(Button button, Color fill, Color hover, Color pressed)
-    {
-        UiButtonTheming.ApplyColorPalette(button, fill, hover, pressed, Color.White);
+        UiButtonTheming.ApplyPrimaryPalette(saveButton);
+        UiButtonTheming.ApplyDangerPalette(cancelButton);
+        UiButtonTheming.ApplyDangerPalette(shutDownButton);
+        UiButtonTheming.ApplySecondaryPalette(defaultSettingsButton);
+        UiButtonTheming.ApplySecondaryPalette(openSettingsTomlButton);
     }
 
     private void ConfigureControls()
@@ -205,16 +153,7 @@ public partial class SettingsForm : Form
 
     private void WireDragHandlers()
     {
-        headerTableLayoutPanel.Cursor = Cursors.SizeAll;
-        headerSettings.Cursor = Cursors.SizeAll;
-
-        headerTableLayoutPanel.MouseDown += HeaderDragBegin;
-        headerTableLayoutPanel.MouseMove += HeaderDragMove;
-        headerTableLayoutPanel.MouseUp += HeaderDragEnd;
-
-        headerSettings.MouseDown += HeaderDragBegin;
-        headerSettings.MouseMove += HeaderDragMove;
-        headerSettings.MouseUp += HeaderDragEnd;
+        FormDragBehavior.Attach(this, headerTableLayoutPanel, headerSettings);
     }
 
     private void ApplySnapshotToUi()
@@ -280,23 +219,12 @@ public partial class SettingsForm : Form
 
     private void OnThemeColorPreviewClick(object? sender, EventArgs e)
     {
-        using var dialog = new ColorDialog
-        {
-            Color = _workingSnapshot.WindowColor,
-            AllowFullOpen = true,
-            FullOpen = true,
-            AnyColor = true,
-            SolidColorOnly = true
-        };
-
-        dialog.CustomColors = UiDialogHelpers.BuildColorDialogCustomColors(_workingSnapshot.WindowColor);
-
-        if (dialog.ShowDialog(this) != DialogResult.OK)
+        if (UiDialogHelpers.ShowColorDialog(this, _workingSnapshot.WindowColor) is not { } color)
         {
             return;
         }
 
-        _workingSnapshot.WindowColor = Color.FromArgb(dialog.Color.R, dialog.Color.G, dialog.Color.B);
+        _workingSnapshot.WindowColor = Color.FromArgb(color.R, color.G, color.B);
         UpdatePreview();
     }
 
@@ -487,37 +415,5 @@ public partial class SettingsForm : Form
     private bool IsBehaviorChecked(int index)
     {
         return behaviorCheckBoxGroup.SelectedIndexes != null && behaviorCheckBoxGroup.SelectedIndexes.Contains(index);
-    }
-
-    private void HeaderDragBegin(object? sender, MouseEventArgs e)
-    {
-        if (e.Button != MouseButtons.Left)
-        {
-            return;
-        }
-
-        _isDragging = true;
-        _dragOffset = e.Location;
-    }
-
-    private void HeaderDragMove(object? sender, MouseEventArgs e)
-    {
-        if (!_isDragging)
-        {
-            return;
-        }
-
-        var screenPoint = PointToScreen(e.Location);
-        Location = new Point(screenPoint.X - _dragOffset.X, screenPoint.Y - _dragOffset.Y);
-    }
-
-    private void HeaderDragEnd(object? sender, MouseEventArgs e)
-    {
-        if (e.Button != MouseButtons.Left)
-        {
-            return;
-        }
-
-        _isDragging = false;
     }
 }

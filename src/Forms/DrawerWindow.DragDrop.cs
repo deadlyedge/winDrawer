@@ -74,7 +74,7 @@ public partial class DrawerWindow
         // A copy leaves this folder untouched; only a move can have removed entries from it.
         if ((effect & DragDropEffects.Move) != 0 && !IsDisposed && !Disposing)
         {
-            _ = RefreshDrawerAsync();
+            _ = PopulateFileListAsync();
         }
     }
 
@@ -286,7 +286,7 @@ public partial class DrawerWindow
         // Cancelling can still leave a partially completed batch, so always re-read the folder.
         if (!IsDisposed && !Disposing)
         {
-            _ = RefreshDrawerAsync();
+            _ = PopulateFileListAsync();
         }
     }
 }

@@ -20,7 +20,7 @@ public partial class DrawerWindow
     private void InitializeDrawerContextMenu()
     {
         var refreshMenuItem = new ToolStripMenuItem("Refresh") { ShortcutKeyDisplayString = "F5" };
-        refreshMenuItem.Click += (_, _) => _ = RefreshDrawerAsync();
+        refreshMenuItem.Click += (_, _) => _ = PopulateFileListAsync();
 
         _sortByNameMenuItem = CreateSortMenuItem("Sort by name", DrawerSortMode.NameAscending);
         _newestFirstMenuItem = CreateSortMenuItem("Newest first", DrawerSortMode.NewestFirst);
@@ -70,7 +70,7 @@ public partial class DrawerWindow
     {
         if (_drawer.SortMode == mode)
         {
-            _ = RefreshDrawerAsync();
+            _ = PopulateFileListAsync();
             return;
         }
 
@@ -84,7 +84,7 @@ public partial class DrawerWindow
         }
 
         SortModeChanged?.Invoke(this, EventArgs.Empty);
-        _ = RefreshDrawerAsync();
+        _ = PopulateFileListAsync();
     }
 
     /// <summary>F5 refreshes the list; the drawer no longer has a refresh button.</summary>
@@ -92,7 +92,7 @@ public partial class DrawerWindow
     {
         if (keyData == Keys.F5)
         {
-            _ = RefreshDrawerAsync();
+            _ = PopulateFileListAsync();
             return true;
         }
 

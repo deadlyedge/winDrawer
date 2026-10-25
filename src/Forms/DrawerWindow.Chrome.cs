@@ -169,7 +169,7 @@ public partial class DrawerWindow
     /// </summary>
     private void UpdateTopResizeGrip(int dpi)
     {
-        var grip = Math.Max(1, (int)Math.Round(TopResizeGripLogicalHeight * Math.Max(1, dpi) / 96d));
+        var grip = DpiScale.Pixels(TopResizeGripLogicalHeight, dpi);
         if (_topResizeGripHeight == grip && Padding.Top == grip)
         {
             return;

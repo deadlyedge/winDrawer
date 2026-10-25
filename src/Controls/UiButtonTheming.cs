@@ -8,6 +8,24 @@ namespace winDrawer;
 /// </summary>
 internal static class UiButtonTheming
 {
+    /// <summary>Applies the confirm-button palette used by the settings dialogs.</summary>
+    public static void ApplyPrimaryPalette(Button button, bool handCursor = false)
+    {
+        ApplyDialogPalette(button, Color.SeaGreen, Color.MediumSeaGreen, Color.DarkGreen, handCursor);
+    }
+
+    /// <summary>Applies the neutral palette used by secondary and tool buttons in the dialogs.</summary>
+    public static void ApplySecondaryPalette(Button button, bool handCursor = false)
+    {
+        ApplyDialogPalette(button, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue, handCursor);
+    }
+
+    /// <summary>Applies the cancel/abort palette used by the settings dialogs.</summary>
+    public static void ApplyDangerPalette(Button button, bool handCursor = false)
+    {
+        ApplyDialogPalette(button, Color.Firebrick, Color.IndianRed, Color.DarkRed, handCursor);
+    }
+
     /// <summary>Applies the accent palette: theme colour, readable accent text and the theme border.</summary>
     public static void ApplyAccentPalette(Button button, ThemePalette theme)
     {
@@ -33,5 +51,14 @@ internal static class UiButtonTheming
     {
         button.FlatAppearance.BorderColor = border;
         button.FlatAppearance.BorderSize = 1;
+    }
+
+    private static void ApplyDialogPalette(Button button, Color fill, Color hover, Color pressed, bool handCursor)
+    {
+        ApplyColorPalette(button, fill, hover, pressed, Color.White);
+        if (handCursor)
+        {
+            button.Cursor = Cursors.Hand;
+        }
     }
 }

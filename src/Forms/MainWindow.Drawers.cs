@@ -88,6 +88,29 @@ namespace winDrawer
         }
 
         /// <summary>
+        /// Clears the drawer-list selection after the open drawer closed. The event can arrive from a
+        /// different thread, so the UI work is marshalled once instead of duplicating the reset.
+        /// </summary>
+        private void ClearDrawerListSelection()
+        {
+            if (drawerListBox.InvokeRequired)
+            {
+                drawerListBox.BeginInvoke(new Action(ClearDrawerListSelection));
+                return;
+            }
+
+            _suppressSelectionChange = true;
+            try
+            {
+                drawerListBox.SelectedIndex = -1;
+            }
+            finally
+            {
+                _suppressSelectionChange = false;
+            }
+        }
+
+        /// <summary>
         /// Keeps the open drawer window glued to the right edge of the main window. Called when the
         /// main window moves and when it is shown again after being hidden.
         /// </summary>
@@ -133,22 +156,7 @@ namespace winDrawer
                     ReloadSettingsFromStorage();
                     _currentDrawerWindow = null;
                     _currentOpenDrawer = null;
-                    // 清空list中的选中状态
-                    if (drawerListBox.InvokeRequired)
-                    {
-                        drawerListBox.BeginInvoke(new Action(() =>
-                        {
-                            _suppressSelectionChange = true;
-                            drawerListBox.SelectedIndex = -1;
-                            _suppressSelectionChange = false;
-                        }));
-                    }
-                    else
-                    {
-                        _suppressSelectionChange = true;
-                        drawerListBox.SelectedIndex = -1;
-                        _suppressSelectionChange = false;
-                    }
+                    ClearDrawerListSelection();
                 };
                 drawerWindow.Show(this);
                 DrawerLogger.LogInformation($"Drawer window displayed for '{drawer.Name}'.");

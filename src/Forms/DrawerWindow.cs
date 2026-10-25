@@ -88,10 +88,10 @@ namespace winDrawer
 
             Opacity = _theme.WindowOpacity;
             var contentBackground = _drawer.OverlayColor is { } contentOverlay
-                ? BlendColor(_theme.ContentBackground, contentOverlay)
+                ? ThemePalette.BlendOverlayColor(_theme.ContentBackground, contentOverlay)
                 : _theme.ContentBackground;
             var windowBackground = _drawer.OverlayColor is { } overlayColor
-                ? BlendColor(_theme.WindowBackground, overlayColor)
+                ? ThemePalette.BlendOverlayColor(_theme.WindowBackground, overlayColor)
                 : _theme.WindowBackground;
             // The client area is covered by mainTableLayoutPanel except for the top resize strip, which
             // must be indistinguishable from the list content instead of showing the window frame.
@@ -134,13 +134,8 @@ namespace winDrawer
             // edited outside the drawer) must be reflected in the list immediately.
             if (_drawer.SortMode != previousSortMode)
             {
-                _ = RefreshDrawerAsync();
+                _ = PopulateFileListAsync();
             }
-        }
-
-        private static Color BlendColor(Color background, Color overlay)
-        {
-            return ThemePalette.BlendOverlayColor(background, overlay);
         }
 
         protected override void OnShown(EventArgs e)
@@ -232,13 +227,13 @@ namespace winDrawer
         /// </summary>
         private void UpdateFooterLayout(int dpi)
         {
-            var scale = Math.Max(1, dpi) / 96d;
+            var scale = DpiScale.Factor(dpi);
             var iconSize = GetFolderIconSize(dpi);
 
             drawerPathTableLayoutPanel.Padding = new Padding(
-                ScaleLogicalPixels(AppConstants.Ui.DrawerFooter.PaddingLeft, scale),
+                DpiScale.Pixels(AppConstants.Ui.DrawerFooter.PaddingLeft, scale),
                 0,
-                ScaleLogicalPixels(AppConstants.Ui.DrawerFooter.PaddingRight, scale),
+                DpiScale.Pixels(AppConstants.Ui.DrawerFooter.PaddingRight, scale),
                 0);
 
             if (drawerPathTableLayoutPanel.ColumnStyles.Count > 0)
@@ -248,20 +243,13 @@ namespace winDrawer
                 drawerPathTableLayoutPanel.ColumnStyles[0].Width = iconSize.Width;
             }
 
-            var iconTextGap = ScaleLogicalPixels(AppConstants.Ui.DrawerFooter.IconTextGap, scale);
+            var iconTextGap = DpiScale.Pixels(AppConstants.Ui.DrawerFooter.IconTextGap, scale);
             fullPathLabel.Padding = new Padding(iconTextGap, 0, 0, 0);
-        }
-
-        private static int ScaleLogicalPixels(int logicalPixels, double scale)
-        {
-            return Math.Max(1, (int)Math.Round(logicalPixels * scale));
         }
 
         private static Size GetFolderIconSize(int dpi)
         {
-            var size = Math.Max(
-                1,
-                (int)Math.Round(AppConstants.Ui.DrawerFooter.FolderIconSize * dpi / 96d));
+            var size = DpiScale.Pixels(AppConstants.Ui.DrawerFooter.FolderIconSize, dpi);
             return new Size(size, size);
         }
 

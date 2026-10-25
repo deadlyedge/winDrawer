@@ -140,7 +140,7 @@ namespace winDrawer
             _settingsRepository.Update(_settingsSnapshot);
             // Saving is handled by the repository's background writer.
             ApplyMainWindowBounds(_settingsSnapshot);
-            ApplySettings(_settingsSnapshot);
+            ApplySettingsSnapshot(_settingsSnapshot);
         }
 
         private void RevertSettingsPreview(SettingsForm settings)
@@ -267,7 +267,7 @@ namespace winDrawer
             // The reset replaces the dialog baseline, so a pending hotkey preview must not survive it.
             _toggleHotkeyPreview = null;
             settings.ApplyResetBaseline(_settingsSnapshot);
-            ApplySettings(_settingsSnapshot);
+            ApplySettingsSnapshot(_settingsSnapshot);
         }
 
         private static void RestoreStartupRegistration(bool previousStartupState, string failureMessage)

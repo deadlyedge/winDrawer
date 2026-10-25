@@ -45,6 +45,26 @@ internal static class UiDialogHelpers
     }
 
     /// <summary>
+    /// Shows a system colour dialog configured like the rest of the settings UI and returns the chosen
+    /// colour, or <see langword="null"/> when the user cancelled. The dialog is created and disposed per
+    /// call, so callers do not keep a long-lived instance alive.
+    /// </summary>
+    public static Color? ShowColorDialog(IWin32Window owner, Color initialColor, Color? secondaryColor = null)
+    {
+        using var dialog = new ColorDialog
+        {
+            Color = initialColor,
+            AllowFullOpen = true,
+            FullOpen = true,
+            AnyColor = true,
+            SolidColorOnly = true,
+            CustomColors = BuildColorDialogCustomColors(initialColor, secondaryColor)
+        };
+
+        return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.Color : null;
+    }
+
+    /// <summary>
     /// Runs <paramref name="activate"/> when Enter or Space was pressed and consumes the key so that a
     /// display-only control behaves like a button.
     /// </summary>

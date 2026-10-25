@@ -20,10 +20,7 @@ partial class SettingsForm
         base.Dispose(disposing);
         if (disposing)
         {
-            foreach (var font in _ownedFonts)
-            {
-                font.Dispose();
-            }
+            _fonts.Dispose();
         }
     }
 

@@ -71,7 +71,7 @@ namespace winDrawer
             LoadBrandingAssets();
             InitializeTray();
             WireDragHandlers();
-            ApplySettings(_settingsSnapshot);
+            ApplySettingsSnapshot(_settingsSnapshot);
             DpiChanged += (_, _) => ApplyMainWindowBounds(_settingsSnapshot);
 
             DrawerLogger.LogInformation("MainWindow initialization completed.");
@@ -402,11 +402,11 @@ namespace winDrawer
                 var snapshot = _settingsRepository.GetSnapshot();
                 if (InvokeRequired)
                 {
-                    BeginInvoke(new Action(() => ApplySnapshot(snapshot)));
+                    BeginInvoke(new Action(() => ApplySettingsSnapshot(snapshot)));
                 }
                 else
                 {
-                    ApplySnapshot(snapshot);
+                    ApplySettingsSnapshot(snapshot);
                 }
             }
             catch (Exception ex)
@@ -416,15 +416,11 @@ namespace winDrawer
             }
         }
 
-        private void ApplySnapshot(SettingsSnapshot snapshot)
+        private void ApplySettingsSnapshot(SettingsSnapshot snapshot)
         {
             _settingsSnapshot = snapshot;
             DrawerLogger.LogDebug("Applying settings snapshot to UI.");
-            ApplySettings(_settingsSnapshot);
-        }
 
-        private void ApplySettings(SettingsSnapshot snapshot)
-        {
             StartPosition = FormStartPosition.Manual;
             logoLabel.Cursor = snapshot.WindowLocked ? Cursors.Default : Cursors.SizeAll;
             if (snapshot.WindowLocked)
@@ -436,7 +432,7 @@ namespace winDrawer
             ApplyAlwaysOnTop(snapshot.AlwaysOnTop);
             ApplyTheme(snapshot.BuildThemePalette());
             PopulateDrawerList(snapshot.Drawers);
-            // 如果有当前打开的drawer，更新list中的选中状态
+            // Keep the list selection in sync with the drawer that is still open.
             UpdateSelectedDrawer();
 
             // The global shortcut follows the same preview/save/cancel semantics as the other startup
@@ -448,9 +444,9 @@ namespace winDrawer
 
         private void ApplyMainWindowBounds(SettingsSnapshot snapshot)
         {
-            var dpiScale = DeviceDpi / 96d;
-            var desiredWidth = Math.Max(1, (int)Math.Round(AppConstants.Defaults.MainWindowWidth * dpiScale));
-            var desiredHeight = Math.Max(1, (int)Math.Round(snapshot.WindowHeight * dpiScale));
+            var dpiScale = DpiScale.Factor(DeviceDpi);
+            var desiredWidth = DpiScale.Pixels(AppConstants.Defaults.MainWindowWidth, dpiScale);
+            var desiredHeight = DpiScale.Pixels(snapshot.WindowHeight, dpiScale);
             var desiredBounds = new Rectangle(snapshot.WindowPosition, new Size(desiredWidth, desiredHeight));
             var workArea = Screen.FromRectangle(desiredBounds).WorkingArea;
 

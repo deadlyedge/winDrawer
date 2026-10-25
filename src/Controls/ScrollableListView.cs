@@ -60,9 +60,10 @@ internal sealed class ScrollableListView : ListView
         base.WndProc(ref m);
 
         if (message is WindowSizeMessage or WindowStyleChangedMessage or ListViewInsertItemMessage or
-            ListViewDeleteItemMessage or ListViewDeleteAllItemsMessage or ListViewSetItemCountMessage)
+            ListViewDeleteItemMessage or ListViewDeleteAllItemsMessage or ListViewSetItemCountMessage or
+            ListViewScrollMessage)
         {
-            ShowScrollBar(Handle, ScrollBarHorizontal, false);
+            HideNativeScrollBars();
         }
 
         if (message is WindowSizeMessage or ListViewInsertItemMessage or ListViewDeleteItemMessage or
@@ -76,6 +77,21 @@ internal sealed class ScrollableListView : ListView
         {
             NotifyViewportChanged();
         }
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        HideNativeScrollBars();
+    }
+
+    private void HideNativeScrollBars()
+    {
+        if (!IsHandleCreated || IsDisposed)
+        {
+            return;
+        }
+        ShowScrollBar(Handle, ScrollBarHorizontal, false);
     }
 
     public new void BeginUpdate()
@@ -222,6 +238,7 @@ internal sealed class ScrollableListView : ListView
 
         var spacing = SendMessage(Handle, ListViewGetItemSpacingMessage, IntPtr.Zero, IntPtr.Zero).ToInt64();
         var itemHeight = Math.Max(1, (int)((spacing >> 16) & 0xFFFF));
+        var scrollPosition = GetIconScrollPosition();
         long contentBottom = 0;
 
         for (var index = 0; index < Items.Count; index++)
@@ -229,7 +246,9 @@ internal sealed class ScrollableListView : ListView
             var itemPosition = new NativePoint();
             if (SendMessage(Handle, ListViewGetItemPositionMessage, new IntPtr(index), ref itemPosition) != IntPtr.Zero)
             {
-                contentBottom = Math.Max(contentBottom, (long)itemPosition.Y + itemHeight);
+                // LVM_GETITEMPOSITION is viewport-relative in icon view. Add the current origin so the
+                // computed content extent stays stable while scrolling.
+                contentBottom = Math.Max(contentBottom, (long)itemPosition.Y + itemHeight + scrollPosition);
             }
         }
 
@@ -275,6 +294,7 @@ internal sealed class ScrollableListView : ListView
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ShowScrollBar(IntPtr windowHandle, int bar, [MarshalAs(UnmanagedType.Bool)] bool show);
+
 
     [DllImport("user32.dll", EntryPoint = "SendMessageW", SetLastError = true)]
     private static extern IntPtr SendMessage(IntPtr windowHandle, int message, IntPtr wParam, IntPtr lParam);

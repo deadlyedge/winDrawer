@@ -76,8 +76,8 @@ public partial class DrawerWindow
     private void UpdateDrawerScrollBarDpi(int dpi)
     {
         var scale = Math.Max(1, dpi) / 96f;
-        drawerContentsScrollBar.FillWidth = Math.Max(6, (int)Math.Round(10 * scale));
-        drawerContentsScrollBar.Width = Math.Max(18, (int)Math.Round(18 * scale));
+        drawerContentsScrollBar.FillWidth = Math.Max(2, (int)Math.Round(3 * scale));
+        drawerContentsScrollBar.Width = Math.Max(17, (int)Math.Round(18 * scale));
         drawerContentsScrollBar.AccessibleName = "Scroll folder contents";
         drawerContentsScrollBar.AccessibleRole = AccessibleRole.ScrollBar;
         PositionDrawerScrollBar();
@@ -90,9 +90,16 @@ public partial class DrawerWindow
             return;
         }
 
+        var scale = Math.Max(1, DeviceDpi) / 96f;
+        var nativeScrollBarWidth = Math.Max(17, (int)Math.Round(17 * scale));
         var scrollBarWidth = drawerContentsScrollBar.Width;
         var viewportWidth = Math.Max(1, drawerContentsHostPanel.ClientSize.Width - scrollBarWidth);
-        drawerContentsListView.SetBounds(0, 0, drawerContentsHostPanel.ClientSize.Width, drawerContentsHostPanel.ClientSize.Height);
+        var listWidth = drawerContentsHostPanel.ClientSize.Width + nativeScrollBarWidth;
+
+        // The list is wider than its host on purpose: the native vertical scrollbar is laid out
+        // outside the host's client area and clipped away. The themed scrollbar below covers the
+        // right edge, while the ListView keeps native wheel/scrollbar behavior internally.
+        drawerContentsListView.SetBounds(0, 0, listWidth, drawerContentsHostPanel.ClientSize.Height);
         drawerContentsScrollBar.SetBounds(viewportWidth, 0, scrollBarWidth, drawerContentsHostPanel.ClientSize.Height);
     }
 

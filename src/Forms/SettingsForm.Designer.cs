@@ -133,9 +133,9 @@ partial class SettingsForm
         //
         windowHeightTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         windowHeightTableLayoutPanel.ColumnCount = 3;
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12F));
         windowHeightTableLayoutPanel.Controls.Add(windowHeightLabel, 0, 0);
         windowHeightTableLayoutPanel.Controls.Add(windowHeightTrackBar, 1, 0);
         windowHeightTableLayoutPanel.Controls.Add(windowHeightValueLabel, 2, 0);
@@ -237,9 +237,9 @@ partial class SettingsForm
         // visualTableLayoutPanel
         //
         visualTableLayoutPanel.ColumnCount = 3;
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12F));
         visualTableLayoutPanel.Controls.Add(previewPanel, 0, 0);
         visualTableLayoutPanel.SetColumnSpan(previewPanel, 3);
         visualTableLayoutPanel.Controls.Add(opacityLabel, 0, 1);

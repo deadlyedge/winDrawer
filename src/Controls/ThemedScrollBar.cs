@@ -13,7 +13,7 @@ internal sealed class ThemedScrollBar : Control
     private int _value;
     private int _largeChange = 1;
     private int _smallChange = 1;
-    private int _fillWidth = 10;
+    private int _fillWidth = 3;
     private bool _dragging;
     private bool _hoverThumb;
     private bool _pressedThumb;
@@ -31,6 +31,7 @@ internal sealed class ThemedScrollBar : Control
         TabStop = true;
         Cursor = Cursors.Hand;
         AccessibleRole = AccessibleRole.ScrollBar;
+        Width = 18;
     }
 
     public event EventHandler? ValueChanged;
@@ -96,7 +97,7 @@ internal sealed class ThemedScrollBar : Control
         get => _fillWidth;
         set
         {
-            var fillWidth = Math.Max(4, value);
+            var fillWidth = Math.Max(2, value);
             if (_fillWidth == fillWidth)
             {
                 return;
@@ -157,12 +158,15 @@ internal sealed class ThemedScrollBar : Control
 
         Focus();
         var thumbBounds = GetThumbBounds();
+        if (!thumbBounds.Contains(e.Location))
+        {
+            Value += e.Y < thumbBounds.Top ? -_largeChange : _largeChange;
+            return;
+        }
+
         _dragging = true;
         _pressedThumb = true;
-        _dragOffset = thumbBounds.Contains(e.Location)
-            ? e.Y - thumbBounds.Top
-            : thumbBounds.Height / 2;
-        SetValueFromThumbY(e.Y);
+        _dragOffset = e.Y - thumbBounds.Top;
         Capture = true;
         Invalidate();
     }

@@ -57,6 +57,16 @@ The value is clamped to 1–10000; missing or invalid values fall back to 200. I
 dotnet publish .\src\winDrawer.csproj -c Release
 ```
 
+```powershell
+dotnet publish .\src\winDrawer.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained false `
+  -p:PublishSingleFile=true `
+  -p:IncludeAllContentForSelfExtract=true `
+  -o .\publish\win-x64
+```
+
 The single-file build is written under the project's `bin\Release\...\publish` folder.
 
 ## Project layout

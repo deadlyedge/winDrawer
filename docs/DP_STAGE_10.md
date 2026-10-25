@@ -43,23 +43,23 @@
 
 ### 3.3 实现方案
 
-1. `TrayController` 继续创建并释放 `ContextMenuStrip`，但**不再赋值给 `NotifyIcon.ContextMenuStrip`**。
-2. 订阅 `NotifyIcon.MouseUp`，只处理 `MouseButtons.Right`，调用私有 `ShowTrayMenu()`。
-3. `ShowTrayMenu()`：
-   - `var screen = Screen.FromPoint(Cursor.Position)`；
-   - 按任务栏边缘选择 `ToolStripDropDownDirection`；
-   - 将锚点夹取到该屏幕 `WorkingArea`；
-   - 调用 `_trayMenu.Show(anchor, direction)`，走普通 `ToolStripDropDown` 的工作区约束路径。
-4. 显示失败时记录日志，并回退到 `_trayMenu.Show(Cursor.Position)`。
-5. 若实际使用中出现“点击菜单外部第一次只关闭、不激活目标窗口”的焦点问题，再增加隐藏 `NativeWindow` 作为 owner 并 `SetForegroundWindow`，不得激活主窗口。
-6. 不新增 P/Invoke 菜单实现，不引入第三方托盘库。
+> 首次实现曾改为手动 `_trayMenu.Show(...)`，结果既没有解决跨屏定位，又因为菜单缺少 owner 而让 Windows 给菜单创建了任务栏按钮。现改为下面的“系统菜单 + 位置纠正”方案。
+
+1. 恢复 `NotifyIcon.ContextMenuStrip = _trayMenu`，让菜单继续由 `NotifyIcon` 的隐藏窗口拥有；这能避免弹出菜单出现在任务栏。
+2. 不再订阅右键 `MouseUp` 手动显示菜单。
+3. 给菜单增加 `Opening`/`Opened`：
+   - `Opening`：记录 `Cursor.Position`，按任务栏边缘计算目标位置，先尝试设置 `Location`；
+   - `Opened`：用菜单实际尺寸重新计算目标位置；如果 WinForms 的 `ShowInTaskbar` 路径仍把菜单放到了错误位置，使用 `SetWindowPos` 移动真实窗口（不改变大小、z-order 或焦点）。
+4. 目标位置只使用鼠标所在屏幕的 `WorkingArea`，按底部/顶部/左右任务栏选择展开方向并夹取，避免菜单跨屏。
+5. 不新增原生 `TrackPopupMenuEx` 实现，不引入第三方托盘库。
 
 ### 3.4 验收
 
+- 右键托盘图标后，任务栏**不新增** winDrawer 图标（菜单仍由 NotifyIcon 拥有）。
 - 由用户在特殊任务栏布局/跨屏场景实测：菜单出现在点击图标所在屏幕。
 - 常规单屏、底部/顶部/左右任务栏下菜单位置合理。
 - 菜单关闭、双击显隐、设置、退出均正常。
-- 本阶段**不做烟测**；不以自动化测试声称跨屏问题已修复。
+- 本阶段**不做特殊布局烟测**；不以自动化测试声称跨屏问题已修复。
 
 ## 4. 阶段 10.2：抽屉容量上限
 
@@ -284,9 +284,11 @@ internal readonly record struct DrawerEnumerationResult(
 
 ### 10.1
 
-- `src/Infrastructure/TrayController.cs`：不再把菜单赋给 `NotifyIcon.ContextMenuStrip`；改为右键 `MouseUp` 手动 `Show`，按光标所在屏幕和任务栏方向选择定位，并夹取到工作区。失败时回退到 `Show(Cursor.Position)` 并记录日志。
-- **已验证**：Debug/Release 完整构建成功。
-- **未验证**：用户特殊任务栏布局下的实际位置、菜单外部点击关闭、隐藏状态下打开菜单。按约定不做烟测。
+- 首次实现（手动 `ContextMenuStrip.Show`）**未解决跨屏定位**，并因菜单缺少 owner 导致右键托盘后出现任务栏按钮。
+- 修订为：恢复 `NotifyIcon.ContextMenuStrip`，菜单继续由 NotifyIcon 拥有；增加 `Opening`/`Opened`，用鼠标所在屏幕的 `WorkingArea` 计算位置，必要时在 `Opened` 中用 `SetWindowPos` 纠正 WinForms 内部 `ShowInTaskbar` 的定位。
+- **已验证**：Debug/Release 完整构建成功；应用可正常启动、初始化托盘并通过 `WM_CLOSE` 退出。
+- **基本托盘菜单验证**：向 NotifyIcon 隐藏窗口发送 `WM_TRAYMOUSEMESSAGE` 模拟右键；菜单窗口的 owner 为 NotifyIcon 隐藏窗口（具备不产生任务栏按钮的条件），在副屏坐标下出现在鼠标所在屏幕范围内。
+- **未验证**：用户特殊任务栏布局下的实际位置、菜单外部点击关闭、真实任务栏上是否完全无按钮。按约定不做特殊布局烟测，需用户实测。
 
 ### 10.2
 

@@ -24,7 +24,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - `MainWindow` 同一时间只维护一个打开中的抽屉窗口；切换抽屉会关闭旧窗口。
 - 托盘菜单和设置面板的退出入口最终都走 `MainWindow.ShutdownApplication(reason)`，再通过 `Application.Exit()` 走常规 `FormClosing/FormClosed` 路径。
 - `MainWindow.OnFormClosed` 的释放顺序为：热键、品牌字体、托盘控制器、`SettingsRepository`；`ForceProcessExit()` 只在常规退出抛异常时作为最后兜底。
-- 托盘菜单由 `TrayController` 手动定位显示，不赋给 `NotifyIcon.ContextMenuStrip`。原因是 WinForms 的 `NotifyIcon` 内部会走 `ContextMenuStrip.ShowInTaskbar`，在多显示器/跨屏任务栏/混合 DPI 下可能选错屏幕；手动 `Show` 使用普通工作区约束路径。
+- 托盘菜单继续由 `NotifyIcon.ContextMenuStrip` 拥有，避免弹出菜单出现在任务栏。WinForms 的 `NotifyIcon` 内部会走 `ContextMenuStrip.ShowInTaskbar`，在多显示器/跨屏任务栏/混合 DPI 下可能选错屏幕；`TrayController` 在 `Opening` 中按鼠标所在屏幕的工作区计算位置，并在 `Opened` 中使用 `SetWindowPos` 做最终纠正。
 
 ## 3. 模块边界
 
@@ -104,7 +104,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 
 ## 10. 已知取舍与技术债
 
-- **托盘菜单位置**：WinForms `NotifyIcon` 的内部 `ShowInTaskbar` 路径在多显示器下不可靠，当前改为手动 `Show`；仍需在特殊任务栏布局中人工验证。
+- **托盘菜单位置**：WinForms `NotifyIcon` 的内部 `ShowInTaskbar` 路径在多显示器下不可靠；当前保留系统菜单所有权，并用 `Opening`/`Opened` 纠正位置，仍需在特殊任务栏布局中人工验证。
 - **文件列表**：`DrawerWindow.FileList.cs` 约 600 行，包含列表编排、视口图像加载、取消/代际和图像所有权。它是当前最复杂的文件，但拆分必须保持现有生命周期语义。
 - **配置写入**：后台 writer 的状态机偏重，但承担防抖、退出 flush、失败保留和原子写入；不建议为了行数牺牲可靠性。
 - **主题**：`ThemePalette` 通过 HSL 往返派生颜色，代码量较大且会轻微改变精确 RGB；修改前需接受视觉变化。

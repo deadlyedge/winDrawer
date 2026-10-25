@@ -373,7 +373,7 @@
 | 项目 | 结果 |
 |---|---|
 | `UIListBox` → `DrawerListBox` | 原生 owner-draw ListBox，保留 hover、选中色、拖放和抽屉插入标记 |
-| `UIScrollBar` → `VScrollBar` | 原生垂直滚动条，重新计算 `LargeChange`/`Maximum`/`Value` |
+| `UIScrollBar` → `ThemedScrollBar` | 项目内细自绘垂直滚动条，重新计算 `LargeChange`/`Maximum`/`Value` |
 | SunnyUI 类型引用 | **0** |
 | `using Sunny.UI` | **0** |
 | `winDrawer.csproj` | 已删除 `SunnyUI 3.9.8` 包引用 |
@@ -383,7 +383,7 @@
 
 接受的外观变化：
 
-- 抽屉列表滚动条由 SunnyUI 自绘样式变为 Windows 原生滚动条；
+- 抽屉列表滚动条由 SunnyUI 自绘样式变为项目内细自绘滚动条（不再显示原生系统滚动条）；
 - 列表边框和 hover 绘制细节以原生 ListBox 为准；
 - 设置页 GroupBox 的标题/边框改为原生外观。
 
@@ -403,4 +403,15 @@ SunnyUI 已从源码和包引用中完全移除。当前项目只依赖 WinForms
 - `BehaviorCheckBoxGroup`
 
 后续维护重点是这些自绘/自绘容器控件的行为回归，而不是第三方 UI 库升级。
+
+## 15. 后续调整：按钮字体与自绘滚动条
+
+- 按钮字体分两级：
+  - `Cancel`/`Save` 保持 `ButtonFontSize = 10F`；
+  - 其他按钮使用 `CompactButtonFontSize = 9.5F`，减少花体字底部裁切。
+- `UIScrollBar` 先替换为原生 `VScrollBar` 后，因系统样式不符合深色主题，又替换为项目内 `ThemedScrollBar`：
+  - 细轨道 + 圆角滑块；
+  - 支持 hover/pressed 颜色、拖动、Track 点击、滚轮和键盘；
+  - 通过 `Maximum`（最大滚动位置）和 `LargeChange`（视口高度）计算滑块比例。
+- 设置页继续压缩原生 GroupBox 的顶部 Padding，为内容留出更多高度。
 

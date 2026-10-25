@@ -15,6 +15,7 @@ public partial class SettingsForm : Form
     private SettingsSnapshot _workingSnapshot;
     private readonly List<Font> _ownedFonts = [];
     private Font? _buttonFont;
+    private Font? _compactButtonFont;
     private Font? _systemFont;
     private Font? _titleFont;
     private bool _isDragging;
@@ -108,8 +109,10 @@ public partial class SettingsForm : Form
     {
         _systemFont = CreateOwnedFont("Segoe UI", 9F);
         _buttonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
+        _compactButtonFont = BrandingFont.Create(AppConstants.Defaults.CompactButtonFontSize);
         _titleFont = BrandingFont.Create(13F);
         _ownedFonts.Add(_buttonFont);
+        _ownedFonts.Add(_compactButtonFont);
         _ownedFonts.Add(_titleFont);
         ApplyFontToControls(this);
     }
@@ -127,7 +130,7 @@ public partial class SettingsForm : Form
         {
             if (control is Button button)
             {
-                button.Font = _buttonFont!;
+                button.Font = IsPrimaryButton(button) ? _buttonFont! : _compactButtonFont!;
             }
             else
             {
@@ -136,6 +139,11 @@ public partial class SettingsForm : Form
 
             ApplyFontToControls(control);
         }
+    }
+
+    private bool IsPrimaryButton(Button button)
+    {
+        return ReferenceEquals(button, cancelButton) || ReferenceEquals(button, saveButton);
     }
 
     private Font CreateOwnedFont(string familyName, float size)

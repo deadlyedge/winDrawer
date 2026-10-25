@@ -103,8 +103,10 @@ namespace winDrawer
 
             drawerContentsListView.BackColor = contentBackground;
             drawerContentsListView.ForeColor = _theme.TextPrimary;
-            drawerContentsScrollBar.BackColor = contentBackground;
-            drawerContentsScrollBar.ForeColor = _theme.Border;
+            drawerContentsScrollBar.FillColor = contentBackground;
+            drawerContentsScrollBar.ThumbColor = _theme.Border;
+            drawerContentsScrollBar.HoverColor = _theme.Border;
+            drawerContentsScrollBar.PressColor = _theme.Border;
             SynchronizeDrawerScrollBar();
 
             fullPathLabel.ForeColor = _theme.TextSecondary;

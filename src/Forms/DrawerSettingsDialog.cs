@@ -12,6 +12,7 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly List<Font> _ownedFonts = [];
     private readonly Font _inputFont = new("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
     private Font? _buttonFont;
+    private Font? _compactButtonFont;
     private Font? _titleFont;
     private readonly TableLayoutPanel _layoutPanel = new();
     private readonly TableLayoutPanel _headerPanel = new();
@@ -114,8 +115,10 @@ internal sealed class DrawerSettingsDialog : Form
     private void ConfigureBrandFont()
     {
         _buttonFont = BrandingFont.Create(AppConstants.Defaults.ButtonFontSize);
+        _compactButtonFont = BrandingFont.Create(AppConstants.Defaults.CompactButtonFontSize);
         _titleFont = BrandingFont.Create(13F);
         _ownedFonts.Add(_buttonFont);
+        _ownedFonts.Add(_compactButtonFont);
         _ownedFonts.Add(_titleFont);
     }
 
@@ -124,7 +127,9 @@ internal sealed class DrawerSettingsDialog : Form
         _titleLabel.Font = _titleFont!;
         foreach (var button in GetButtons())
         {
-            button.Font = _buttonFont!;
+            button.Font = ReferenceEquals(button, _saveButton) || ReferenceEquals(button, _cancelButton)
+                ? _buttonFont!
+                : _compactButtonFont!;
         }
     }
 

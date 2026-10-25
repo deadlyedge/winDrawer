@@ -75,6 +75,7 @@ internal static class AppConstants
         public const int ThemeOpacity = 95;
         public const float LogoFontSize = 14f;
         public const float ButtonFontSize = 10f;
+        public const float CompactButtonFontSize = 9.5f;
     }
 
     internal static class Theme

@@ -26,6 +26,7 @@ public partial class DrawerWindow
     private CancellationTokenSource? _imageWorkCancellation;
     private int _fileListLoadGeneration;
     private int _imageRequestGeneration;
+    private bool _synchronizingScrollBar;
 
     private readonly record struct PendingImageRequest(int Index, DrawerItemInfo Item);
 
@@ -75,6 +76,7 @@ public partial class DrawerWindow
     private void UpdateDrawerScrollBarDpi(int dpi)
     {
         var scale = Math.Max(1, dpi) / 96f;
+        drawerContentsScrollBar.FillWidth = Math.Max(6, (int)Math.Round(10 * scale));
         drawerContentsScrollBar.Width = Math.Max(18, (int)Math.Round(18 * scale));
         drawerContentsScrollBar.AccessibleName = "Scroll folder contents";
         drawerContentsScrollBar.AccessibleRole = AccessibleRole.ScrollBar;
@@ -109,6 +111,11 @@ public partial class DrawerWindow
 
     private void DrawerContentsScrollBar_ValueChanged(object? sender, EventArgs e)
     {
+        if (_synchronizingScrollBar)
+        {
+            return;
+        }
+
         drawerContentsListView.ScrollToVerticalPosition(drawerContentsScrollBar.Value);
     }
 
@@ -127,16 +134,20 @@ public partial class DrawerWindow
             return;
         }
 
-        var largeChange = Math.Max(1, viewportSize);
-        drawerContentsScrollBar.LargeChange = largeChange;
-        drawerContentsScrollBar.Maximum = Math.Max(largeChange, maximumPosition + largeChange - 1);
-        drawerContentsScrollBar.Value = Math.Clamp(
-            position,
-            0,
-            drawerContentsScrollBar.Maximum - drawerContentsScrollBar.LargeChange + 1);
-        drawerContentsScrollBar.Visible = true;
-        PositionDrawerScrollBar();
-        drawerContentsScrollBar.BringToFront();
+        _synchronizingScrollBar = true;
+        try
+        {
+            drawerContentsScrollBar.LargeChange = Math.Max(1, viewportSize);
+            drawerContentsScrollBar.Maximum = maximumPosition;
+            drawerContentsScrollBar.Value = position;
+            drawerContentsScrollBar.Visible = true;
+            PositionDrawerScrollBar();
+            drawerContentsScrollBar.BringToFront();
+        }
+        finally
+        {
+            _synchronizingScrollBar = false;
+        }
     }
 
     private static Size GetImageSize(int dpi)

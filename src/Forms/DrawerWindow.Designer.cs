@@ -34,7 +34,7 @@ namespace winDrawer
             mainTableLayoutPanel = new TableLayoutPanel();
             drawerContentsHostPanel = new Panel();
             drawerContentsListView = new ScrollableListView();
-            drawerContentsScrollBar = new VScrollBar();
+            drawerContentsScrollBar = new ThemedScrollBar();
             drawerImageList = new ImageList(components);
             drawerHeaderTableLayoutPanel = new TableLayoutPanel();
             drawerPathTableLayoutPanel = new TableLayoutPanel();
@@ -222,7 +222,7 @@ namespace winDrawer
         private FlowLayoutPanel drawerButtonTableLayoutPanel;
         private Button closeDrawerButton;
         private ScrollableListView drawerContentsListView;
-        private VScrollBar drawerContentsScrollBar;
+        private ThemedScrollBar drawerContentsScrollBar;
         private ImageList drawerImageList;
         private ToolTip drawerToolTip;
     }

@@ -1,6 +1,5 @@
 using System.Drawing.Drawing2D;
 using System.Diagnostics;
-using Sunny.UI;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -286,37 +285,15 @@ namespace winDrawer
             return resized;
         }
 
-        private void ApplyThemeToButton(UIButton button, bool isCloseButton)
+        private void ApplyThemeToButton(Button button, bool isCloseButton)
         {
-            if (button == null)
-            {
-                return;
-            }
-
             var fillColor = isCloseButton ? Color.FromArgb(180, 45, 45) : _theme.Accent;
             var hoverColor = isCloseButton ? Color.FromArgb(146, 36, 36) : _theme.AccentHover;
             var pressColor = isCloseButton ? Color.FromArgb(112, 25, 25) : _theme.AccentPressed;
-            var disabledFillColor = BlendButtonColor(fillColor, _theme.WindowBackground);
+            var textColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(fillColor);
 
-            button.FillColor = fillColor;
-            button.FillHoverColor = hoverColor;
-            button.FillPressColor = pressColor;
-            button.FillSelectedColor = pressColor;
-            button.FillDisableColor = disabledFillColor;
-            button.ForeColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(fillColor);
-            button.ForeHoverColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(hoverColor);
-            button.ForePressColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(pressColor);
-            button.ForeSelectedColor = button.ForePressColor;
-            button.ForeDisableColor = ThemePalette.GetReadableTextColor(disabledFillColor);
+            UiButtonTheming.ApplyColorPalette(button, fillColor, hoverColor, pressColor, textColor);
             UiButtonTheming.ApplyBorderPalette(button, _theme.Border);
-        }
-
-        private static Color BlendButtonColor(Color color, Color background)
-        {
-            return Color.FromArgb(
-                (color.R + background.R) / 2,
-                (color.G + background.G) / 2,
-                (color.B + background.B) / 2);
         }
 
         private void PersistWindowSize()

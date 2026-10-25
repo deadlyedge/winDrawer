@@ -19,11 +19,11 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly Label _titleLabel = new();
     private readonly UIGroupBox _detailsGroup = new();
     private readonly UIGroupBox _overlayGroup = new();
-    private readonly UIButton _browseButton = new();
-    private readonly UIButton _clearColorButton = new();
-    private readonly UIButton _saveButton = new();
-    private readonly UIButton _deleteButton = new();
-    private readonly UIButton _cancelButton = new();
+    private readonly Button _browseButton = new();
+    private readonly Button _clearColorButton = new();
+    private readonly Button _saveButton = new();
+    private readonly Button _deleteButton = new();
+    private readonly Button _cancelButton = new();
     private readonly Label _overlayInfoLabel = new();
     private readonly TableLayoutPanel _fieldsPanel = new();
     private readonly FlowLayoutPanel _colorPanel = new();
@@ -358,14 +358,13 @@ internal sealed class DrawerSettingsDialog : Form
         UpdateColorPreview();
     }
 
-    private static void ConfigureButtonStyle(UIButton button, Color fill, Color hover, Color pressed)
+    private static void ConfigureButtonStyle(Button button, Color fill, Color hover, Color pressed)
     {
         UiButtonTheming.ApplyColorPalette(button, fill, hover, pressed, Color.White);
-        button.Radius = 20;
         button.Cursor = Cursors.Hand;
     }
 
-    private IEnumerable<UIButton> GetButtons()
+    private IEnumerable<Button> GetButtons()
     {
         yield return _browseButton;
         yield return _clearColorButton;
@@ -374,7 +373,7 @@ internal sealed class DrawerSettingsDialog : Form
         yield return _cancelButton;
     }
 
-    private static void ConfigureButton(UIButton button, string text, Size size)
+    private static void ConfigureButton(Button button, string text, Size size)
     {
         button.Text = text;
         button.Size = size;

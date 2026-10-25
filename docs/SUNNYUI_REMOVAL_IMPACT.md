@@ -290,7 +290,7 @@
 - 不修改任何源码、`SunnyUI` 包引用或 `docs/TODOs.md`。
 - 工作量是粗略估计，实际取决于是否要求像素级视觉一致、是否保留自绘控件、以及 DPI/主题回归范围。
 
-## 11. 首次试装记录
+## 11. 第一批试装记录：布局与文本控件
 
 分支：`test/sunnyui-simple-controls`
 
@@ -309,4 +309,28 @@
 | Debug/Release 构建 | 均成功，无构建错误 |
 
 未完成：尚未进行实际窗口视觉/DPI 手工验收。建议重点检查设置页标题与滑块标签、主窗口标题、抽屉底栏在 100%/150%/200% DPI 下是否仍保持原有深色背景和布局。
+
+
+## 12. 第二批试装记录：按钮
+
+分支：`test/sunnyui-simple-controls`
+
+| 项目 | 结果 |
+|---|---|
+| `UIButton` → 原生 `Button` | 约 30 处引用全部替换 |
+| 按钮主题 | `UiButtonTheming` 改用 `FlatStyle.Flat` + `BackColor` + `FlatAppearance` |
+| 已删除的 SunnyUI 属性 | `Radius`、`TipsFont`、`Fill*`、`Rect*`、`ForeHover/Press/Selected/Disable`、`Style` |
+| `DrawerWindow` 的 `using Sunny.UI` | 已删除 |
+| SunnyUI 类型引用 | 约 54 → 22 |
+| 仍保留的 SunnyUI 类型 | `UIGroupBox`、`UITrackBar`、`UIPanel`、`UICheckBoxGroup`、`UIListBox`、`UIScrollBar`、`UIForm` |
+| Debug/Release 构建 | 均成功；因 `bin` 被运行中的实例锁定，使用 `-o Z:\Temp\...` 验证 |
+
+接受的外观变化：
+
+- 按钮从圆角变为直角；
+- 不再有 SunnyUI 的 `TipsFont` 和独立禁用/悬停文字颜色；
+- 禁用状态使用 WinForms 原生绘制；
+- 主窗口的 `settings`/`add drawer` 按钮会显示主题边框。
+
+功能行为保持不变：点击、主题色、hover/press 背景色、字体、无障碍名称和对话框默认按钮均沿用原有逻辑。
 

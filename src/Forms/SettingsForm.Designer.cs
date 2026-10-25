@@ -51,11 +51,11 @@ partial class SettingsForm
         opacityLabel = new Label();
         previewPanel = new UIPanel();
         footerGroupBox = new UIGroupBox();
-        shutDownButton = new UIButton();
-        defaultSettingsButton = new UIButton();
-        openSettingsTomlButton = new UIButton();
-        cancelButton = new UIButton();
-        saveButton = new UIButton();
+        shutDownButton = new Button();
+        defaultSettingsButton = new Button();
+        openSettingsTomlButton = new Button();
+        cancelButton = new Button();
+        saveButton = new Button();
         mainTableLayoutPanel.SuspendLayout();
         headerTableLayoutPanel.SuspendLayout();
         settingsTableLayoutPanel.SuspendLayout();
@@ -333,7 +333,6 @@ partial class SettingsForm
         shutDownButton.Margin = new Padding(3, 4, 12, 4);
         shutDownButton.MinimumSize = new Size(1, 1);
         shutDownButton.Name = "shutDownButton";
-        shutDownButton.Radius = 20;
         shutDownButton.Size = new Size(215, 40);
         shutDownButton.TabIndex = 4;
         shutDownButton.Text = "Close app";
@@ -344,7 +343,6 @@ partial class SettingsForm
         defaultSettingsButton.Margin = new Padding(3, 4, 12, 4);
         defaultSettingsButton.MinimumSize = new Size(1, 1);
         defaultSettingsButton.Name = "defaultSettingsButton";
-        defaultSettingsButton.Radius = 20;
         defaultSettingsButton.Size = new Size(120, 40);
         defaultSettingsButton.TabIndex = 3;
         defaultSettingsButton.Text = "Default";
@@ -355,7 +353,6 @@ partial class SettingsForm
         openSettingsTomlButton.Margin = new Padding(3, 4, 3, 4);
         openSettingsTomlButton.MinimumSize = new Size(1, 1);
         openSettingsTomlButton.Name = "openSettingsTomlButton";
-        openSettingsTomlButton.Radius = 20;
         openSettingsTomlButton.Size = new Size(240, 40);
         openSettingsTomlButton.TabIndex = 5;
         openSettingsTomlButton.Text = "Open settings TOML";
@@ -365,7 +362,6 @@ partial class SettingsForm
         cancelButton.Location = new Point(509, 8);
         cancelButton.MinimumSize = new Size(1, 1);
         cancelButton.Name = "cancelButton";
-        cancelButton.Radius = 20;
         cancelButton.Size = new Size(120, 40);
         cancelButton.TabIndex = 2;
         cancelButton.Text = "Cancel";
@@ -375,7 +371,6 @@ partial class SettingsForm
         saveButton.Location = new Point(643, 8);
         saveButton.MinimumSize = new Size(1, 1);
         saveButton.Name = "saveButton";
-        saveButton.Radius = 20;
         saveButton.Size = new Size(120, 40);
         saveButton.TabIndex = 1;
         saveButton.Text = "Save";
@@ -420,9 +415,9 @@ partial class SettingsForm
     private Label opacityLabel;
     private Sunny.UI.UIPanel previewPanel;
     private Sunny.UI.UIGroupBox footerGroupBox;
-    private Sunny.UI.UIButton cancelButton;
-    private Sunny.UI.UIButton saveButton;
-    private Sunny.UI.UIButton defaultSettingsButton;
-    private Sunny.UI.UIButton shutDownButton;
-    private Sunny.UI.UIButton openSettingsTomlButton;
+    private Button cancelButton;
+    private Button saveButton;
+    private Button defaultSettingsButton;
+    private Button shutDownButton;
+    private Button openSettingsTomlButton;
 }

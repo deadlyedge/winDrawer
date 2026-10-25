@@ -35,9 +35,9 @@ namespace winDrawer
             mainTableLayoutPanel = new TableLayoutPanel();
             headerTableLayoutPanel = new TableLayoutPanel();
             logoLabel = new Label();
-            settingsButton = new UIButton();
+            settingsButton = new Button();
             drawerListBox = new UIListBox();
-            addDrawerButton = new UIButton();
+            addDrawerButton = new Button();
             mainTableLayoutPanel.SuspendLayout();
             headerTableLayoutPanel.SuspendLayout();
             SuspendLayout();
@@ -95,25 +95,13 @@ namespace winDrawer
             // 
             settingsButton.Cursor = Cursors.Hand;
             settingsButton.Dock = DockStyle.Right;
-            settingsButton.FillColor = Color.FromArgb(66, 66, 66);
-            settingsButton.FillHoverColor = Color.FromArgb(84, 84, 84);
-            settingsButton.FillPressColor = Color.FromArgb(63, 63, 63);
-            settingsButton.FillSelectedColor = Color.FromArgb(63, 63, 63);
             settingsButton.Font = SystemFonts.MessageBoxFont;
             settingsButton.Location = new Point(287, 3);
             settingsButton.MinimumSize = new Size(1, 1);
             settingsButton.Name = "settingsButton";
-            settingsButton.Radius = 12;
-            settingsButton.RectColor = Color.Transparent;
-            settingsButton.RectDisableColor = Color.Transparent;
-            settingsButton.RectHoverColor = Color.Transparent;
-            settingsButton.RectPressColor = Color.Transparent;
-            settingsButton.RectSelectedColor = Color.Transparent;
             settingsButton.Size = new Size(117, 38);
-            settingsButton.Style = UIStyle.Custom;
             settingsButton.TabIndex = 1;
             settingsButton.Text = "settings";
-            settingsButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             settingsButton.Click += SettingsButton_Click;
             // 
             // drawerListBox
@@ -144,25 +132,13 @@ namespace winDrawer
             // 
             addDrawerButton.Anchor = AnchorStyles.None;
             addDrawerButton.Cursor = Cursors.Hand;
-            addDrawerButton.FillColor = Color.FromArgb(9, 140, 210);
-            addDrawerButton.FillHoverColor = Color.FromArgb(0, 94, 140);
-            addDrawerButton.FillPressColor = Color.FromArgb(0, 94, 140);
-            addDrawerButton.FillSelectedColor = Color.FromArgb(0, 94, 140);
             addDrawerButton.Font = SystemFonts.MessageBoxFont;
             addDrawerButton.Location = new Point(121, 353);
             addDrawerButton.MinimumSize = new Size(1, 1);
             addDrawerButton.Name = "addDrawerButton";
-            addDrawerButton.Radius = 20;
-            addDrawerButton.RectColor = Color.Transparent;
-            addDrawerButton.RectDisableColor = Color.Transparent;
-            addDrawerButton.RectHoverColor = Color.Transparent;
-            addDrawerButton.RectPressColor = Color.Transparent;
-            addDrawerButton.RectSelectedColor = Color.Transparent;
             addDrawerButton.Size = new Size(170, 44);
-            addDrawerButton.Style = UIStyle.Custom;
             addDrawerButton.TabIndex = 1;
             addDrawerButton.Text = "add drawer";
-            addDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             addDrawerButton.Click += AddDrawerButton_Click;
             // 
             // MainWindow
@@ -184,8 +160,8 @@ namespace winDrawer
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel headerTableLayoutPanel;
         private Label logoLabel;
-        private Sunny.UI.UIButton settingsButton;
+        private Button settingsButton;
         private Sunny.UI.UIListBox drawerListBox;
-        private Sunny.UI.UIButton addDrawerButton;
+        private Button addDrawerButton;
     }
 }

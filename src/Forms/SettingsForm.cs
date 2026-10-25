@@ -122,10 +122,9 @@ public partial class SettingsForm : UIForm
     {
         foreach (Control control in parent.Controls)
         {
-            if (control is UIButton button)
+            if (control is Button button)
             {
                 button.Font = _buttonFont!;
-                button.TipsFont = _systemFont!;
             }
             else
             {
@@ -152,7 +151,7 @@ public partial class SettingsForm : UIForm
         ConfigureButton(openSettingsTomlButton, Color.SteelBlue, Color.CornflowerBlue, Color.DarkSlateBlue);
     }
 
-    private static void ConfigureButton(UIButton button, Color fill, Color hover, Color pressed)
+    private static void ConfigureButton(Button button, Color fill, Color hover, Color pressed)
     {
         UiButtonTheming.ApplyColorPalette(button, fill, hover, pressed, Color.White);
     }

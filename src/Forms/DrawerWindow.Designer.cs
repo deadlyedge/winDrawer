@@ -42,7 +42,7 @@ namespace winDrawer
             openFolderIconPictureBox = new PictureBox();
             fullPathLabel = new EllipsisLabel();
             drawerButtonTableLayoutPanel = new FlowLayoutPanel();
-            closeDrawerButton = new UIButton();
+            closeDrawerButton = new Button();
             mainTableLayoutPanel.SuspendLayout();
             drawerHeaderTableLayoutPanel.SuspendLayout();
             drawerPathTableLayoutPanel.SuspendLayout();
@@ -183,13 +183,11 @@ namespace winDrawer
             closeDrawerButton.Location = new Point(176, 3);
             closeDrawerButton.MinimumSize = new Size(1, 1);
             closeDrawerButton.Name = "closeDrawerButton";
-            closeDrawerButton.Radius = 2;
             closeDrawerButton.Size = new Size(40, 38);
             closeDrawerButton.TabIndex = 1;
             closeDrawerButton.Text = "\uE8BB";
             closeDrawerButton.AccessibleName = "Close drawer";
             closeDrawerButton.AccessibleDescription = "Closes this drawer window.";
-            closeDrawerButton.TipsFont = new Font("微软雅黑", 9F, FontStyle.Regular, GraphicsUnit.Point, 134);
             drawerToolTip.SetToolTip(closeDrawerButton, "Close drawer");
             // 
             // DrawerWindow
@@ -223,7 +221,7 @@ namespace winDrawer
         private PictureBox openFolderIconPictureBox;
         private EllipsisLabel fullPathLabel;
         private FlowLayoutPanel drawerButtonTableLayoutPanel;
-        private UIButton closeDrawerButton;
+        private Button closeDrawerButton;
         private ScrollableListView drawerContentsListView;
         private UIScrollBar drawerContentsScrollBar;
         private ImageList drawerImageList;

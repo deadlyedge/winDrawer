@@ -1,47 +1,37 @@
-using Sunny.UI;
 using winDrawer.Theming;
 
 namespace winDrawer;
 
 /// <summary>
-/// Applies the shared button colour rules. The same fill/border assignment block used to be copied
-/// into the main window, the drawer window and both settings dialogs, so a new SunnyUI button
-/// property had to be added in four places.
+/// Applies the shared native-button colour rules. Flat buttons keep the existing theme colours and
+/// hover/press feedback; rounded corners and SunnyUI-only state colours are intentionally dropped.
 /// </summary>
 internal static class UiButtonTheming
 {
     /// <summary>Applies the accent palette: theme colour, readable accent text and the theme border.</summary>
-    public static void ApplyAccentPalette(UIButton button, ThemePalette theme)
+    public static void ApplyAccentPalette(Button button, ThemePalette theme)
     {
-        button.FillColor = theme.Accent;
-        button.FillHoverColor = theme.AccentHover;
-        button.FillPressColor = theme.AccentPressed;
-        button.FillSelectedColor = theme.AccentPressed;
-        button.ForeColor = theme.AccentText;
+        ApplyColorPalette(button, theme.Accent, theme.AccentHover, theme.AccentPressed, theme.AccentText);
         ApplyBorderPalette(button, theme.Border);
     }
 
-    /// <summary>Applies a fixed three-state palette together with its border colours.</summary>
-    public static void ApplyColorPalette(UIButton button, Color fill, Color hover, Color pressed, Color textColor)
+    /// <summary>Applies a fixed three-state palette with a flat background.</summary>
+    public static void ApplyColorPalette(Button button, Color fill, Color hover, Color pressed, Color textColor)
     {
-        button.FillColor = fill;
-        button.FillHoverColor = hover;
-        button.FillPressColor = pressed;
-        button.FillSelectedColor = pressed;
+        button.UseVisualStyleBackColor = false;
+        button.FlatStyle = FlatStyle.Flat;
+        button.BackColor = fill;
         button.ForeColor = textColor;
-        button.RectColor = fill;
-        button.RectHoverColor = hover;
-        button.RectPressColor = pressed;
-        button.RectSelectedColor = pressed;
+        button.FlatAppearance.MouseOverBackColor = hover;
+        button.FlatAppearance.MouseDownBackColor = pressed;
+        button.FlatAppearance.BorderColor = fill;
+        button.FlatAppearance.BorderSize = 0;
     }
 
     /// <summary>Uses one border colour for every button state (accent borders).</summary>
-    public static void ApplyBorderPalette(UIButton button, Color border)
+    public static void ApplyBorderPalette(Button button, Color border)
     {
-        button.RectColor = border;
-        button.RectDisableColor = border;
-        button.RectHoverColor = border;
-        button.RectPressColor = border;
-        button.RectSelectedColor = border;
+        button.FlatAppearance.BorderColor = border;
+        button.FlatAppearance.BorderSize = 1;
     }
 }

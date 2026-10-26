@@ -2,6 +2,8 @@
 
 winDrawer keeps frequently used folders one click away. Open a drawer to see a folder's direct children, preview images, and double-click anything to open it with Windows.
 
+Although the visual style is quite different now, I sincerely hope that a similar functionality can be integrated into toolsets like PowerToys.
+
 ![winDrawer main window](docs/images/main-window.png)
 
 ## What it does

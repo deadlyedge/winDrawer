@@ -157,16 +157,19 @@ internal static class ShellFileOperation
 
         [PreserveSig] int ApplyPropertiesToItems(IntPtr items);
 
-        [PreserveSig] int RenameItem(
+        [PreserveSig]
+        int RenameItem(
             IntPtr shellItem,
             [MarshalAs(UnmanagedType.LPWStr)] string? newName,
             IntPtr progressSink);
 
-        [PreserveSig] int RenameItems(
+        [PreserveSig]
+        int RenameItems(
             IntPtr items,
             [MarshalAs(UnmanagedType.LPWStr)] string? newName);
 
-        [PreserveSig] int MoveItem(
+        [PreserveSig]
+        int MoveItem(
             IShellItem shellItem,
             IShellItem destinationFolder,
             [MarshalAs(UnmanagedType.LPWStr)] string? newName,
@@ -174,7 +177,8 @@ internal static class ShellFileOperation
 
         [PreserveSig] int MoveItems(IntPtr items, IShellItem destinationFolder, IntPtr progressSink);
 
-        [PreserveSig] int CopyItem(
+        [PreserveSig]
+        int CopyItem(
             IShellItem shellItem,
             IShellItem destinationFolder,
             [MarshalAs(UnmanagedType.LPWStr)] string? copyName,
@@ -186,7 +190,8 @@ internal static class ShellFileOperation
 
         [PreserveSig] int DeleteItems(IntPtr items, IntPtr progressSink);
 
-        [PreserveSig] int NewItem(
+        [PreserveSig]
+        int NewItem(
             IntPtr destinationFolder,
             uint fileAttributes,
             [MarshalAs(UnmanagedType.LPWStr)] string? name,

@@ -28,7 +28,7 @@ internal readonly record struct DrawerDropPlan(
 
     public static DrawerDropPlan Reject(DrawerDropRejection rejection)
     {
-        return new(Array.Empty<string>(), Array.Empty<string>(), rejection);
+        return new([], [], rejection);
     }
 }
 

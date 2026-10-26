@@ -323,17 +323,12 @@ internal sealed class WindowFade : IDisposable
 /// always supplied by the caller (the main window owns drawer placement), so a cancelled transition
 /// never leaves a stale offset behind.
 /// </summary>
-internal sealed class WindowSlide : IDisposable
+internal sealed class WindowSlide(Form form) : IDisposable
 {
-    private readonly Form _form;
+    private readonly Form _form = form ?? throw new ArgumentNullException(nameof(form));
     private readonly AnimationClock _clock = new();
     private Point _start;
     private Point _target;
-
-    public WindowSlide(Form form)
-    {
-        _form = form ?? throw new ArgumentNullException(nameof(form));
-    }
 
     public bool IsRunning => _clock.IsRunning;
 

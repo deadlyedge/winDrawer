@@ -6,7 +6,7 @@ namespace winDrawer;
 internal static class BrandingFont
 {
     private const string ResourcePrefix = "winDrawer.Branding.";
-    private static readonly object SyncLock = new();
+    private static readonly Lock SyncLock = new();
     private static PrivateFontCollection? _fontCollection;
     private static FontFamily? _fontFamily;
     private static byte[]? _fontData;
@@ -75,12 +75,7 @@ internal static class BrandingFont
             fontCollection.AddMemoryFont(fontDataHandle.AddrOfPinnedObject(), fontData.Length);
 
             var fontFamily = fontCollection.Families.FirstOrDefault(family =>
-                string.Equals(family.Name, "Lobster", StringComparison.OrdinalIgnoreCase));
-            if (fontFamily == null)
-            {
-                throw new InvalidDataException($"Embedded branding font resource '{resourceName}' does not contain the Lobster font family.");
-            }
-
+                string.Equals(family.Name, "Lobster", StringComparison.OrdinalIgnoreCase)) ?? throw new InvalidDataException($"Embedded branding font resource '{resourceName}' does not contain the Lobster font family.");
             _fontData = fontData;
             _fontDataHandle = fontDataHandle;
             _fontCollection = fontCollection;

@@ -77,7 +77,7 @@ The single-file build is written under the project's `bin\Release\...\publish` f
 - `src/Controls/` – Native WinForms controls and project-local controls: `DrawerListBox`, `ThemedScrollBar`, `ColorPreviewPanel`, `BehaviorCheckBoxGroup`, `ScrollableListView`, and UI helpers.
 - `src/Theming/` – Theme palette, branding font, Shell icons.
 - `src/Infrastructure/` – Logging, tray, startup registration, hotkey, Shell file operations.
-- `docs/` – [Documentation index](docs/INDEX.md), configuration format, plans, white paper, screenshots, and the [SunnyUI removal record](docs/SUNNYUI_REMOVAL_IMPACT.md).
+- `docs/` – [Documentation index](docs/INDEX.md), configuration format, white paper, screenshots, and [development history](docs/development-history/README.md) for completed stage plans, reviews, and migration records.
 
 Screenshots use demo folders and images. They were captured before the native-control migration; the layout is still representative, but button/scrollbar chrome now uses native and project-local controls.
 

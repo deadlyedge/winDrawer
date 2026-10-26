@@ -3,7 +3,7 @@
 > 目的：在阶段 7.6 收尾后对 `src/` 做一次整体代码质量审查，记录结论与可执行的优化建议。
 > 性质：**本次审查只读代码并运行既有验证手段，未修改任何产品行为**；下列条目均给出来源与证据，供后续按优先级决定是否实施。
 >
-> **后续状态：** 本文是迁移前快照。SunnyUI 已完全移除，`UIButton`/`Radius`/SunnyUI 技术选型和相关行号描述不再代表当前实现；`UiButtonTheming` 现在作用于原生 `Button`。当前 UI 架构见 [`WHITEPAPER.md`](WHITEPAPER.md)，迁移记录见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
+> **后续状态：** 本文是迁移前快照。SunnyUI 已完全移除，`UIButton`/`Radius`/SunnyUI 技术选型和相关行号描述不再代表当前实现；`UiButtonTheming` 现在作用于原生 `Button`。当前 UI 架构见 [`WHITEPAPER.md`](../WHITEPAPER.md)，迁移记录见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
 
 ## 1. 审查范围与方法
 

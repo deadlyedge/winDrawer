@@ -1,6 +1,6 @@
 # 阶段九建议：抽屉文件拖入/拖出与底栏文件夹入口收整
 
-> **后续状态：** 本文是 SunnyUI 迁移前的实施记录；文中 `Sunny.UI.UILabel` 已由原生 `Label`/`EllipsisLabel` 取代，SunnyUI 依赖已完全移除。当前 UI 架构见 [`WHITEPAPER.md`](WHITEPAPER.md)。
+> **后续状态：** 本文是 SunnyUI 迁移前的实施记录；文中 `Sunny.UI.UILabel` 已由原生 `Label`/`EllipsisLabel` 取代，SunnyUI 依赖已完全移除。当前 UI 架构见 [`WHITEPAPER.md`](../WHITEPAPER.md)。
 
 我检查了当前实现、工作树和 `docs/TODOs.md`。`git status --short` 只有 `M docs/TODOs.md`（未提交的用户改动，内容正是剩余两条待办）；本文件只新增计划，没有改动源码、`TODOs.md` 或其它文档。
 

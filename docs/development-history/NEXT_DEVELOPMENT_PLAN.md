@@ -2,9 +2,9 @@
 
 > 状态：阶段 6.1–6.6 已实施；阶段 6.7 的文档更新、配置 smoke checks、Release 构建和单文件发布验证已完成。阶段 6.4–6.6 用户反馈基本正常，长期使用回归继续进行。
 >
-> **后续 UI 状态：** SunnyUI 已在后续迁移中完全移除。阶段 6 描述的 Lobster 按钮、圆角/状态色和设置页控件为当时实现；当前按钮为原生扁平 `Button`（主操作 10F、其他 9.5F），设置页使用原生 GroupBox/TrackBar/CheckBox，抽屉滚动条为 `ThemedScrollBar`。具体见 [`WHITEPAPER.md`](WHITEPAPER.md)。
+> **后续 UI 状态：** SunnyUI 已在后续迁移中完全移除。阶段 6 描述的 Lobster 按钮、圆角/状态色和设置页控件为当时实现；当前按钮为原生扁平 `Button`（主操作 10F、其他 9.5F），设置页使用原生 GroupBox/TrackBar/CheckBox，抽屉滚动条为 `ThemedScrollBar`。具体见 [`WHITEPAPER.md`](../WHITEPAPER.md)。
 >
-> 本计划承接 [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) 已完成的抽屉管理、主题和窗口体验工作，将 [`TODOs.md`](TODOs.md) 中的待办收敛为可实施、可验收的阶段。实施时以用户最新明确要求为准；若与现有开发约定冲突，先记录并更新相应文档。
+> 本计划承接 [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md) 已完成的抽屉管理、主题和窗口体验工作，将 [`TODOs.md`](../TODOs.md) 中的待办收敛为可实施、可验收的阶段。实施时以用户最新明确要求为准；若与现有开发约定冲突，先记录并更新相应文档。
 
 ## 1. 目标
 
@@ -166,7 +166,7 @@
 
 - **文件列表排序（7.1）**：抽屉直接子项按最后修改时间（`LastWriteTimeUtc`）降序显示，目录与文件混排；时间相同按名称 `OrdinalIgnoreCase` 升序、再按完整路径 `Ordinal` 升序；时间不可读的条目排在最后。**阶段 8.4 更新：** 该顺序是默认值 `drawers[].sort_mode = "newest"`，用户可在抽屉右键菜单切换到 `oldest`/`name` 并持久化；三种模式都保持目录与文件混排。
 - **图标与缩略图延迟加载（7.2）**：继续使用原生 `ListView` 图标视图与 `ImageList`（不引入 `VirtualMode`）；初次只枚举并显示轻量元数据，缩略图与 Shell 图标只针对可视区及一屏预取范围生成，离开预取范围即释放。
-- **`always_on_top` 配置（7.3）**：`startup.always_on_top`（Boolean，默认 `false`）已贯穿设置模型、配置读写、根目录默认模板与 [CONFIGURATION_FORMAT.md](CONFIGURATION_FORMAT.md)；作用于主窗口与当前抽屉窗口，设置面板自身不置顶；缺失或类型无效时按 `false` 处理，不做旧配置迁移。
+- **`always_on_top` 配置（7.3）**：`startup.always_on_top`（Boolean，默认 `false`）已贯穿设置模型、配置读写、根目录默认模板与 [CONFIGURATION_FORMAT.md](../CONFIGURATION_FORMAT.md)；作用于主窗口与当前抽屉窗口，设置面板自身不置顶；缺失或类型无效时按 `false` 处理，不做旧配置迁移。
 - **设置窗口位置策略（7.4）**：主设置窗体与抽屉设置对话框在每次创建时按主窗口位置偏移 (100, 100) 定位，并夹取到主窗口所在显示器的工作区内；两者位置都不写入配置。
 - **抽屉设置交互（7.5）**：移除自绘关闭图标（保留窗口标题与拖动区域）；Folder 路径改为只读显示控件，点击或 Enter/Space 与 Browse 共用同一选目录流程；Browse 独立成行并加宽；Escape 与 Alt+F4 按 Cancel 处理，不提交草稿。
 - **回归范围**：配置层与列表层的纯逻辑检查由 `%TEMP%` 下的临时 smoke harness 覆盖（当前 32 项，含时间排序、同时间稳定排序、默认置顶值与写盘往返）；Debug/Release 构建与框架依赖单文件发布已在本机验证。大目录滚动、多显示器/多 DPI 位置、托盘与设置保存/取消等**手工 UI 回归仍待执行**。

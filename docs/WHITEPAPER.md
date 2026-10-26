@@ -2,7 +2,7 @@
 
 > 本文描述当前实现（SunnyUI 移除后），用于快速理解代码边界、数据流和必须保持的行为不变量。
 >
-> 这不是需求文档；具体配置字段见 [`CONFIGURATION_FORMAT.md`](CONFIGURATION_FORMAT.md)，阶段计划见 [`DP_STAGE_10.md`](DP_STAGE_10.md)，UI 栈迁移记录见 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。
+> 这不是需求文档；具体配置字段见 [`CONFIGURATION_FORMAT.md`](CONFIGURATION_FORMAT.md)，历史阶段计划见 [`development-history/DP_STAGE_10.md`](development-history/DP_STAGE_10.md)，UI 栈迁移记录见 [`development-history/SUNNYUI_REMOVAL_IMPACT.md`](development-history/SUNNYUI_REMOVAL_IMPACT.md)。
 
 ## 1. 产品定位
 
@@ -115,7 +115,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - **抽屉列表**：主窗口使用 owner-draw 和拖动重排，已拆为 `MainWindow.DrawerList.cs`、`MainWindow.DrawerList.Paint.cs`、`MainWindow.DrawerReorder.cs`；没有 UI 自动化测试。
 - **滚动条**：`DrawerWindow.FileList.PositionDrawerScrollBar` 通过加宽 ListView 裁剪原生垂直条，`ThemedScrollBar` 负责可见轨道和拖动。这个组合依赖原生滚动信息、图标视图和 DPI，布局或滚动逻辑改动后必须做 100%/150%/200% 手工回归。
 - **测试**：仓库没有测试工程；纯逻辑使用 `%TEMP%` 下的临时 harness 验证，UI 行为依赖人工回归。
-- 更细的代码审查项和预计收益见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。
+- 更细的代码审查项和历史收益记录见 [`development-history/CODE_REVIEW_STAGE_10.md`](development-history/CODE_REVIEW_STAGE_10.md)。
 
 ## 11. 修改指南
 

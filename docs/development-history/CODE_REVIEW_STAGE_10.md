@@ -4,7 +4,7 @@
 >
 > 审查范围：`src/` 下全部手写 C#（不含 Designer 生成代码），以及 10.1/10.2 新增/修改的代码。工作树中的 `docs/TODOs.md` 为用户改动，本文未修改它。
 >
-> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A 组低风险清理与 B1/B2/B3/B5 已于 2026-10 完成，实施结果见第 2、3 节；B4/B6 与 C 组仍按原清单讨论，不代表已实施。
+> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](../WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A 组低风险清理与 B1/B2/B3/B5 已于 2026-10 完成，实施结果见第 2、3 节；B4/B6 与 C 组仍按原清单讨论，不代表已实施。
 
 ## 1. 当前规模
 

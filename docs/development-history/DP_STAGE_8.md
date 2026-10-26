@@ -1,6 +1,6 @@
 # 阶段八建议：快捷键与显示/隐藏语义、顶部边带、抽屉右键菜单
 
-> **后续状态：** 本文是 SunnyUI 迁移前的实施记录；文中 `UICheckBoxGroup` 已被 `BehaviorCheckBoxGroup` 取代，SunnyUI 依赖已完全移除。当前 UI 架构见 [`WHITEPAPER.md`](WHITEPAPER.md)。
+> **后续状态：** 本文是 SunnyUI 迁移前的实施记录；文中 `UICheckBoxGroup` 已被 `BehaviorCheckBoxGroup` 取代，SunnyUI 依赖已完全移除。当前 UI 架构见 [`WHITEPAPER.md`](../WHITEPAPER.md)。
 
 我检查了当前实现、TODO 和工作树状态。`git status --short` 只有 `M docs/TODOs.md`（未提交的用户改动，内容正是这几条待办）；我保留了该文件原样，没有改动任何源码。
 

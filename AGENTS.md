@@ -4,7 +4,7 @@
 
 winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在程序内显示所选文件夹的直接内容；用户可预览常见图片类型，双击条目后将其交给 Windows Shell 按系统默认行为打开。首要目标是简单、可靠、容易继续维护，而不是复刻完整资源管理器。保留主题设置页面和预览，但简化控件实现。
 
-具体范围和分阶段验收条件见 [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) 与 [`docs/NEXT_DEVELOPMENT_PLAN.md`](docs/NEXT_DEVELOPMENT_PLAN.md)。若旧计划中的 HSLA 控件要求与后续计划或用户最新明确要求冲突，以用户最新要求为准，并先同步更新相关文档。
+当前实现与开发约束以 [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md)、[`docs/CONFIGURATION_FORMAT.md`](docs/CONFIGURATION_FORMAT.md)、根 [`README.md`](README.md) 和本文件为准。阶段 0–10 的计划、审查与迁移记录归档在 [`docs/development-history/`](docs/development-history/README.md)，仅作历史参考；若历史文档中的旧要求（例如 HSLA 控件）与当前实现或用户最新明确要求冲突，以当前实现和用户最新要求为准，并先同步更新当前文档。
 
 ## 开始工作前：保护现有工作
 

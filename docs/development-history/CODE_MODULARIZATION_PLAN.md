@@ -2,7 +2,7 @@
 
 > 目的：先把文件列表与抽屉窗口相关职责拆成易读、可分别验证的小模块，再开始实施 [`DP_STAGE_7.md`](DP_STAGE_7.md) 的阶段 7.1/7.2。本文是拆分方案，不表示代码已按此结构修改。
 >
-> 范围：优先处理 `DrawerWindow` 的文件列表管线。继续使用当前单个 WinForms 项目、BCL 和项目内轻量控件；SunnyUI 已在后续迁移中移除。不新增项目、不引入 MVVM、依赖注入框架或大型缓存层。`docs/TODOs.md` 和 `docs/DP_STAGE_7.md` 中已有的工作均应保留。
+> 范围：优先处理 `DrawerWindow` 的文件列表管线。继续使用当前单个 WinForms 项目、BCL 和项目内轻量控件；SunnyUI 已在后续迁移中移除。不新增项目、不引入 MVVM、依赖注入框架或大型缓存层。`docs/TODOs.md` 和 `docs/development-history/DP_STAGE_7.md` 中已有的工作均应保留。
 >
 > **实施状态（本次已落地）：** 步骤 A–D 已按本方案完成——`DrawerWindow` 改为 partial 并新增 `DrawerWindow.FileList.cs`（列表编排、视口延迟加载、ImageList 所有权），业务逻辑拆到 `Drawers/DrawerItemInfo.cs`、`Drawers/DrawerItemEnumerator.cs`、`Drawers/DrawerItemImageLoader.cs`，`ScrollableListView` 增加 `TryGetVisibleItemRange`。排序采用已确认的“目录与文件全体混排、`LastWriteTimeUtc` 降序”契约，并已同步 [`DP_STAGE_7.md`](DP_STAGE_7.md)。时间排序、枚举降级、缩略图回退与源文件解锁、可见范围查询已用 `%TEMP%` 下的临时 smoke harness 验证（22 项通过）；大目录滚动、深浅主题、DPI 切换和双击打开等人工 UI 回归尚未执行。
 >
@@ -192,7 +192,7 @@ src/
 ## 6. 需要保持的当前工作
 
 - 本次制定方案期间 `docs/TODOs.md` 已有用户未提交改动；代码拆分期间不得覆盖或格式化该文件。
-- `docs/DP_STAGE_7.md` 是阶段七计划来源；实施时应同步其中的排序契约，并消除“混排”和“目录分组”两种表述冲突。
+- `docs/development-history/DP_STAGE_7.md` 是阶段七计划来源；实施时应同步其中的排序契约，并消除“混排”和“目录分组”两种表述冲突。
 - 只在对应阶段验收完成后更新阶段状态；不要把文档计划或临时 harness 描述成已完成的 UI 手工测试。
 
 > **当前目录结构（阶段 7.6 整理后）：** `src/Program.cs`；`src/Forms/`（`MainWindow.*`、`DrawerWindow.*`、`SettingsForm.*`、`DrawerSettingsDialog.cs`）；`src/Controls/ScrollableListView.cs`；`src/Drawers/`（条目模型、枚举排序、图像加载）；`src/Configuration/`（设置仓储分部文件、`SettingsSnapshot`、`DrawerDefinition`、`AppConstants`）；`src/Theming/`（主题、品牌字体、Shell 图标）；`src/Infrastructure/`（`DrawerLogger`、`TrayController`、`StartupRegistration`）。文件移动不改文件名与命名空间，WinForms 窗体的 `.cs`/`.Designer.cs`/`.resx` 保持同名同目录，因此设计器资源名不变（构建后仍为 6 个嵌入资源）。

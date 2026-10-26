@@ -2,7 +2,7 @@
 
 > 状态：阶段 0–2 已实施；阶段 3/4 的大部分功能与测试已完成。本轮收尾依赖、构建产物和文档清理。旧配置自动迁移暂缓，不属于当前实现。
 >
-> **后续状态更新（SunnyUI 移除后）：** SunnyUI 已在后续迁移中完全移除；当前 UI 使用原生 WinForms 和项目内轻量控件，按钮为扁平原生按钮，抽屉内容使用裁剪原生滚动条 + `ThemedScrollBar`。本文中阶段 2/4 关于“保留 SunnyUI”“圆角按钮”“删除手绘滚动条”的描述仅记录当时决策，当前实现以 [`WHITEPAPER.md`](WHITEPAPER.md) 和 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md) 为准。
+> **后续状态更新（SunnyUI 移除后）：** SunnyUI 已在后续迁移中完全移除；当前 UI 使用原生 WinForms 和项目内轻量控件，按钮为扁平原生按钮，抽屉内容使用裁剪原生滚动条 + `ThemedScrollBar`。本文中阶段 2/4 关于“保留 SunnyUI”“圆角按钮”“删除手绘滚动条”的描述仅记录当时决策，当前实现以 [`WHITEPAPER.md`](../WHITEPAPER.md) 和 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md) 为准。
 >
 > 历史目标：把 winDrawer 收敛为一个易懂、可维护的 Windows 文件夹快捷入口，保留常见图片缩略图和当时的 HSLA 主题调色功能；停止投入任意图标尺寸调优。后续主题要求见下方更新说明。
 >

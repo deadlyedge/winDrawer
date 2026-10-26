@@ -19,6 +19,7 @@
 - 按钮为原生扁平 `Button`；`Cancel`/`Save` 使用 10F 品牌字体，其他按钮使用 9.5F。主窗口的“添加抽屉”“设置”是不带文字、只显示字形的图标按钮。
 - 设置窗体/抽屉设置对话框使用原生 `Form`、`GroupBox`、`TrackBar`、`CheckBox`、`Label`。
 - 抽屉内容区保留原生 ListView 垂直滚动条用于滚轮/`GetScrollInfo`，但通过加宽 ListView 裁剪到宿主外侧；`ThemedScrollBar` 覆盖可见区域，轨道约 3px。
+- 过渡动画由 `Infrastructure/WindowAnimation.cs` 统一驱动（抽屉滑出淡入、显示淡入、滚动条加宽、列表悬停渐变），跟随 Windows“动画效果”开关，结束时会还原配置的透明度与位置。
 
 ## 开发历史
 

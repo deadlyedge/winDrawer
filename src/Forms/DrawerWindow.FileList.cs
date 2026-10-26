@@ -54,7 +54,7 @@ public partial class DrawerWindow
     private void UpdateDrawerScrollBarDpi(int dpi)
     {
         var scale = DpiScale.Factor(dpi);
-        drawerContentsScrollBar.FillWidth = Math.Max(2, DpiScale.Pixels(3, scale));
+        drawerContentsScrollBar.RestFillWidth = Math.Max(2, DpiScale.Pixels(3, scale));
         drawerContentsScrollBar.Width = Math.Max(17, DpiScale.Pixels(18, scale));
         drawerContentsScrollBar.AccessibleName = "Scroll folder contents";
         drawerContentsScrollBar.AccessibleRole = AccessibleRole.ScrollBar;

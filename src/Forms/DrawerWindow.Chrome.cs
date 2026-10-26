@@ -130,6 +130,16 @@ public partial class DrawerWindow
     }
 
     /// <summary>
+    /// Forces the reclaimed top strip to be repainted once. Opacity transitions can toggle the layered
+    /// window style, and after such a toggle the strip may keep the frame colour until the next
+    /// <c>WM_NCPAINT</c>; the appearance transition calls this when it finishes.
+    /// </summary>
+    internal void RefreshTopResizeGrip()
+    {
+        RepaintTopResizeGrip();
+    }
+
+    /// <summary>
     /// Keeps the top edge resizable. Only points the system reports as <c>HTCLIENT</c> are remapped, so
     /// the native left/right/bottom resize borders keep working unchanged.
     /// </summary>

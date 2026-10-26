@@ -167,12 +167,17 @@ public sealed class ThemePalette
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     }
 
-    private static Color Blend(Color foreground, Color background, float amount)
+    /// <summary>
+    /// Blends two colours channel by channel: <paramref name="amount"/> 0 keeps
+    /// <paramref name="from"/>, 1 returns <paramref name="to"/>. Shared by theme derivation and the
+    /// animated hover highlight.
+    /// </summary>
+    internal static Color Blend(Color from, Color to, float amount)
     {
         amount = Math.Clamp(amount, 0f, 1f);
-        int r = (int)(foreground.R * (1 - amount) + background.R * amount);
-        int g = (int)(foreground.G * (1 - amount) + background.G * amount);
-        int b = (int)(foreground.B * (1 - amount) + background.B * amount);
+        int r = (int)(from.R * (1 - amount) + to.R * amount);
+        int g = (int)(from.G * (1 - amount) + to.G * amount);
+        int b = (int)(from.B * (1 - amount) + to.B * amount);
         return Color.FromArgb(r, g, b);
     }
 }

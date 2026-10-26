@@ -42,6 +42,7 @@ namespace winDrawer
             UpdateTopResizeGrip(DeviceDpi);
             UpdateFooterLayout(DeviceDpi);
             InitializeFolderLink();
+            InitializeTransitions();
             closeDrawerButton.Click += (_, _) => Close();
 
             Size = _drawer.PreferredSize ?? Size;
@@ -86,7 +87,9 @@ namespace winDrawer
             _theme = theme ?? throw new ArgumentNullException(nameof(theme));
             DrawerLogger.LogDebug($"Applying theme to drawer '{_drawer.Name}'.");
 
-            Opacity = _theme.WindowOpacity;
+            // The configured opacity is the fade base: a running transition continues towards this
+            // value instead of being snapped back.
+            ApplyBaseOpacity(_theme.WindowOpacity);
             var contentBackground = _drawer.OverlayColor is { } contentOverlay
                 ? ThemePalette.BlendOverlayColor(_theme.ContentBackground, contentOverlay)
                 : _theme.ContentBackground;
@@ -157,6 +160,7 @@ namespace winDrawer
             base.OnFormClosing(e);
             if (!e.Cancel)
             {
+                CancelAppearanceTransition();
                 CancelFileListWork();
             }
         }

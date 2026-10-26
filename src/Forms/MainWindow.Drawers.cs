@@ -122,7 +122,21 @@ namespace winDrawer
                 return;
             }
 
+            // A running slide must not fight the authoritative position below.
+            drawerWindow.CancelAppearanceTransition();
             drawerWindow.Location = new Point(Right, Top);
+        }
+
+        /// <summary>
+        /// Stops a drawer appearance transition. Called whenever something else takes over placement:
+        /// the user drags the main window, the drawer is hidden or it is restored from hidden state.
+        /// </summary>
+        private void CancelDrawerAppearanceTransition()
+        {
+            if (_currentDrawerWindow is { IsDisposed: false } drawerWindow)
+            {
+                drawerWindow.CancelAppearanceTransition();
+            }
         }
 
         private void OpenDrawer(DrawerDefinition drawer)
@@ -158,7 +172,12 @@ namespace winDrawer
                     _currentOpenDrawer = null;
                     ClearDrawerListSelection();
                 };
+                // Prepare before showing so the drawer never flashes at its final position first.
+                drawerWindow.PrepareAppearanceTransition(DpiScale.Pixels(
+                    AppConstants.Ui.Animation.DrawerSlideDistanceLogical,
+                    DeviceDpi));
                 drawerWindow.Show(this);
+                drawerWindow.StartAppearanceTransition();
                 DrawerLogger.LogInformation($"Drawer window displayed for '{drawer.Name}'.");
             }
             catch (Exception ex)

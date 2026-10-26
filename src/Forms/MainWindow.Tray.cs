@@ -82,6 +82,9 @@ namespace winDrawer
                 drawerWindow.Hide();
             }
 
+            // Restore the configured opacity while nothing is on screen, so the next show starts from a
+            // known state instead of a half-finished fade.
+            _windowFade?.Cancel();
             Hide();
         }
 
@@ -99,10 +102,14 @@ namespace winDrawer
             var drawerWindow = _currentDrawerWindow;
             if (drawerWindow is { IsDisposed: false })
             {
+                // No slide here: the drawer is restored where MainWindow put it, only the fade runs.
+                drawerWindow.PrepareAppearanceTransition(0);
                 drawerWindow.Show(this);
+                drawerWindow.StartAppearanceTransition();
             }
 
             Activate();
+            PlayWindowFadeIn();
         }
     }
 }

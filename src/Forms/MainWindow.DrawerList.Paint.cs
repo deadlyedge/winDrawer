@@ -31,7 +31,10 @@ namespace winDrawer
             }
             else if (drawerListBox.HoveredIndex == e.Index)
             {
-                background = drawerListBox.HoverColor;
+                background = ThemePalette.Blend(
+                    background,
+                    drawerListBox.HoverColor,
+                    (float)drawerListBox.HoverProgress);
             }
 
             var item = drawerListBox.Items[e.Index];

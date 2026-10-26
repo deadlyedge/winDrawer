@@ -18,6 +18,9 @@ internal sealed class ThemedScrollBar : Control
     private bool _hoverThumb;
     private bool _pressedThumb;
     private int _dragOffset;
+    private readonly AnimationClock _widthClock = new();
+    private int _restFillWidth = 3;
+    private bool _pointerInside;
 
     public ThemedScrollBar()
     {
@@ -108,6 +111,30 @@ internal sealed class ThemedScrollBar : Control
         }
     }
 
+    /// <summary>
+    /// Track width while the pointer is away, in physical pixels. Hovering or dragging the scrollbar
+    /// animates the visible width up to <c>ScrollBarActiveWidthLogical</c> and back to this value.
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int RestFillWidth
+    {
+        get => _restFillWidth;
+        set
+        {
+            var rest = Math.Max(2, value);
+            if (_restFillWidth == rest)
+            {
+                return;
+            }
+
+            _restFillWidth = rest;
+            if (!_widthClock.IsRunning)
+            {
+                FillWidth = rest;
+            }
+        }
+    }
+
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Color FillColor { get; set; } = Color.FromArgb(56, 56, 56);
 
@@ -169,6 +196,7 @@ internal sealed class ThemedScrollBar : Control
         _dragOffset = e.Y - thumbBounds.Top;
         Capture = true;
         Invalidate();
+        UpdateFillWidthAnimation();
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -200,18 +228,49 @@ internal sealed class ThemedScrollBar : Control
         _pressedThumb = false;
         Capture = false;
         Invalidate();
+        UpdateFillWidthAnimation();
+    }
+
+    protected override void OnMouseEnter(EventArgs e)
+    {
+        base.OnMouseEnter(e);
+        _pointerInside = true;
+        UpdateFillWidthAnimation();
     }
 
     protected override void OnMouseLeave(EventArgs e)
     {
         base.OnMouseLeave(e);
-        if (_dragging)
+        _pointerInside = false;
+        if (!_dragging)
         {
+            _hoverThumb = false;
+        }
+
+        Invalidate();
+        UpdateFillWidthAnimation();
+    }
+
+    /// <summary>
+    /// Widens the visible track while the pointer is over the scrollbar or the thumb is dragged, and
+    /// relaxes it again afterwards. Animating both directions keeps the control from snapping.
+    /// </summary>
+    private void UpdateFillWidthAnimation()
+    {
+        var activeWidth = Math.Max(
+            _restFillWidth,
+            DpiScale.Pixels(AppConstants.Ui.Animation.ScrollBarActiveWidthLogical, DeviceDpi));
+        var target = _pointerInside || _dragging ? activeWidth : _restFillWidth;
+        var start = _fillWidth;
+        if (start == target)
+        {
+            _widthClock.Cancel();
             return;
         }
 
-        _hoverThumb = false;
-        Invalidate();
+        _widthClock.Start(
+            AppConstants.Ui.Animation.ShortDurationMilliseconds,
+            progress => FillWidth = Animations.Lerp(start, target, progress));
     }
 
     protected override void OnMouseWheel(MouseEventArgs e)
@@ -310,6 +369,16 @@ internal sealed class ThemedScrollBar : Control
             ? trackBounds.Top
             : trackBounds.Top + (int)Math.Round(travel * (_value / (double)_maximum));
         return new Rectangle(trackBounds.Left, thumbTop, trackBounds.Width, thumbHeight);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _widthClock.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 
     private static GraphicsPath CreateRoundedRectangle(Rectangle bounds, int radius)

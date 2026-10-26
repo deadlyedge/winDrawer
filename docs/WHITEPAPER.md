@@ -39,7 +39,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 | `Drawers/` | 直接子项枚举/排序/上限、条目元数据、Shell 图标与缩略图、拖放规划 |
 | `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
 | `Controls/` | `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、`IconGlyphs` 图标字形、按钮/菜单主题、颜色对话框 helper、消息框 |
-| `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation` |
+| `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation`、窗口过渡动画 |
 | `Theming/` | `#RRGGBB` 解析、主题派生色、品牌字体、Shell 图标 |
 
 依赖方向应保持为：窗体 → 业务/配置/基础设施；`Drawers/` 与 `Configuration/` 不反向依赖具体窗体。不要为了形式上的分层新增接口或工厂。
@@ -78,6 +78,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 按钮使用原生 `Button` 的 `FlatStyle.Flat`：`Cancel`/`Save` 使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。不再使用 SunnyUI 的圆角、`TipsFont` 或独立状态前景色。
 - 设置窗体和抽屉设置对话框使用原生 `Form`/`GroupBox`/`TrackBar`/`CheckBox`/`Label`；颜色预览由 `ColorPreviewPanel` 自绘，行为选项由 `BehaviorCheckBoxGroup` 提供两列布局。
 - 抽屉内容区保留原生 `ListView` 垂直滚动条用于 `GetScrollInfo`、滚轮和原生滚动平滑度，但把 `ListView` 加宽到宿主客户区之外，让原生条被父面板裁掉；`ThemedScrollBar` 只在可见侧绘制约 3px 轨道，并覆盖原生条的约 18px 区域。该裁剪关系是刻意的，不要恢复可见的系统滚动条。
+- 过渡动画统一由 `Infrastructure/WindowAnimation.cs` 提供：`AnimationClock` 用 `Stopwatch` 计时并驱动单个 15ms `System.Windows.Forms.Timer`，`WindowFade` 以"主题透明度为基准值"做淡入，`WindowSlide` 只做视觉位移且终点始终由调用方（`MainWindow` 的抽屉定位）给出。当前效果：抽屉打开时从主窗口右边缘滑出并淡入（160ms）、从隐藏恢复和启动时淡入（120ms）、滚动条悬停或拖动时轨道加宽（3→6 逻辑像素，120ms）、抽屉列表行悬停高亮渐变（160ms）。Windows 关闭"动画效果"（`SPI_GETCLIENTAREAANIMATION`）时，所有过渡直接落到终态。
 - 主窗口和设置页使用 WinForms 自动缩放；抽屉窗口使用 `AutoScaleMode.None`，在 `DpiChanged` 时显式重算图标尺寸、底栏布局、滚动条和图像列表。修改这些尺寸时必须同时验证 100%/150%/200% DPI。
 
 ## 7. 拖放
@@ -106,6 +107,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 8. 已存在的用户配置不被模板覆盖；保存失败不静默丢失旧文件；未知键尽可能保留。
 9. 主题颜色只接受 `#RRGGBB`，透明度单独保存；不恢复 HSLA 字段。
 10. 共用逻辑只保留一份：用户提示 `UiMessages`、按钮主题 `UiButtonTheming`、颜色对话框 `UiDialogHelpers`、路径比较 `PathComparison`、TOML 键名 `SettingsKeys`。
+11. 过渡动画必须可取消且不改变配置：结束时 `Opacity` 必须精确回到 `ThemePalette.WindowOpacity`，位置必须回到 `MainWindow` 计算的位置；动画不得阻塞隐藏、关闭或退出，逐帧回调里不写日志。
 
 ## 10. 已知取舍与技术债
 
@@ -124,6 +126,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 新增抽屉行为：优先改 `Drawers/` 中的纯逻辑，再接到 `DrawerWindow`；保持枚举/排序/上限结果可区分，不要在窗体里复制文件系统逻辑。
 - 修改主题：同时检查主窗口、抽屉、设置窗体和右键菜单的普通/悬停/按下/禁用状态，以及深色/浅色背景对比度。
 - 修改窗口布局：验证 100%/150%/200% DPI、最小尺寸、工作区夹取、无标题栏缩放和退出时的资源释放。
+- 修改动画：时长、偏移和起始透明度常量在 `AppConstants.Ui.Animation`，时钟与缓动在 `Infrastructure/WindowAnimation.cs`；新增过渡优先复用它，不要在窗体里各自实现 Timer 动画，也不要在帧回调里写日志。
 - UI 控件：优先复用项目内 `DrawerListBox`、`ThemedScrollBar`、`ColorPreviewPanel` 和 `BehaviorCheckBoxGroup`；不要再引入 SunnyUI 或为单个小效果新增大型 UI 框架。按钮颜色统一走 `UiButtonTheming`；主窗口标题行的图标字形统一走 `IconGlyphs`，不要在窗体或设计器里硬编码私有区字符。
 - 每次改动后执行完整 `dotnet build .\src\winDrawer.csproj`（Debug/Release），不要使用 `-t:Compile` 绕过资源生成；构建产物被占用时改用临时输出目录。
 

@@ -95,6 +95,34 @@ internal static class AppConstants
         public static readonly Size TrayIconSize = new(16, 16);
 
         /// <summary>
+        /// Transition timings and offsets in 96-DPI logical units. The orchestration lives in
+        /// <c>WindowAnimation.cs</c>; keeping the numbers here makes every transition behave the same.
+        /// </summary>
+        internal static class Animation
+        {
+            /// <summary>Frame interval of the shared animation clock.</summary>
+            public const int TimerIntervalMilliseconds = 15;
+
+            /// <summary>Duration of short feedback transitions (appearing, scrollbar widening).</summary>
+            public const int ShortDurationMilliseconds = 120;
+
+            /// <summary>Duration of the drawer slide and other full transitions.</summary>
+            public const int NormalDurationMilliseconds = 160;
+
+            /// <summary>Duration of the drawer-list hover highlight fade.</summary>
+            public const int HoverDurationMilliseconds = 160;
+
+            /// <summary>Distance the drawer starts to the left of its final position.</summary>
+            public const int DrawerSlideDistanceLogical = 24;
+
+            /// <summary>Widened scrollbar track while the pointer is over it or it is dragged.</summary>
+            public const int ScrollBarActiveWidthLogical = 6;
+
+            /// <summary>Opacity factor a fading window starts from, relative to the theme opacity.</summary>
+            public const double FadeInStartFactor = 0.4d;
+        }
+
+        /// <summary>
         /// Drawer footer metrics in 96-DPI logical pixels. The drawer window uses
         /// <c>AutoScaleMode.None</c>, so these values are scaled explicitly for the current DPI.
         /// </summary>

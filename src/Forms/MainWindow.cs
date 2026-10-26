@@ -11,6 +11,7 @@ namespace winDrawer
         private const int ShutdownFlushTimeoutMilliseconds = 500;
         private Font? _logoFont;
         private Font? _headerIconFont;
+        private WindowFade? _windowFade;
         private bool _isDragging;
         private Point _dragOffset;
         private readonly SettingsRepository _settingsRepository;
@@ -68,6 +69,14 @@ namespace winDrawer
             // 在窗体加载完成后填充菜单，避免默认打开
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            // Startup is the one show path that does not go through ShowMainWindowAndDrawer.
+            PlayWindowFadeIn();
+        }
+
         /// <summary>
         /// Flushes pending drawer changes and lets a failed save cancel the close so the user keeps
         /// the chance to fix the settings file.
@@ -91,6 +100,10 @@ namespace winDrawer
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            // Stop the transitions first: their timers must not outlive the resources released below.
+            _windowFade?.Dispose();
+            _windowFade = null;
+
             // Releasing the shortcut keeps the "hotkey turned off" path explicit; it is a no-op when
             // OnHandleDestroyed already released it.
             ReleaseHotKey();
@@ -323,6 +336,7 @@ namespace winDrawer
                 return;
             }
 
+            CancelDrawerAppearanceTransition();
             _isDragging = true;
             _dragOffset = args.Location;
         }
@@ -468,7 +482,7 @@ namespace winDrawer
             _currentTheme = theme;
             DrawerLogger.LogDebug($"Applying theme palette. Accent={theme.Accent}, WindowOpacity={theme.WindowOpacity:0.00}.");
 
-            Opacity = theme.WindowOpacity;
+            ApplyBaseWindowOpacity(theme.WindowOpacity);
             BackColor = theme.WindowBackground;
 
             mainTableLayoutPanel.BackColor = theme.WindowBackground;
@@ -490,6 +504,36 @@ namespace winDrawer
             {
                 _currentDrawerWindow.ApplyTheme(theme);
             }
+        }
+
+        /// <summary>
+        /// The theme opacity is the fade base. Updating it while a fade runs keeps the current frame and
+        /// continues towards the new value, so the settings preview never fights the transition.
+        /// </summary>
+        private void ApplyBaseWindowOpacity(double opacity)
+        {
+            if (_windowFade is null)
+            {
+                Opacity = Math.Clamp(opacity, 0d, 1d);
+                return;
+            }
+
+            _windowFade.BaseOpacity = opacity;
+        }
+
+        /// <summary>Fades the main window in from a fraction of the configured opacity.</summary>
+        private void PlayWindowFadeIn()
+        {
+            if (_shutdownInProgress)
+            {
+                return;
+            }
+
+            _windowFade ??= new WindowFade(this, _currentTheme.WindowOpacity);
+            _windowFade.BaseOpacity = _currentTheme.WindowOpacity;
+            _windowFade.FadeIn(
+                AppConstants.Ui.Animation.ShortDurationMilliseconds,
+                AppConstants.Ui.Animation.FadeInStartFactor);
         }
 
         private void MainWindow_LocationChanged(object? sender, EventArgs e)

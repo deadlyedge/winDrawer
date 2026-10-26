@@ -14,19 +14,6 @@ namespace winDrawer
         private Font? _addDrawerButtonFont;
         private bool _isDragging;
         private Point _dragOffset;
-        private bool _drawerPointerDown;
-        private bool _isDrawerReordering;
-        private bool _drawerDragStarted;
-        private int _drawerPressedIndex = -1;
-        private Point _drawerPressPoint;
-        private int _dropInsertionIndex = -1;
-        private int _dropRawInsertionIndex = -1;
-        private readonly Panel _drawerInsertionMarker = new()
-        {
-            Height = 3,
-            Visible = false,
-            Enabled = false
-        };
         private readonly SettingsRepository _settingsRepository;
         private SettingsSnapshot _settingsSnapshot;
         private ThemePalette _currentTheme;

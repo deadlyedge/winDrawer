@@ -118,6 +118,7 @@
 - 位置：`src/Theming/ThemePalette.cs:48-52`（`FromColor` → `ToHsl` 取整）与 `:98-130`（`accent = FromHslInternal(hue, saturation, lightness - 0.18f, 1f)`）。
 - 影响：① 按钮/边框实际使用的颜色与设置面板预览里显示的 `#RRGGBB` 并不完全相同（差一个亮度档）；② H/S/L 取整带来 ≤0.5% 的额外误差。
 - 判断：这属于既有主题设计（`borderOffset`/`hoverOffset` 等派生规则），**不建议在无需求时改动**。建议二选一：在代码注释与 README 里写明"强调色为配置色派生的深色变体"；或（若你期望按钮底色就是所选颜色）让 `Accent` 直接使用解析出的原始 `Color`，仅派生 hover/pressed/背景。
+- **后续（阶段 10 B5）：** 已移除 HSL 往返，改为 RGB 混色/去饱和；本条保留为历史记录。
 
 **L3 可见区间查询为 O(n) 原生调用**
 - 位置：`src/Controls/ScrollableListView.cs:163-191`；每次防抖都会对全部条目各发一次 `LVM_GETITEMRECT`。

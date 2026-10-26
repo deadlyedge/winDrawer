@@ -4,21 +4,21 @@
 >
 > 审查范围：`src/` 下全部手写 C#（不含 Designer 生成代码），以及 10.1/10.2 新增/修改的代码。工作树中的 `docs/TODOs.md` 为用户改动，本文未修改它。
 >
-> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A 组低风险清理已于 2026-10 完成，实施结果见第 2 节；B/C 组仍按原审查清单讨论，不代表已实施。
+> **后续状态（2026-10）：** SunnyUI 已完全移除，C1 已完成；按钮改为原生扁平 `Button`，设置页改为原生控件，滚动条改为裁剪原生条 + `ThemedScrollBar`。本文中关于 `UIButton`、`Radius`、SunnyUI 保留建议和旧行号的描述属于迁移前快照，当前实现见 [`WHITEPAPER.md`](WHITEPAPER.md) 与 [`SUNNYUI_REMOVAL_IMPACT.md`](SUNNYUI_REMOVAL_IMPACT.md)。A 组低风险清理与 B1/B2/B3/B5 已于 2026-10 完成，实施结果见第 2、3 节；B4/B6 与 C 组仍按原清单讨论，不代表已实施。
 
 ## 1. 当前规模
 
-- 53 个 C# 文件，约 8,461 行；其中 Designer 约 770 行，手写代码约 7,691 行。
+- 56 个 C# 文件，约 8,562 行；其中 Designer 约 770 行，手写代码约 7,792 行。
 - 最大文件：
-  - `DrawerWindow.FileList.cs` 532 行
-  - `MainWindow.cs` 443 行
+  - `MainWindow.cs` 430 行
+  - `DrawerSettingsDialog.cs` 429 行
   - `SettingsForm.Designer.cs` 396 行
-  - `DrawerSettingsDialog.cs` 381 行
-  - `SettingsForm.cs` 359 行
-  - `MainWindow.DrawerList.cs` 331 行
+  - `DrawerWindow.FileList.cs` 394 行
+  - `SettingsForm.cs` 355 行
   - `TrayController.cs` 320 行
   - `SettingsRepository.Persistence.cs` 304 行
   - `DrawerWindow.cs` 297 行
+  - `SettingsRepository.Drawers.cs` 295 行
   - `ThemedScrollBar.cs` 295 行
 
 需要先说明一个判断：这 8,500 行里真正“重复、可机械删除”的部分有限。大量代码来自 WinForms 布局、DPI、主题派生、延迟缩略图、拖放、配置原子写入和托盘生命周期。**仅靠重构很难把代码量减半；若目标是大幅缩减，更有效的是减少功能/配置项，而不是继续抽象。**
@@ -128,6 +128,8 @@
 
 ## 3. B 组：中等风险，先讨论再决定
 
+> **实施状态（2026-10）：** B1/B2/B3/B5 已完成；B4/B6 本轮不做。下列“位置”是实施前快照，实际结果见各条“实施结果”。
+
 ### B1 `DrawerSettingsDialog` 的代码布局过长
 
 - 位置：`DrawerSettingsDialog.cs:132-234`（`ConfigureLayout`，约 103 行）、`254-311`（`ConfigureOverlayGroup`，约 58 行）、`312-357`（`ApplyStyle`，约 46 行）。
@@ -135,6 +137,7 @@
 - 建议：按区域拆成 `BuildHeader/BuildDetails/BuildOverlay/BuildFooter`，把 `CreateLabel/FindLabels` 等通用控件工厂移到小的 UI helper。**不改成 Designer**，避免生成代码增加。
 - 预计减少：约 30–50 行；风险：中（布局/DPI 需手工验证）。
 - 讨论点：目标是“可读”还是“行数”；拆方法可能不减少总行数，只降低单方法长度。
+- 实施结果：`ConfigureLayout` 已拆为 `BuildMainLayout` / `BuildHeader` / `BuildDetails` / `BuildOverlay` / `BuildOverlayColorSelector` / `BuildFooter`；主文件 429 行，diff 净增 58 行，`ConfigureLayout` 约 15 行。颜色区修复了真实溢出：旧 overlay 内容区实际约 95px，却固定了 88+26=114px，并且 FlowLayoutPanel 默认 Margin 再裁掉预览约 2px；新布局用 Percent 行 + TableLayoutPanel，预览填满、Remove overlay 按钮固定 40px 垂直居中。`No overlay` 改为 `Remove overlay`，无颜色时禁用，并补充无障碍文本。另补 `AutoScaleDimensions` + `OnLoad` 按 `DeviceDpi / 96` 缩放，修复 200% DPI 下提示行和整窗裁切。192 DPI 离屏探针确认预览、按钮、提示文字均在父容器内。
 
 ### B2 `DrawerWindow.FileList` 的图像缓存/视口加载
 
@@ -144,6 +147,7 @@
 - 预计减少：文件行数约 180–220 行；**总代码量可能持平或略增**（新类有字段/方法边界）。收益是可读性和可测试性。
 - 风险：中到高（必须保持取消、过期请求、ImageList 绑定顺序和 Dispose 顺序）。
 - 讨论点：如果目标是显著减少总行数，这一项不应优先；如果目标是让文件列表可维护，值得做。
+- 实施结果：新增 `Drawers/DrawerItemImageCache.cs`（216 行）；`DrawerWindow.FileList.cs` 394 行，diff 净减少 160 行，B2 净增约 56 行。缓存拥有占位图、已加载图像、请求索引、信号量、取消源和图像代际；窗口只负责可见范围、ImageList 绑定和占位图回退。`DrawerWindow.Designer.Dispose` 改为 `_imageCache.Dispose()`；增加“已在缓存中的索引不再重复加载”和 ImageList 添加失败时回滚缓存的保护。缩略图、滚动、取消和窗口关闭释放仍需手工回归。
 
 ### B3 `MainWindow.DrawerList` 的绘制与拖动重排
 
@@ -151,6 +155,7 @@
 - 建议：拆成 `MainWindow.DrawerList.Paint.cs` 与 `MainWindow.DrawerReorder.cs`；或把重排索引计算提取为纯逻辑 helper，便于测试。
 - 预计减少：0 行（文件拆分）；风险：中（拖动/绘制行为需回归）。
 - 讨论点：当前是否真的难以维护；如果只是文件长，拆分可能只是把复杂度搬走。
+- 实施结果：已拆为 `MainWindow.DrawerList.cs`（113 行）、`MainWindow.DrawerList.Paint.cs`（54 行）、`MainWindow.DrawerReorder.cs`（199 行）；拖动状态字段从 `MainWindow.cs` 移入重排文件（−13 行）。diff 净减少 8 行，行为不变。拖动重排、插入标记和右键菜单仍需手工回归。
 
 ### B4 `SettingsRepository` 后台写盘与状态机
 
@@ -158,6 +163,7 @@
 - 现象：`_dirty/_writeInProgress/_flushTcs` 状态机约 220 行；对一个小工具来说偏重，但承担了防抖、退出 flush、失败保留和原子写入。
 - 建议：**暂不重构**。若一定要简化，可评估单一 `SaveAsync` + 防抖 + 退出时同步 flush，但必须保留失败语义；预计减少 80–120 行，风险高。
 - 讨论点：你更看重“代码少”还是“配置写入可靠”；我不建议为了行数牺牲后者。
+- 本轮结论：未改动；保留现有后台写入、防抖、退出 flush 和失败语义。
 
 ### B5 `ThemePalette` 的 HSL 往返与派生色
 
@@ -166,12 +172,14 @@
 - 建议：若要减少代码，可改为直接 RGB 混合/固定偏移，减少 HSL 转换；但会改变实际配色。
 - 预计减少：约 50–80 行；风险：高（视觉回归、深浅色对比度）。
 - 讨论点：是否接受视觉变化；如果只想统一规则，当前实现可以保留。
+- 实施结果：已删除 `ToHsl` / `FromHslInternal` / `HueToRgb` / `AdjustLightness`，改为直接 RGB 混色，并按感知亮度灰去饱和；`ThemePalette.cs` 229 → 158 行，diff 净减少 51 行。默认 `#000533` 的窗口背景会比原 HSL 派生更中性、少一点蓝色；这是已接受的视觉变化，需在 UI 中确认深浅色对比度。
 
 ### B6 `SettingsForm.Designer` / `DrawerWindow.Designer`
 
 - 位置：`SettingsForm.Designer.cs` 420 行、`DrawerWindow.Designer.cs` 234 行。
 - 建议：保留生成代码，不手改以“减少行数”；Designer 行数不代表维护复杂度。
 - 讨论点：无，除非你希望彻底重做设置页布局。
+- 本轮结论：未改动；保留 Designer 生成代码。
 
 ## 4. C 组：高风险或收益不明确，不建议默认实施
 
@@ -203,28 +211,29 @@
 | 组 | 内容 | 实际/预计行数变化 | 风险 | 建议 |
 |---|---|---:|---|---|
 | A1–A9 | 字体/按钮/颜色/拖动/DPI/包装/重复分支/一致性 | 已有文件净减少 162 行；新增共享类 131 行，整体约减少 31 行 | 低 | 已完成 |
-| B1 | 拆分抽屉设置布局 | 约减少 30–50 行 | 中 | 可做，需 UI 回归 |
-| B2 | 提取图像缓存 | 文件减少约 200 行，总量持平 | 中高 | 按“可维护性”决定 |
-| B3 | 拆分抽屉列表绘制/重排 | 0 行 | 中 | 仅当当前难维护 |
-| B4 | 简化配置 writer | 减少 80–120 行 | 高 | 不建议 |
-| B5 | 简化 ThemePalette | 减少 50–80 行 | 高 | 需接受视觉变化 |
+| B1 | 拆分抽屉设置布局 | diff 净 +58；含颜色区/DPI 修复 | 中 | 已完成，需 UI 回归 |
+| B2 | 提取图像缓存 | FileList −160；新增缓存 216；净 +56 | 中高 | 已完成，需 UI 回归 |
+| B3 | 拆分抽屉列表绘制/重排 | diff 净 −8（含字段移动） | 中 | 已完成，需拖动回归 |
+| B4 | 简化配置 writer | — | 高 | 本轮不做 |
+| B5 | 移除 HSL 派生 | diff 净 −51 | 高（视觉变化） | 已完成，需视觉确认 |
 | C1 | 移除 SunnyUI | 已实施；代码量可能增加 | 高 | 已完成，见迁移记录 |
 
-结论：A 组安全清理已完成，已有文件减少 162 行，但三个共享 helper 新增 131 行，整体只减少约 31 行；收益主要是统一规则和单一入口，而不是缩小代码库。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
+结论：A 组整体约减少 31 行；B1/B2/B3/B5 合计约增加 55 行（git diff：B1 +58、B2 +56、B3 −8、B5 −51）。B 组收益是职责分离和可读性，而不是缩小代码库。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
 
 ## 6. 建议的逐项讨论顺序
 
 1. ~~A1–A9~~（已完成，见第 2 节）
-2. B1 布局拆分
-3. B2 图像缓存（只在你认为文件列表难维护时）
-4. 其余 B/C 项逐项确认“做/不做”
+2. ~~B1/B2/B3/B5~~（已完成，见第 3 节；需手工 UI 回归）
+3. B4 配置 writer（本轮不做）
+4. B6 Designer（保留，不做）
+5. 其余 C 组项逐项确认“做/不做”
 
 ## 7. 状态与待确认问题
 
 1. A1–A9 已全部实施；A9 采用合并 `ApplySettingsSnapshot` 的低风险方案，未做批量注释翻译。A4 的鼠标捕获/DPI 行为仍需人工回归。
-2. 是否接受“总代码量不降、但可读性提升”的 B1/B2？
-3. 是否愿意讨论“删功能”以显著减少代码量？如果愿意，哪些功能可以放弃（拖放、主题派生、抽屉颜色、热键、托盘常驻等）？
-4. B4/B5 是否明确暂缓？（C1 已随 SunnyUI 迁移完成。）
+2. B1/B2/B3/B5 已实施；B1 的 100%/150%/200% UI、B2 的缩略图/滚动/取消、B3 的拖动重排、B5 的配色对比度仍需手工回归；B1 已在 192 DPI 离屏探针验证颜色区边界。
+3. B4/B6 本轮明确不做；是否仍要讨论“删功能”以显著减少代码量？如果愿意，哪些功能可以放弃（拖放、主题派生、抽屉颜色、热键、托盘常驻等）？
+4. C1 已完成；C2/C3/C4 维持不做。
 
-验证：A 组改动已完成 Debug 与 Release 的完整 `dotnet build`，均为 0 警告 0 错误；未执行 UI 自动化测试，设置窗体拖动、颜色对话框和抽屉列表刷新仍需手工回归。
+验证：Debug 与 Release 完整构建（使用 `-o %TEMP%`，因运行中的 winDrawer 锁定 `bin\Debug`）均为 0 警告 0 错误；B1 使用 192 DPI 离屏探针确认颜色预览、Remove overlay、提示文字均在父容器内；未执行 UI 自动化测试，B2/B3/B5 与 B1 其他 DPI 的人工回归尚未完成。
 

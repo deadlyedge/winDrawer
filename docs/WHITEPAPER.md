@@ -109,10 +109,10 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 ## 10. 已知取舍与技术债
 
 - **托盘菜单位置**：WinForms `NotifyIcon` 的内部 `ShowInTaskbar` 路径在多显示器下不可靠；当前保留系统菜单所有权，并用 `Opening`/`Opened` 纠正位置，仍需在特殊任务栏布局中人工验证。
-- **文件列表**：`DrawerWindow.FileList.cs` 约 600 行，包含列表编排、视口图像加载、取消/代际和图像所有权。它是当前最复杂的文件，但拆分必须保持现有生命周期语义。
+- **文件列表**：`DrawerWindow.FileList.cs` 约 390 行，负责列表编排、视口图像请求和 ImageList 绑定；`DrawerItemImageCache` 独立管理占位图、图像所有权、取消和释放。拆分后仍必须保持现有生命周期语义。
 - **配置写入**：后台 writer 的状态机偏重，但承担防抖、退出 flush、失败保留和原子写入；不建议为了行数牺牲可靠性。
-- **主题**：`ThemePalette` 通过 HSL 往返派生颜色，代码量较大且会轻微改变精确 RGB；修改前需接受视觉变化。
-- **抽屉列表**：主窗口使用 owner-draw 和拖动重排，行为直观但代码集中；没有 UI 自动化测试。
+- **主题**：`ThemePalette` 使用直接 RGB 混色和按亮度灰去饱和派生颜色，不再做 HSL 往返；修改派生系数会改变实际配色，需接受视觉变化。
+- **抽屉列表**：主窗口使用 owner-draw 和拖动重排，已拆为 `MainWindow.DrawerList.cs`、`MainWindow.DrawerList.Paint.cs`、`MainWindow.DrawerReorder.cs`；没有 UI 自动化测试。
 - **滚动条**：`DrawerWindow.FileList.PositionDrawerScrollBar` 通过加宽 ListView 裁剪原生垂直条，`ThemedScrollBar` 负责可见轨道和拖动。这个组合依赖原生滚动信息、图标视图和 DPI，布局或滚动逻辑改动后必须做 100%/150%/200% 手工回归。
 - **测试**：仓库没有测试工程；纯逻辑使用 `%TEMP%` 下的临时 harness 验证，UI 行为依赖人工回归。
 - 更细的代码审查项和预计收益见 [`CODE_REVIEW_STAGE_10.md`](CODE_REVIEW_STAGE_10.md)。

@@ -1,34 +1,18 @@
-using System.Globalization;
-
 namespace winDrawer;
 
 /// <summary>
 /// File list orchestration for <see cref="DrawerWindow"/>: metadata refresh, viewport-driven image
-/// loading and ownership of the images that are added to the drawer image list.
+/// requests and binding the images produced by <see cref="DrawerItemImageCache"/>.
 /// </summary>
 public partial class DrawerWindow
 {
-    private const string PlaceholderImageKey = "__placeholder__";
-    private const int ImagePrefetchScreenCount = 1;
     private const int ViewportDebounceIntervalMilliseconds = 80;
 
-    private readonly Dictionary<int, Image> _loadedImagesByIndex = [];
-    private readonly HashSet<int> _imageRequestIndices = [];
-
-    // Serializes the background batches. It is intentionally never disposed: an in-flight batch
-    // releases it after the form was disposed, and a SemaphoreSlim without a wait handle owns no
-    // unmanaged resources.
-    private readonly SemaphoreSlim _imageLoadSemaphore = new(1, 1);
-
-    private Image? _placeholderImage;
+    private readonly DrawerItemImageCache _imageCache = new();
     private System.Windows.Forms.Timer? _viewportDebounceTimer;
     private CancellationTokenSource? _fileListLoadCancellation;
-    private CancellationTokenSource? _imageWorkCancellation;
     private int _fileListLoadGeneration;
-    private int _imageRequestGeneration;
     private bool _synchronizingScrollBar;
-
-    private readonly record struct PendingImageRequest(int Index, DrawerItemInfo Item);
 
     private void InitializeFileList()
     {
@@ -172,7 +156,7 @@ public partial class DrawerWindow
         previousCancellation?.Cancel();
 
         // List images always belong to the contents that were visible when they were requested.
-        RestartImageWork();
+        _imageCache.Restart();
 
         DrawerLogger.LogInformation($"Refreshing drawer contents for '{_drawer.Name}'.");
         ClearFileList();
@@ -262,8 +246,7 @@ public partial class DrawerWindow
         _fileListLoadCancellation = null;
         metadataCancellation?.Cancel();
 
-        _imageWorkCancellation?.Cancel();
-        InvalidateImageRequests();
+        _imageCache.Cancel();
     }
 
     private void ApplyDrawerItems(IReadOnlyList<DrawerItemInfo> items)
@@ -272,10 +255,10 @@ public partial class DrawerWindow
         try
         {
             ClearFileList();
-            EnsurePlaceholderImage();
+            _imageCache.EnsurePlaceholder(drawerImageList);
             foreach (var item in items)
             {
-                var listViewItem = new ListViewItem(item.Name, PlaceholderImageKey)
+                var listViewItem = new ListViewItem(item.Name, DrawerItemImageCache.PlaceholderKey)
                 {
                     ToolTipText = item.Path,
                     Tag = item
@@ -307,14 +290,12 @@ public partial class DrawerWindow
 
     private void ClearFileList()
     {
-        InvalidateImageRequests();
-
         drawerContentsListView.BeginUpdate();
         try
         {
             drawerContentsListView.Items.Clear();
             drawerImageList.Images.Clear();
-            DisposeFileListImages();
+            _imageCache.Clear();
         }
         finally
         {
@@ -326,7 +307,7 @@ public partial class DrawerWindow
 
     private void ShowListStatus(string text, string? toolTip = null)
     {
-        InvalidateImageRequests();
+        _imageCache.Invalidate();
 
         drawerContentsListView.Items.Clear();
         var statusItem = new ListViewItem(text)
@@ -336,37 +317,6 @@ public partial class DrawerWindow
 
         drawerContentsListView.Items.Add(statusItem);
         SynchronizeDrawerScrollBar();
-    }
-
-    private void EnsurePlaceholderImage()
-    {
-        if (_placeholderImage is not null && drawerImageList.Images.ContainsKey(PlaceholderImageKey))
-        {
-            return;
-        }
-
-        _placeholderImage?.Dispose();
-        _placeholderImage = new Bitmap(drawerImageList.ImageSize.Width, drawerImageList.ImageSize.Height);
-        drawerImageList.Images.Add(PlaceholderImageKey, _placeholderImage);
-    }
-
-    /// <summary>
-    /// Releases the images owned by the file list. The designer dispose path calls this after the
-    /// list view items and the image list were cleared.
-    /// </summary>
-    private void DisposeFileListImages()
-    {
-        foreach (var image in _loadedImagesByIndex.Values)
-        {
-            image.Dispose();
-        }
-
-        _loadedImagesByIndex.Clear();
-        _imageRequestIndices.Clear();
-
-        var placeholder = _placeholderImage;
-        _placeholderImage = null;
-        placeholder?.Dispose();
     }
 
     private void ReleaseFileListResources()
@@ -380,6 +330,8 @@ public partial class DrawerWindow
             timer.Tick -= ViewportDebounceTimer_Tick;
             timer.Dispose();
         }
+
+        _imageCache.Dispose();
     }
 
     private void RequestViewportImages(bool immediate = false)
@@ -409,8 +361,8 @@ public partial class DrawerWindow
     }
 
     /// <summary>
-    /// Loads the images of the visible items plus a one-screen prefetch margin. Items that left the
-    /// prefetch margin release their images again.
+    /// Requests the images of the visible items plus a one-screen prefetch margin. Items that left
+    /// the prefetch margin release their images again.
     /// </summary>
     private async Task RefreshViewportImagesAsync()
     {
@@ -420,22 +372,23 @@ public partial class DrawerWindow
         }
 
         var requests = CollectPendingImageRequests();
-        ReleaseImagesOutsidePrefetchMargin();
+        foreach (var index in _imageCache.GetIndicesToRelease())
+        {
+            ReleaseLoadedImage(index);
+        }
 
         if (requests.Count == 0)
         {
             return;
         }
 
-        var cancellation = _imageWorkCancellation;
-        if (cancellation == null || cancellation.IsCancellationRequested)
-        {
-            return;
-        }
-
         try
         {
-            await LoadItemImagesAsync(requests, drawerImageList.ImageSize, _imageRequestGeneration, cancellation);
+            await _imageCache.LoadAsync(
+                requests,
+                drawerImageList.ImageSize,
+                CanApplyImage,
+                ApplyLoadedImage);
         }
         catch (Exception ex)
         {
@@ -443,63 +396,30 @@ public partial class DrawerWindow
         }
     }
 
-    private List<PendingImageRequest> CollectPendingImageRequests()
+    private IReadOnlyList<DrawerItemImageCache.PendingImageRequest> CollectPendingImageRequests()
     {
-        var requests = new List<PendingImageRequest>();
-        _imageRequestIndices.Clear();
-
         if (!drawerContentsListView.TryGetVisibleItemRange(out var firstVisible, out var lastVisible))
         {
-            return requests;
+            return [];
         }
 
-        var visibleCount = lastVisible - firstVisible + 1;
-        var prefetchMargin = visibleCount * ImagePrefetchScreenCount;
-        var firstRequest = Math.Max(0, firstVisible - prefetchMargin);
-        var lastRequest = Math.Min(drawerContentsListView.Items.Count - 1, lastVisible + prefetchMargin);
-
-        for (var index = firstRequest; index <= lastRequest; index++)
-        {
-            _imageRequestIndices.Add(index);
-            if (_loadedImagesByIndex.ContainsKey(index))
-            {
-                continue;
-            }
-
-            if (drawerContentsListView.Items[index].Tag is DrawerItemInfo item)
-            {
-                requests.Add(new PendingImageRequest(index, item));
-            }
-        }
-
-        return requests;
+        return _imageCache.CollectRequests(
+            firstVisible,
+            lastVisible,
+            drawerContentsListView.Items.Count,
+            index => drawerContentsListView.Items[index].Tag as DrawerItemInfo);
     }
 
-    private void ReleaseImagesOutsidePrefetchMargin()
+    private bool CanApplyImage(int index)
     {
-        List<int>? indicesToRelease = null;
-        foreach (var index in _loadedImagesByIndex.Keys)
-        {
-            if (!_imageRequestIndices.Contains(index))
-            {
-                (indicesToRelease ??= []).Add(index);
-            }
-        }
-
-        if (indicesToRelease == null)
-        {
-            return;
-        }
-
-        foreach (var index in indicesToRelease)
-        {
-            ReleaseLoadedImage(index);
-        }
+        return !IsDisposed && !Disposing &&
+               index >= 0 && index < drawerContentsListView.Items.Count &&
+               drawerContentsListView.Items[index].Tag is DrawerItemInfo;
     }
 
     private void ReleaseLoadedImage(int index)
     {
-        if (!_loadedImagesByIndex.Remove(index, out var image))
+        if (!_imageCache.RemoveImage(index, out var image))
         {
             return;
         }
@@ -508,113 +428,31 @@ public partial class DrawerWindow
         // control never draws an image that is about to be disposed.
         if (index >= 0 && index < drawerContentsListView.Items.Count)
         {
-            drawerContentsListView.Items[index].ImageKey = PlaceholderImageKey;
+            drawerContentsListView.Items[index].ImageKey = DrawerItemImageCache.PlaceholderKey;
         }
 
-        drawerImageList.Images.RemoveByKey(GetImageKey(index));
-        image.Dispose();
-    }
-
-    private async Task LoadItemImagesAsync(
-        IReadOnlyList<PendingImageRequest> requests,
-        Size imageSize,
-        int generation,
-        CancellationTokenSource cancellation)
-    {
-        // Only one batch may run at a time. A queued batch re-checks its generation when it gets its
-        // turn and exits as soon as a newer viewport replaced it.
-        await _imageLoadSemaphore.WaitAsync().ConfigureAwait(true);
-        try
-        {
-            foreach (var request in requests)
-            {
-                if (!IsImageRequestCurrent(request.Index, generation, cancellation))
-                {
-                    return;
-                }
-
-                Image image;
-                try
-                {
-                    image = await Task.Run(
-                        () => DrawerItemImageLoader.Load(request.Item, imageSize, cancellation.Token),
-                        cancellation.Token).ConfigureAwait(true);
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    DrawerLogger.LogError($"Failed to load the list image for '{request.Item.Path}'.", ex);
-                    continue;
-                }
-
-                if (!IsImageRequestCurrent(request.Index, generation, cancellation))
-                {
-                    image.Dispose();
-                    return;
-                }
-
-                ApplyLoadedImage(request.Index, image);
-            }
-        }
-        finally
-        {
-            _imageLoadSemaphore.Release();
-        }
-    }
-
-    private bool IsImageRequestCurrent(int index, int generation, CancellationTokenSource cancellation)
-    {
-        return !IsDisposed && !Disposing &&
-               generation == _imageRequestGeneration &&
-               ReferenceEquals(_imageWorkCancellation, cancellation) &&
-               !cancellation.IsCancellationRequested &&
-               index >= 0 && index < drawerContentsListView.Items.Count &&
-               _imageRequestIndices.Contains(index);
+        drawerImageList.Images.RemoveByKey(DrawerItemImageCache.GetImageKey(index));
+        image?.Dispose();
     }
 
     private void ApplyLoadedImage(int index, Image image)
     {
-        var key = GetImageKey(index);
+        var key = DrawerItemImageCache.GetImageKey(index);
+        _imageCache.StoreImage(index, image);
+
         try
         {
             drawerImageList.Images.Add(key, image);
-            _loadedImagesByIndex[index] = image;
         }
         catch
         {
-            image.Dispose();
+            _imageCache.RemoveImage(index, out _);
             throw;
         }
 
-        drawerContentsListView.Items[index].ImageKey = key;
-    }
-
-    private static string GetImageKey(int index)
-    {
-        return index.ToString(CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// Discards every pending and in-flight image request without allocating a new cancellation
-    /// source. Scroll changes, list resets and DPI changes use this cheap invalidation.
-    /// </summary>
-    private void InvalidateImageRequests()
-    {
-        _imageRequestGeneration++;
-        _imageRequestIndices.Clear();
-    }
-
-    /// <summary>
-    /// Starts a new image work session. The previous cancellation source is cancelled but not
-    /// disposed, because an in-flight worker may still observe its token.
-    /// </summary>
-    private void RestartImageWork()
-    {
-        _imageWorkCancellation?.Cancel();
-        _imageWorkCancellation = new CancellationTokenSource();
-        InvalidateImageRequests();
+        if (index >= 0 && index < drawerContentsListView.Items.Count)
+        {
+            drawerContentsListView.Items[index].ImageKey = key;
+        }
     }
 }

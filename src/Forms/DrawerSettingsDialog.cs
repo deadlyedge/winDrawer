@@ -15,14 +15,15 @@ internal sealed class DrawerSettingsDialog : Form
     private readonly GroupBox _detailsGroup = new();
     private readonly GroupBox _overlayGroup = new();
     private readonly Button _browseButton = new();
-    private readonly Button _clearColorButton = new();
+    private readonly Button _removeOverlayButton = new();
     private readonly Button _saveButton = new();
     private readonly Button _deleteButton = new();
     private readonly Button _cancelButton = new();
-    private readonly Label _overlayInfoLabel = new();
+    private readonly Label _overlayHintLabel = new();
     private readonly TableLayoutPanel _fieldsPanel = new();
-    private readonly FlowLayoutPanel _colorPanel = new();
+    private readonly TableLayoutPanel _overlayColorLayout = new();
     private readonly FlowLayoutPanel _footerPanel = new();
+    private static readonly Size InitialClientSize = new(600, 500);
     private Color? _selectedColor;
 
     public DrawerSettingsDialog(DrawerDefinition drawer)
@@ -35,8 +36,9 @@ internal sealed class DrawerSettingsDialog : Form
         MinimizeBox = false;
         MaximizeBox = false;
         ShowInTaskbar = false;
+        AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(600, 500);
+        ClientSize = InitialClientSize;
         MinimumSize = new Size(540, 480);
         DoubleBuffered = true;
 
@@ -44,6 +46,19 @@ internal sealed class DrawerSettingsDialog : Form
         _fonts.ApplyTo(this);
         ApplyStyle();
         ApplyBrandFonts();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        // The dialog is laid out in 96-DPI pixels. Scale it once when the handle reports the real DPI;
+        // the guard keeps a future platform/designer auto-scale pass from scaling it twice.
+        var factor = (float)DpiScale.Factor(DeviceDpi);
+        if (factor > 1f && ClientSize == InitialClientSize)
+        {
+            Scale(new SizeF(factor, factor));
+        }
     }
 
     protected override void OnShown(EventArgs e)
@@ -110,6 +125,19 @@ internal sealed class DrawerSettingsDialog : Form
         _pathTextBox.Text = drawer.Path;
         _selectedColor = drawer.OverlayColor;
 
+        BuildMainLayout();
+        BuildHeader();
+        BuildDetails();
+        BuildOverlay();
+        BuildFooter();
+
+        FormDragBehavior.Attach(this, _titleLabel, _headerPanel);
+        AcceptButton = _saveButton;
+        CancelButton = _cancelButton;
+    }
+
+    private void BuildMainLayout()
+    {
         _layoutPanel.Dock = DockStyle.Fill;
         _layoutPanel.ColumnCount = 1;
         _layoutPanel.RowCount = 4;
@@ -119,7 +147,15 @@ internal sealed class DrawerSettingsDialog : Form
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 168F));
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
+        _layoutPanel.Controls.Add(_headerPanel, 0, 0);
+        _layoutPanel.Controls.Add(_detailsGroup, 0, 1);
+        _layoutPanel.Controls.Add(_overlayGroup, 0, 2);
+        _layoutPanel.Controls.Add(_footerPanel, 0, 3);
+        Controls.Add(_layoutPanel);
+    }
 
+    private void BuildHeader()
+    {
         _headerPanel.Dock = DockStyle.Fill;
         _headerPanel.ColumnCount = 1;
         _headerPanel.RowCount = 1;
@@ -134,7 +170,10 @@ internal sealed class DrawerSettingsDialog : Form
         _titleLabel.AutoSize = false;
         _titleLabel.BackColor = Color.Transparent;
         _titleLabel.TextAlign = ContentAlignment.MiddleLeft;
+    }
 
+    private void BuildDetails()
+    {
         _detailsGroup.Text = "Drawer details";
         _detailsGroup.Dock = DockStyle.Fill;
         _detailsGroup.Margin = new Padding(18, 5, 18, 6);
@@ -151,23 +190,26 @@ internal sealed class DrawerSettingsDialog : Form
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
-        _fieldsPanel.Controls.Add(CreateLabel("Name"), 0, 0);
+
         _nameTextBox.Dock = DockStyle.Fill;
         _nameTextBox.Margin = new Padding(0, 5, 0, 5);
         _nameTextBox.BorderStyle = BorderStyle.FixedSingle;
+        _fieldsPanel.Controls.Add(CreateLabel("Name"), 0, 0);
         _fieldsPanel.Controls.Add(_nameTextBox, 1, 0);
-        _fieldsPanel.Controls.Add(CreateLabel("Folder"), 0, 1);
+
         ConfigurePathDisplay();
+        _fieldsPanel.Controls.Add(CreateLabel("Folder"), 0, 1);
         _fieldsPanel.Controls.Add(_pathTextBox, 1, 1);
 
-        // Browse gets its own full-width row below the path, so narrowing the dialog cannot squeeze
-        // the path and the button against each other.
+        _browseButton.Text = "Browse...";
         _browseButton.Dock = DockStyle.Fill;
         _browseButton.Margin = new Padding(0, 4, 0, 4);
+        _browseButton.Click += BrowseButton_Click;
         _fieldsPanel.Controls.Add(_browseButton, 1, 2);
+    }
 
-        ConfigureOverlayGroup();
-
+    private void BuildFooter()
+    {
         _footerPanel.Dock = DockStyle.Fill;
         _footerPanel.FlowDirection = FlowDirection.RightToLeft;
         _footerPanel.WrapContents = false;
@@ -176,27 +218,11 @@ internal sealed class DrawerSettingsDialog : Form
         ConfigureButton(_cancelButton, "Cancel", new Size(92, 38));
         _cancelButton.DialogResult = DialogResult.Cancel;
         ConfigureButton(_saveButton, "Save", new Size(92, 38));
-        ConfigureButton(_deleteButton, "Delete", new Size(92, 38));
-        _deleteButton.Click += (_, _) =>
-        {
-            DeleteRequested = true;
-            DialogResult = DialogResult.Yes;
-        };
         _saveButton.Click += SaveButton_Click;
-        _browseButton.Text = "Browse...";
-        _browseButton.Click += BrowseButton_Click;
+        ConfigureButton(_deleteButton, "Delete", new Size(92, 38));
+        _deleteButton.Click += DeleteButton_Click;
 
         _footerPanel.Controls.AddRange([_saveButton, _cancelButton, _deleteButton]);
-        _layoutPanel.Controls.Add(_headerPanel, 0, 0);
-        _layoutPanel.Controls.Add(_detailsGroup, 0, 1);
-        _layoutPanel.Controls.Add(_overlayGroup, 0, 2);
-        _layoutPanel.Controls.Add(_footerPanel, 0, 3);
-        Controls.Add(_layoutPanel);
-
-        FormDragBehavior.Attach(this, _titleLabel, _headerPanel);
-
-        AcceptButton = _saveButton;
-        CancelButton = _cancelButton;
     }
 
     /// <summary>
@@ -222,34 +248,54 @@ internal sealed class DrawerSettingsDialog : Form
         UiDialogHelpers.HandleActivationKey(e, () => BrowseButton_Click(sender, EventArgs.Empty));
     }
 
-    private void ConfigureOverlayGroup()
+    private void BuildOverlay()
     {
         _overlayGroup.Text = "Overlay color";
         _overlayGroup.Dock = DockStyle.Fill;
         _overlayGroup.Margin = new Padding(18, 0, 18, 4);
         _overlayGroup.Padding = new Padding(14, 30, 14, 8);
-        var overlayContentPanel = new TableLayoutPanel
+
+        var overlayContentLayout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 2,
             BackColor = Color.FromArgb(64, 64, 64),
-            Margin = new Padding(0),
-            Padding = new Padding(0)
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
         };
-        overlayContentPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        overlayContentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
-        overlayContentPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
-        overlayContentPanel.Controls.Add(_colorPanel, 0, 0);
-        overlayContentPanel.Controls.Add(_overlayInfoLabel, 0, 1);
-        _overlayGroup.Controls.Add(overlayContentPanel);
+        overlayContentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        overlayContentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        overlayContentLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
 
-        _colorPanel.Dock = DockStyle.Fill;
-        _colorPanel.FlowDirection = FlowDirection.LeftToRight;
-        _colorPanel.WrapContents = false;
-        _colorPanel.Padding = new Padding(0);
+        _overlayHintLabel.Text = "Overlay uses a fixed 70% blend and affects this drawer only.";
+        _overlayHintLabel.Dock = DockStyle.Fill;
+        _overlayHintLabel.AutoSize = false;
+        _overlayHintLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _overlayHintLabel.Margin = Padding.Empty;
 
-        _colorPreview.Size = new Size(240, 84);
+        overlayContentLayout.Controls.Add(BuildOverlayColorSelector(), 0, 0);
+        overlayContentLayout.Controls.Add(_overlayHintLabel, 0, 1);
+        _overlayGroup.Controls.Add(overlayContentLayout);
+
+        UpdateOverlayColorPreview();
+    }
+
+    /// <summary>
+    /// Builds the colour preview and its action button. The preview fills the remaining width, so
+    /// neither control can be clipped by a fixed size or a FlowLayoutPanel margin.
+    /// </summary>
+    private TableLayoutPanel BuildOverlayColorSelector()
+    {
+        _overlayColorLayout.Dock = DockStyle.Fill;
+        _overlayColorLayout.ColumnCount = 2;
+        _overlayColorLayout.RowCount = 1;
+        _overlayColorLayout.Margin = Padding.Empty;
+        _overlayColorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _overlayColorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132F));
+        _overlayColorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        _colorPreview.Dock = DockStyle.Fill;
         _colorPreview.MinimumSize = new Size(1, 1);
         _colorPreview.Margin = new Padding(0, 0, 12, 0);
         _colorPreview.Padding = new Padding(8, 4, 8, 4);
@@ -258,23 +304,20 @@ internal sealed class DrawerSettingsDialog : Form
         _colorPreview.AccessibleName = "Overlay color preview";
         _colorPreview.Cursor = Cursors.Hand;
         _colorPreview.TabStop = true;
-        _colorPreview.Click += ChooseColorButton_Click;
-        _colorPreview.KeyDown += ColorPreview_KeyDown;
-        _colorPanel.Controls.Add(_colorPreview);
+        _colorPreview.Click += ChooseOverlayColor_Click;
+        _colorPreview.KeyDown += OverlayColorPreview_KeyDown;
+        _overlayColorLayout.Controls.Add(_colorPreview, 0, 0);
 
-        _clearColorButton.Text = "No overlay";
-        _clearColorButton.Size = new Size(132, 40);
-        _clearColorButton.Margin = new Padding(0, 20, 0, 0);
-        _clearColorButton.Click += (_, _) => SetSelectedColor(null);
-        _colorPanel.Controls.Add(_clearColorButton);
+        _removeOverlayButton.Text = "Remove overlay";
+        _removeOverlayButton.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _removeOverlayButton.Size = new Size(132, 40);
+        _removeOverlayButton.MinimumSize = new Size(1, 1);
+        _removeOverlayButton.AccessibleName = "Remove overlay color";
+        _removeOverlayButton.AccessibleDescription = "Removes this drawer's overlay color. The window theme is used unchanged.";
+        _removeOverlayButton.Click += RemoveOverlayButton_Click;
+        _overlayColorLayout.Controls.Add(_removeOverlayButton, 1, 0);
 
-        _overlayInfoLabel.Text = "Overlay uses a fixed 70% blend and affects this drawer only.";
-        _overlayInfoLabel.Dock = DockStyle.Fill;
-        _overlayInfoLabel.AutoSize = false;
-        _overlayInfoLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _overlayInfoLabel.Margin = new Padding(0);
-
-        UpdateColorPreview();
+        return _overlayColorLayout;
     }
 
     private void ApplyStyle()
@@ -291,13 +334,12 @@ internal sealed class DrawerSettingsDialog : Form
         _overlayGroup.BackColor = Color.FromArgb(64, 64, 64);
         _overlayGroup.ForeColor = Color.FromArgb(224, 224, 224);
 
-        _overlayInfoLabel.ForeColor = Color.FromArgb(192, 192, 192);
         _nameTextBox.BackColor = Color.FromArgb(56, 56, 56);
         _nameTextBox.ForeColor = Color.FromArgb(224, 224, 224);
         _pathTextBox.BackColor = Color.FromArgb(56, 56, 56);
         _pathTextBox.ForeColor = Color.FromArgb(224, 224, 224);
         _fieldsPanel.BackColor = Color.FromArgb(64, 64, 64);
-        _colorPanel.BackColor = Color.FromArgb(64, 64, 64);
+        _overlayColorLayout.BackColor = Color.FromArgb(64, 64, 64);
         _footerPanel.BackColor = Color.FromArgb(64, 64, 64);
 
         foreach (var label in FindLabels(this))
@@ -311,18 +353,21 @@ internal sealed class DrawerSettingsDialog : Form
             label.BackColor = Color.Transparent;
         }
 
+        // Keep the hint dimmer than the field labels after the generic label pass.
+        _overlayHintLabel.ForeColor = Color.FromArgb(192, 192, 192);
+
         UiButtonTheming.ApplySecondaryPalette(_browseButton, handCursor: true);
-        UiButtonTheming.ApplySecondaryPalette(_clearColorButton, handCursor: true);
+        UiButtonTheming.ApplySecondaryPalette(_removeOverlayButton, handCursor: true);
         UiButtonTheming.ApplyPrimaryPalette(_saveButton, handCursor: true);
         UiButtonTheming.ApplySecondaryPalette(_deleteButton, handCursor: true);
         UiButtonTheming.ApplyDangerPalette(_cancelButton, handCursor: true);
-        UpdateColorPreview();
+        UpdateOverlayColorPreview();
     }
 
     private IEnumerable<Button> GetButtons()
     {
         yield return _browseButton;
-        yield return _clearColorButton;
+        yield return _removeOverlayButton;
         yield return _saveButton;
         yield return _deleteButton;
         yield return _cancelButton;
@@ -398,28 +443,41 @@ internal sealed class DrawerSettingsDialog : Form
         DialogResult = DialogResult.OK;
     }
 
-    private void ChooseColorButton_Click(object? sender, EventArgs e)
+    private void DeleteButton_Click(object? sender, EventArgs e)
+    {
+        DeleteRequested = true;
+        DialogResult = DialogResult.Yes;
+    }
+
+    private void RemoveOverlayButton_Click(object? sender, EventArgs e)
+    {
+        SetOverlayColor(null);
+    }
+
+    private void ChooseOverlayColor_Click(object? sender, EventArgs e)
     {
         var currentColor = _selectedColor ?? AppConstants.Defaults.ThemeColor;
         if (UiDialogHelpers.ShowColorDialog(this, currentColor, _selectedColor) is { } color)
         {
-            SetSelectedColor(color);
+            SetOverlayColor(color);
         }
     }
 
-    private void ColorPreview_KeyDown(object? sender, KeyEventArgs e)
+    private void OverlayColorPreview_KeyDown(object? sender, KeyEventArgs e)
     {
-        UiDialogHelpers.HandleActivationKey(e, () => ChooseColorButton_Click(sender, EventArgs.Empty));
+        UiDialogHelpers.HandleActivationKey(e, () => ChooseOverlayColor_Click(sender, EventArgs.Empty));
     }
 
-    private void SetSelectedColor(Color? color)
+    private void SetOverlayColor(Color? color)
     {
         _selectedColor = color;
-        UpdateColorPreview();
+        UpdateOverlayColorPreview();
     }
 
-    private void UpdateColorPreview()
+    private void UpdateOverlayColorPreview()
     {
+        _removeOverlayButton.Enabled = _selectedColor is not null;
+
         if (_selectedColor is not { } color)
         {
             _colorPreview.FillColor = Color.FromArgb(64, 64, 64);

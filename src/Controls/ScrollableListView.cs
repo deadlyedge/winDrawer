@@ -146,7 +146,14 @@ internal sealed class ScrollableListView : ListView
                 break;
 
             case MouseLeaveMessage:
-                UpdateHoveredIndex(-1);
+                // A tooltip (or any other window) can cover the pointer, which makes the list report a
+                // leave even though the pointer never left the client area. Clearing the highlight then
+                // makes it flicker in sync with the tooltip, so only a real exit clears it.
+                if (!IsPointerInsideClient())
+                {
+                    UpdateHoveredIndex(-1);
+                }
+
                 break;
 
             case ListViewScrollMessage:
@@ -323,6 +330,21 @@ internal sealed class ScrollableListView : ListView
 
         var point = PointToClient(Cursor.Position);
         UpdateHoverFromClientPoint(point.X, point.Y);
+    }
+
+    /// <summary>
+    /// True while the pointer is physically inside the list's client area. Item tooltips take the
+    /// pointer away from the list without moving it, so the hover state must be judged by the pointer
+    /// position rather than by the last mouse message the control happened to receive.
+    /// </summary>
+    private bool IsPointerInsideClient()
+    {
+        if (!IsHandleCreated || IsDisposed)
+        {
+            return false;
+        }
+
+        return ClientRectangle.Contains(PointToClient(Cursor.Position));
     }
 
     private void UpdateHoveredIndex(int index)

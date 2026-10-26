@@ -140,6 +140,15 @@ namespace winDrawer
             drawerListBox.TabIndex = 3;
             drawerListBox.Text = "drawerListBox";
             // 
+            // headerToolTip
+            // 
+            headerToolTip.AutoPopDelay = 8000;
+            headerToolTip.InitialDelay = 400;
+            headerToolTip.ReshowDelay = 100;
+            // The main window is a borderless, non-taskbar window that is often not the active window;
+            // without ShowAlways the tooltips of the icon buttons would never appear.
+            headerToolTip.ShowAlways = true;
+            // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(14F, 31F);

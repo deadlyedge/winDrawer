@@ -62,7 +62,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
    - `FolderMissing`：显示缺失状态；
    - `TooManyItems`：在发现第 `limit + 1` 项时立即停止，不读取其元数据、不排序。
 3. 超过 `max_drawer_items` 时不创建任何文件条目，只显示“Too many items...”状态；底栏路径仍可打开资源管理器。
-4. 未超限时，`ListView` 使用 `LargeIcon` 和 `ImageList`；目录与文件混排，排序由 `DrawerSortMode` 决定。指针悬停的条目由系统绘制高亮底色（`ScrollableListView.HoverHighlightColor`，通过 `NM_CUSTOMDRAW` 的 `clrTextBk` 交给原生条目绘制），出现和消失都是即时的、不叠加额外绘制层，因此不会残留或闪烁；悬停命中测试与条目矩形查询都在 `base.WndProc` 返回后执行。
+4. 未超限时，`ListView` 使用 `LargeIcon` 和 `ImageList`；目录与文件混排，排序由 `DrawerSortMode` 决定。指针悬停的条目由系统绘制高亮底色（`ScrollableListView.HoverHighlightColor`，通过 `NM_CUSTOMDRAW` 的 `clrTextBk` 交给原生条目绘制），出现和消失都是即时的、不叠加额外绘制层，因此不会残留或闪烁；悬停命中测试与条目矩形查询都在 `base.WndProc` 返回后执行。条目名被截断时会弹出系统 tooltip，它会盖住指针并让列表收到 `WM_MOUSELEAVE`，所以清除高亮前必须按"指针是否仍在客户区内"判断，否则高亮会随 tooltip 出现/消失反复闪烁。
 5. 图标/缩略图按可视区加一屏预取范围延迟加载；滚动防抖，离开预取范围释放图像。加载批次用 generation + `CancellationTokenSource` 丢弃过期结果，避免旧目录/旧视口覆盖新状态。
 6. 图片缩略图失败时回退为 Shell 图标，不影响列表和双击打开；生成过程不得锁住源文件。
 7. 双击条目通过 `ProcessStartInfo { UseShellExecute = true }` 交给 Windows Shell。
@@ -70,7 +70,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 ## 6. 窗口、DPI 与主题
 
 - 主窗口无系统边框，支持拖动；`window_locked = true` 时禁止拖动并隐藏移动光标。位置保存到 `window_position`，高度以 96 DPI 逻辑像素保存到 `window_height`，运行时按当前 DPI 换算并夹取到所在屏幕工作区。
-- 主窗口宽度是固定常量 `AppConstants.Defaults.MainWindowWidth`（96 DPI 逻辑像素，当前 150），不写入配置，也不提供设置项。标题行左侧是 `winDrawer` 品牌文字（`LogoFontSize`，11pt），右侧依次是“添加抽屉”和“设置”两个图标按钮：按钮只显示字形（`IconGlyphs`，Segoe MDL2 Assets 的 `E710`/`E713`，缺少该字体时退回 Segoe UI Symbol 的 `+`/`⚙`），用途由 ToolTip 说明。抽屉列表占满标题行以下的全部空间，底部没有独立的添加区域。
+- 主窗口宽度是固定常量 `AppConstants.Defaults.MainWindowWidth`（96 DPI 逻辑像素，当前 150），不写入配置，也不提供设置项。标题行左侧是 `winDrawer` 品牌文字（`LogoFontSize`，11pt），右侧依次是“添加抽屉”和“设置”两个图标按钮：按钮只显示字形（`IconGlyphs`，Segoe MDL2 Assets 的 `E710`/`E713`，缺少该字体时退回 Segoe UI Symbol 的 `+`/`⚙`），用途由 ToolTip 说明（必须开启 `ShowAlways`，因为主窗口经常不是活动窗口，否则不会弹出）。抽屉列表占满标题行以下的全部空间，底部没有独立的添加区域。
 - 抽屉窗口通过移除 `WS_CAPTION` 隐藏标题栏，保留 `FormBorderStyle.Sizable` 的边缘缩放；底部提供文件夹路径入口、刷新和关闭按钮。窗口尺寸在调整结束/关闭时写回 `drawers[].size`。
 - 设置窗体与抽屉设置对话框每次打开时按主窗口位置偏移 `(100, 100)` 并夹取到主窗口所在屏幕工作区；它们的位置不持久化。
 - 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（0–100）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。

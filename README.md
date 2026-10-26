@@ -9,6 +9,7 @@ winDrawer keeps frequently used folders one click away. Open a drawer to see a f
 - **Folder drawers** – Keep a list of folders and open any of them in a compact drawer.
 - **Image thumbnails** – JPG/JPEG/PNG files appear as list thumbnails; other items use Windows Shell icons.
 - **Windows-native actions** – Double-click an item to open it with its default Windows behavior.
+- **Hover highlight** – The item under the pointer gets a soft highlight, so the entry you are about to open stands out.
 - **Drag and drop** – Drag items to Explorer, or drop files/folders into a drawer; Windows performs the move/copy.
 - **Large folders are capped** – A drawer shows at most `max_drawer_items` entries (default 200); larger folders show a status instead, and the folder path can still open them in Explorer.
 - **Tray control** – Use the tray icon or `Win+Shift+D` to show/hide the main window and current drawer.
@@ -50,6 +51,15 @@ max_drawer_items = 200
 ```
 
 The value is clamped to 1–10000; missing or invalid values fall back to 200. It is not exposed in the settings window. See [CONFIGURATION_FORMAT.md](docs/CONFIGURATION_FORMAT.md) for every field.
+
+Transition animations share a single frame interval that can be tuned in the same file:
+
+```toml
+[startup]
+animation_frame_ms = 15
+```
+
+`0` disables every transition, values are clamped to 0–50 ms, and anything between 1 and 7 is raised to 8. A larger interval means fewer, cheaper frames; a smaller one looks smoother. It is not exposed in the settings window either.
 
 ## Build a single file
 

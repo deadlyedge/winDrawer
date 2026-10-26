@@ -442,6 +442,9 @@ namespace winDrawer
                 _isDragging = false;
             }
 
+            // The frame interval lives in the TOML file; applying it here covers startup and reloads.
+            Animations.Configure(snapshot.AnimationFrameMilliseconds);
+
             ApplyMainWindowBounds(snapshot);
             ApplyAlwaysOnTop(snapshot.AlwaysOnTop);
             ApplyTheme(snapshot.BuildThemePalette());

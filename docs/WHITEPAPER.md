@@ -62,7 +62,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
    - `FolderMissing`：显示缺失状态；
    - `TooManyItems`：在发现第 `limit + 1` 项时立即停止，不读取其元数据、不排序。
 3. 超过 `max_drawer_items` 时不创建任何文件条目，只显示“Too many items...”状态；底栏路径仍可打开资源管理器。
-4. 未超限时，`ListView` 使用 `LargeIcon` 和 `ImageList`；目录与文件混排，排序由 `DrawerSortMode` 决定。
+4. 未超限时，`ListView` 使用 `LargeIcon` 和 `ImageList`；目录与文件混排，排序由 `DrawerSortMode` 决定。指针悬停的条目由系统绘制高亮底色（`ScrollableListView.HoverHighlightColor`，通过 `NM_CUSTOMDRAW` 的 `clrTextBk` 交给原生条目绘制），出现和消失都是即时的、不叠加额外绘制层，因此不会残留或闪烁；悬停命中测试与条目矩形查询都在 `base.WndProc` 返回后执行。
 5. 图标/缩略图按可视区加一屏预取范围延迟加载；滚动防抖，离开预取范围释放图像。加载批次用 generation + `CancellationTokenSource` 丢弃过期结果，避免旧目录/旧视口覆盖新状态。
 6. 图片缩略图失败时回退为 Shell 图标，不影响列表和双击打开；生成过程不得锁住源文件。
 7. 双击条目通过 `ProcessStartInfo { UseShellExecute = true }` 交给 Windows Shell。
@@ -78,7 +78,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 按钮使用原生 `Button` 的 `FlatStyle.Flat`：`Cancel`/`Save` 使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。不再使用 SunnyUI 的圆角、`TipsFont` 或独立状态前景色。
 - 设置窗体和抽屉设置对话框使用原生 `Form`/`GroupBox`/`TrackBar`/`CheckBox`/`Label`；颜色预览由 `ColorPreviewPanel` 自绘，行为选项由 `BehaviorCheckBoxGroup` 提供两列布局。
 - 抽屉内容区保留原生 `ListView` 垂直滚动条用于 `GetScrollInfo`、滚轮和原生滚动平滑度，但把 `ListView` 加宽到宿主客户区之外，让原生条被父面板裁掉；`ThemedScrollBar` 只在可见侧绘制约 3px 轨道，并覆盖原生条的约 18px 区域。该裁剪关系是刻意的，不要恢复可见的系统滚动条。
-- 过渡动画统一由 `Infrastructure/WindowAnimation.cs` 提供：`AnimationClock` 用 `Stopwatch` 计时并驱动单个 15ms `System.Windows.Forms.Timer`，`WindowFade` 以"主题透明度为基准值"做淡入，`WindowSlide` 只做视觉位移且终点始终由调用方（`MainWindow` 的抽屉定位）给出。当前效果：抽屉打开时从主窗口右边缘滑出并淡入（160ms）、从隐藏恢复和启动时淡入（120ms）、滚动条悬停或拖动时轨道加宽（3→6 逻辑像素，120ms）、抽屉列表行悬停高亮渐变（160ms）。Windows 关闭"动画效果"（`SPI_GETCLIENTAREAANIMATION`）时，所有过渡直接落到终态。
+- 过渡动画统一由 `Infrastructure/WindowAnimation.cs` 提供：`AnimationClock` 用 `Stopwatch` 计时并驱动单个 `System.Windows.Forms.Timer`，帧间隔由 `startup.animation_frame_ms` 决定（默认 15ms，0 表示关闭全部过渡动画），运行期间临时申请 1ms 系统计时精度；`WindowFade` 以"主题透明度为基准值"做淡入，`WindowSlide` 只做视觉位移且终点始终由调用方（`MainWindow` 的抽屉定位）给出。当前效果：抽屉打开时从主窗口右边缘滑出并淡入（160ms）、从隐藏恢复和启动时淡入（120ms）、滚动条悬停或拖动时轨道加宽（3→6 逻辑像素，120ms）、主窗口抽屉列表行悬停高亮渐变（160ms）。抽屉内容条目的悬停高亮不使用动画，由原生条目绘制即时切换。Windows 关闭"动画效果"（`SPI_GETCLIENTAREAANIMATION`）时，所有过渡直接落到终态。
 - 主窗口和设置页使用 WinForms 自动缩放；抽屉窗口使用 `AutoScaleMode.None`，在 `DpiChanged` 时显式重算图标尺寸、底栏布局、滚动条和图像列表。修改这些尺寸时必须同时验证 100%/150%/200% DPI。
 
 ## 7. 拖放
@@ -126,7 +126,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 新增抽屉行为：优先改 `Drawers/` 中的纯逻辑，再接到 `DrawerWindow`；保持枚举/排序/上限结果可区分，不要在窗体里复制文件系统逻辑。
 - 修改主题：同时检查主窗口、抽屉、设置窗体和右键菜单的普通/悬停/按下/禁用状态，以及深色/浅色背景对比度。
 - 修改窗口布局：验证 100%/150%/200% DPI、最小尺寸、工作区夹取、无标题栏缩放和退出时的资源释放。
-- 修改动画：时长、偏移和起始透明度常量在 `AppConstants.Ui.Animation`，时钟与缓动在 `Infrastructure/WindowAnimation.cs`；新增过渡优先复用它，不要在窗体里各自实现 Timer 动画，也不要在帧回调里写日志。
+- 修改动画：时长、偏移和起始透明度常量在 `AppConstants.Ui.Animation`，帧间隔由 `startup.animation_frame_ms`（0 关闭全部过渡），时钟、缓动与帧率控制在 `Infrastructure/WindowAnimation.cs`；新增过渡优先复用它，不要在窗体里各自实现 Timer 动画，也不要在帧回调里写日志。
 - UI 控件：优先复用项目内 `DrawerListBox`、`ThemedScrollBar`、`ColorPreviewPanel` 和 `BehaviorCheckBoxGroup`；不要再引入 SunnyUI 或为单个小效果新增大型 UI 框架。按钮颜色统一走 `UiButtonTheming`；主窗口标题行的图标字形统一走 `IconGlyphs`，不要在窗体或设计器里硬编码私有区字符。
 - 每次改动后执行完整 `dotnet build .\src\winDrawer.csproj`（Debug/Release），不要使用 `-t:Compile` 绕过资源生成；构建产物被占用时改用临时输出目录。
 

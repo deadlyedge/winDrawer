@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using winDrawer.Theming;
 
 namespace winDrawer;
 
@@ -28,13 +29,52 @@ internal sealed class ScrollableListView : ListView
     private const int MouseWheelMessage = 0x020A;
     private const int KeyDownMessage = 0x0100;
     private const int TimerMessage = 0x0113;
+    private const int MouseMoveMessage = 0x0200;
+    private const int MouseLeaveMessage = 0x02A3;
+    private const int WindowNotifyMessage = 0x004E;
+    private const int ReflectedNotifyMessage = 0x204E;
+    private const int NotificationCustomDraw = -12;
+    private const uint CustomDrawStagePrePaint = 0x00000001;
+    private const uint CustomDrawStageItemPrePaint = 0x00010001;
+    private const int CustomDrawResultDefault = 0x00000000;
+    private const int CustomDrawResultNotifyItemDraw = 0x00000020;
+    private const int ListViewSetExtendedStyleMessage = 0x1036;
+    private const int ListViewGetExtendedStyleMessage = 0x1037;
+    private const int ListViewDoubleBufferStyle = 0x00010000;
+
+    /// <summary>How far the hover background is blended from the list background towards the highlight colour.</summary>
+    private const float HoverTileBlend = 0.16f;
 
     private int _updateDepth;
     private bool _viewportChangedDuringUpdate;
     private bool _hasCachedIconScrollRange;
     private int _cachedIconScrollRange;
+    private int _hoveredIndex = -1;
+    private Color _hoverHighlightColor = Color.Empty;
 
     public event EventHandler? ViewportChanged;
+
+    /// <summary>
+    /// Colour the hovered item's background is blended towards. The background is supplied to the
+    /// native item drawing (custom-draw <c>clrTextBk</c>), so the item layout, selection and focus
+    /// visuals stay exactly as the system draws them and the highlight never lags behind a repaint.
+    /// <see cref="Color.Empty"/> disables it.
+    /// </summary>
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public Color HoverHighlightColor
+    {
+        get => _hoverHighlightColor;
+        set
+        {
+            if (_hoverHighlightColor == value)
+            {
+                return;
+            }
+
+            _hoverHighlightColor = value;
+            InvalidateItem(_hoveredIndex);
+        }
+    }
 
     protected override CreateParams CreateParams
     {
@@ -49,6 +89,14 @@ internal sealed class ScrollableListView : ListView
     protected override void WndProc(ref Message m)
     {
         var message = m.Msg;
+        if (message is WindowNotifyMessage or ReflectedNotifyMessage && TryApplyItemBackground(ref m))
+        {
+            // The custom-draw notification is answered here; passing it on would let WinForms' own
+            // handler answer it as well. Windows sends it to the parent, and WinForms reflects it to
+            // this control as WM_REFLECT|WM_NOTIFY.
+            return;
+        }
+
         if (message == WindowStyleChangingMessage &&
             m.WParam.ToInt32() == WindowStyleIndex &&
             m.LParam != IntPtr.Zero)
@@ -72,10 +120,39 @@ internal sealed class ScrollableListView : ListView
             _hasCachedIconScrollRange = false;
         }
 
+        if (message == ListViewDeleteAllItemsMessage)
+        {
+            // A refreshed folder rebuilds the items; an index kept from the old list would highlight
+            // whatever item happens to land on it next.
+            ResetHover();
+        }
+
         if (message is ListViewScrollMessage or WindowSizeMessage or LeftButtonUpMessage or MouseWheelMessage or
             KeyDownMessage or TimerMessage)
         {
             NotifyViewportChanged();
+        }
+
+        // Hover bookkeeping runs after the native window procedure returned, so the hit test and the
+        // item geometry queries below never execute while the list view is still handling its own
+        // message.
+        switch (message)
+        {
+            case MouseMoveMessage:
+                var coordinates = m.LParam.ToInt64();
+                UpdateHoverFromClientPoint(
+                    unchecked((short)(coordinates & 0xFFFF)),
+                    unchecked((short)((coordinates >> 16) & 0xFFFF)));
+                break;
+
+            case MouseLeaveMessage:
+                UpdateHoveredIndex(-1);
+                break;
+
+            case ListViewScrollMessage:
+            case MouseWheelMessage:
+                RefreshHoverFromPointer();
+                break;
         }
     }
 
@@ -83,6 +160,138 @@ internal sealed class ScrollableListView : ListView
     {
         base.OnHandleCreated(e);
         HideNativeScrollBars();
+        EnableDoubleBuffering();
+    }
+
+    protected override void OnVisibleChanged(EventArgs e)
+    {
+        base.OnVisibleChanged(e);
+        if (!Visible)
+        {
+            ResetHover();
+        }
+    }
+
+    /// <summary>
+    /// Turns on the native double buffering of the list view. Without it every item repaint (hover,
+    /// image binding, scrolling) shows the background erase for one frame.
+    /// </summary>
+    private void EnableDoubleBuffering()
+    {
+        if (!IsHandleCreated || IsDisposed)
+        {
+            return;
+        }
+
+        var currentStyles = SendMessage(Handle, ListViewGetExtendedStyleMessage, IntPtr.Zero, IntPtr.Zero).ToInt64();
+        var wantedStyles = currentStyles | ListViewDoubleBufferStyle;
+        SendMessage(
+            Handle,
+            ListViewSetExtendedStyleMessage,
+            new IntPtr(ListViewDoubleBufferStyle),
+            new IntPtr(wantedStyles));
+    }
+
+    /// <summary>
+    /// Answers the list view's custom-draw notification so the hovered item is painted with a
+    /// different background by the control itself. Only <c>clrTextBk</c> is supplied; the icon, the
+    /// label, the selection and the focus rectangle keep the native drawing.
+    /// </summary>
+    private bool TryApplyItemBackground(ref Message m)
+    {
+        var header = Marshal.PtrToStructure<NativeNotificationHeader>(m.LParam);
+        if (header.Code != NotificationCustomDraw)
+        {
+            return false;
+        }
+
+        var customDraw = Marshal.PtrToStructure<NativeListCustomDraw>(m.LParam);
+        switch (customDraw.DrawStage)
+        {
+            case CustomDrawStagePrePaint:
+                // Ask for one notification per item before the control paints it.
+                m.Result = new IntPtr(CustomDrawResultNotifyItemDraw);
+                return true;
+
+            case CustomDrawStageItemPrePaint:
+                if (ShouldHighlightItem(customDraw.ItemIndex))
+                {
+                    customDraw.TextBackground = ToColorRef(
+                        ThemePalette.Blend(BackColor, _hoverHighlightColor, HoverTileBlend));
+                    Marshal.StructureToPtr(customDraw, m.LParam, fDeleteOld: false);
+                }
+
+                m.Result = new IntPtr(CustomDrawResultDefault);
+                return true;
+
+            default:
+                m.Result = new IntPtr(CustomDrawResultDefault);
+                return true;
+        }
+    }
+
+    private bool ShouldHighlightItem(long itemIndex)
+    {
+        // Only the cached index is consulted: reading item state here would send messages to the list
+        // view from inside its own custom-draw notification. A selected item keeps the native
+        // selection rendering on top, so skipping the check cannot show a wrong background.
+        return !_hoverHighlightColor.IsEmpty &&
+               itemIndex >= 0 &&
+               itemIndex == _hoveredIndex &&
+               itemIndex < Items.Count;
+    }
+
+    private static uint ToColorRef(Color color)
+    {
+        // COLORREF is 0x00BBGGRR.
+        return (uint)(color.R | (color.G << 8) | (color.B << 16));
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeNotificationHeader
+    {
+        public IntPtr WindowFrom;
+        public IntPtr IdFrom;
+        public int Code;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRectangle
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    /// <summary>
+    /// <c>NMLVCUSTOMDRAW</c>: <c>NMCUSTOMDRAW</c> followed by the list view's text/background colours.
+    /// The trailing Vista+ fields are declared so the structure matches the size Windows passes in.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeListCustomDraw
+    {
+        public NativeNotificationHeader Header;
+        public uint DrawStage;
+        public IntPtr Hdc;
+        public NativeRectangle Bounds;
+        public IntPtr ItemSpec;
+        public uint ItemState;
+        public IntPtr ItemLParam;
+        public uint TextColor;
+        public uint TextBackground;
+        public int SubItem;
+        public uint ItemType;
+        public uint FaceColor;
+        public int IconEffect;
+        public int IconPhase;
+        public int PartId;
+        public int StateId;
+        public NativeRectangle TextBounds;
+        public int Align;
+
+        /// <summary>Item index reported for <c>CDDS_ITEMPREPAINT</c>.</summary>
+        public long ItemIndex => (long)ItemSpec;
     }
 
     private void HideNativeScrollBars()
@@ -92,6 +301,56 @@ internal sealed class ScrollableListView : ListView
             return;
         }
         ShowScrollBar(Handle, ScrollBarHorizontal, false);
+    }
+
+    private void UpdateHoverFromClientPoint(int x, int y)
+    {
+        if (!IsHandleCreated || IsDisposed)
+        {
+            return;
+        }
+
+        var hit = HitTest(x, y);
+        UpdateHoveredIndex(hit.Item?.Index ?? -1);
+    }
+
+    private void RefreshHoverFromPointer()
+    {
+        if (!IsHandleCreated || IsDisposed)
+        {
+            return;
+        }
+
+        var point = PointToClient(Cursor.Position);
+        UpdateHoverFromClientPoint(point.X, point.Y);
+    }
+
+    private void UpdateHoveredIndex(int index)
+    {
+        if (_hoveredIndex == index)
+        {
+            return;
+        }
+
+        var previous = _hoveredIndex;
+        _hoveredIndex = index;
+        InvalidateItem(previous);
+        InvalidateItem(_hoveredIndex);
+    }
+
+    private void ResetHover()
+    {
+        _hoveredIndex = -1;
+    }
+
+    private void InvalidateItem(int index)
+    {
+        if (index < 0 || index >= Items.Count || !IsHandleCreated)
+        {
+            return;
+        }
+
+        Invalidate(Items[index].Bounds);
     }
 
     public new void BeginUpdate()

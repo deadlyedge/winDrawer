@@ -17,18 +17,84 @@ internal static class Animations
     /// <summary><c>SPI_GETCLIENTAREAANIMATION</c>, the "Animation effects" switch in Windows settings.</summary>
     private const uint SpiGetClientAreaAnimation = 0x1042;
 
+    private static int _frameIntervalMilliseconds = AppConstants.Defaults.AnimationFrameMillisecondsDefault;
+    private static int _activeClocks;
+
     /// <summary>
-    /// True when transitions should run. The value is queried per transition (the call is cheap) so a
-    /// changed Windows setting applies without restarting the application.
+    /// Frame interval configured by the user (<c>startup.animation_frame_ms</c>). Larger values give
+    /// fewer, cheaper frames; 0 disables every transition.
+    /// </summary>
+    public static int FrameIntervalMilliseconds => _frameIntervalMilliseconds;
+
+    /// <summary>Interval a running clock should use; 0 means transitions are disabled.</summary>
+    public static int EffectiveFrameIntervalMilliseconds => _frameIntervalMilliseconds <= 0
+        ? 0
+        : Math.Max(AppConstants.Ui.Animation.MinFrameIntervalMilliseconds, _frameIntervalMilliseconds);
+
+    /// <summary>Applies the configured frame interval. Non-positive values disable the transitions.</summary>
+    public static void Configure(int frameIntervalMilliseconds)
+    {
+        var interval = Math.Clamp(
+            frameIntervalMilliseconds,
+            AppConstants.Defaults.AnimationFrameMillisecondsMin,
+            AppConstants.Defaults.AnimationFrameMillisecondsMax);
+        if (_frameIntervalMilliseconds == interval)
+        {
+            return;
+        }
+
+        _frameIntervalMilliseconds = interval;
+        DrawerLogger.LogInformation(interval <= 0
+            ? "Transition animations disabled by settings."
+            : $"Transition frame interval set to {interval} ms.");
+    }
+
+    /// <summary>
+    /// True when transitions should run: enabled in the settings and allowed by Windows. The system
+    /// flag is queried per transition (the call is cheap) so a changed Windows setting applies without
+    /// restarting the application.
     /// </summary>
     public static bool IsEnabled()
     {
+        if (EffectiveFrameIntervalMilliseconds <= 0)
+        {
+            return false;
+        }
+
         if (!SystemInformation.UIEffectsEnabled)
         {
             return false;
         }
 
         return !SystemParametersInfo(SpiGetClientAreaAnimation, 0, out var enabled, 0) || enabled;
+    }
+
+    /// <summary>
+    /// Raises the system timer resolution while transitions run, so the requested frame interval is
+    /// actually honoured instead of being rounded up to the default ~15.6 ms tick.
+    /// </summary>
+    public static void BeginFramePacing()
+    {
+        if (Interlocked.Increment(ref _activeClocks) != 1)
+        {
+            return;
+        }
+
+        if (timeBeginPeriod(AppConstants.Ui.Animation.TimerResolutionMilliseconds) != 0)
+        {
+            DrawerLogger.LogDebug("Unable to raise the timer resolution for transitions.");
+        }
+    }
+
+    /// <summary>Drops the raised timer resolution once the last transition stopped.</summary>
+    public static void EndFramePacing()
+    {
+        if (Interlocked.Decrement(ref _activeClocks) != 0)
+        {
+            return;
+        }
+
+        _ = timeEndPeriod(AppConstants.Ui.Animation.TimerResolutionMilliseconds);
     }
 
     /// <summary>Decelerating easing used by every transition.</summary>
@@ -55,6 +121,12 @@ internal static class Animations
         uint uiParam,
         [MarshalAs(UnmanagedType.Bool)] out bool pvParam,
         uint fWinIni);
+
+    [DllImport("winmm.dll", EntryPoint = "timeBeginPeriod")]
+    private static extern uint timeBeginPeriod(uint period);
+
+    [DllImport("winmm.dll", EntryPoint = "timeEndPeriod")]
+    private static extern uint timeEndPeriod(uint period);
 }
 
 /// <summary>
@@ -69,11 +141,12 @@ internal sealed class AnimationClock : IDisposable
     private Action<double>? _onProgress;
     private Action? _onCompleted;
     private int _durationMilliseconds;
+    private bool _framePacing;
     private bool _disposed;
 
     public AnimationClock()
     {
-        _timer = new System.Windows.Forms.Timer { Interval = AppConstants.Ui.Animation.TimerIntervalMilliseconds };
+        _timer = new System.Windows.Forms.Timer();
         _timer.Tick += Timer_Tick;
     }
 
@@ -95,11 +168,18 @@ internal sealed class AnimationClock : IDisposable
 
         if (!Animations.IsEnabled())
         {
-            // 系统关闭动画时直接落到终态，行为与没有过渡时一致。
+            // 系统或设置关闭动画时直接落到终态，行为与没有过渡时一致。
             var completed = Detach();
             onProgress(1d);
             completed?.Invoke();
             return;
+        }
+
+        _timer.Interval = Animations.EffectiveFrameIntervalMilliseconds;
+        if (!_framePacing)
+        {
+            _framePacing = true;
+            Animations.BeginFramePacing();
         }
 
         onProgress(0d);
@@ -141,6 +221,12 @@ internal sealed class AnimationClock : IDisposable
         _onProgress = null;
         _onCompleted = null;
         _durationMilliseconds = 0;
+        if (_framePacing)
+        {
+            _framePacing = false;
+            Animations.EndFramePacing();
+        }
+
         return completed;
     }
 

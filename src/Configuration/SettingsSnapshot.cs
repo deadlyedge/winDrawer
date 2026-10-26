@@ -13,7 +13,8 @@ public sealed class SettingsSnapshot(
     int windowHeight = winDrawer.AppConstants.Defaults.MainWindowHeightDefault,
     bool alwaysOnTop = false,
     bool toggleHotkeyEnabled = true,
-    int maxDrawerItems = winDrawer.AppConstants.Defaults.MaxDrawerItemsDefault)
+    int maxDrawerItems = winDrawer.AppConstants.Defaults.MaxDrawerItemsDefault,
+    int animationFrameMilliseconds = winDrawer.AppConstants.Defaults.AnimationFrameMillisecondsDefault)
 {
     private readonly List<DrawerDefinition> _drawers = drawers != null
             ? [.. drawers]
@@ -28,6 +29,16 @@ public sealed class SettingsSnapshot(
     public bool AlwaysOnTop { get; set; } = alwaysOnTop;
     public bool ToggleHotkeyEnabled { get; set; } = toggleHotkeyEnabled;
     public int MaxDrawerItems { get; set; } = Math.Clamp(maxDrawerItems, winDrawer.AppConstants.Defaults.MaxDrawerItemsMin, winDrawer.AppConstants.Defaults.MaxDrawerItemsMax);
+
+    /// <summary>
+    /// Frame interval of the transition animations in milliseconds; 0 disables them. Larger values
+    /// produce fewer frames and cost less; the clock never uses less than
+    /// <c>AppConstants.Ui.Animation.MinFrameIntervalMilliseconds</c>.
+    /// </summary>
+    public int AnimationFrameMilliseconds { get; set; } = Math.Clamp(
+        animationFrameMilliseconds,
+        winDrawer.AppConstants.Defaults.AnimationFrameMillisecondsMin,
+        winDrawer.AppConstants.Defaults.AnimationFrameMillisecondsMax);
     public IReadOnlyList<DrawerDefinition> Drawers => _drawers;
 
     public ThemePalette BuildThemePalette()
@@ -47,7 +58,8 @@ public sealed class SettingsSnapshot(
             windowHeight: WindowHeight,
             alwaysOnTop: AlwaysOnTop,
             toggleHotkeyEnabled: ToggleHotkeyEnabled,
-            maxDrawerItems: MaxDrawerItems);
+            maxDrawerItems: MaxDrawerItems,
+            animationFrameMilliseconds: AnimationFrameMilliseconds);
     }
 
     private static int[] GetIntArray(TomlTable table, string key, int[] fallback)
@@ -94,7 +106,13 @@ public sealed class SettingsSnapshot(
             windowHeight: windowHeight,
             alwaysOnTop: GetBoolean(startup, SettingsKeys.AlwaysOnTop),
             toggleHotkeyEnabled: GetBoolean(startup, SettingsKeys.ToggleHotkeyEnabled, fallback: true),
-            maxDrawerItems: GetInt(startup, SettingsKeys.MaxDrawerItems, AppConstants.Defaults.MaxDrawerItemsMin, AppConstants.Defaults.MaxDrawerItemsMax, AppConstants.Defaults.MaxDrawerItemsDefault));
+            maxDrawerItems: GetInt(startup, SettingsKeys.MaxDrawerItems, AppConstants.Defaults.MaxDrawerItemsMin, AppConstants.Defaults.MaxDrawerItemsMax, AppConstants.Defaults.MaxDrawerItemsDefault),
+            animationFrameMilliseconds: GetInt(
+                startup,
+                SettingsKeys.AnimationFrameMilliseconds,
+                AppConstants.Defaults.AnimationFrameMillisecondsMin,
+                AppConstants.Defaults.AnimationFrameMillisecondsMax,
+                AppConstants.Defaults.AnimationFrameMillisecondsDefault));
     }
 
     private static List<DrawerDefinition> ParseDrawers(TomlTableArray entries)

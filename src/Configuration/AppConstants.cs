@@ -70,6 +70,11 @@ internal static class AppConstants
         public const int MaxDrawerItemsMin = 1;
         public const int MaxDrawerItemsDefault = 200;
         public const int MaxDrawerItemsMax = 10000;
+
+        /// <summary>Frame interval of the transition animations; 0 disables every transition.</summary>
+        public const int AnimationFrameMillisecondsMin = 0;
+        public const int AnimationFrameMillisecondsDefault = 15;
+        public const int AnimationFrameMillisecondsMax = 50;
         /// <summary>
         /// 96-DPI logical width of the main window. It stays narrow on purpose: the drawer list only
         /// needs room for folder names, and the header actions are icon buttons.
@@ -100,8 +105,11 @@ internal static class AppConstants
         /// </summary>
         internal static class Animation
         {
-            /// <summary>Frame interval of the shared animation clock.</summary>
-            public const int TimerIntervalMilliseconds = 15;
+            /// <summary>Fastest frame interval the clock accepts (higher values are slower, fewer frames).</summary>
+            public const int MinFrameIntervalMilliseconds = 8;
+
+            /// <summary>Timer resolution requested from Windows while a transition runs.</summary>
+            public const int TimerResolutionMilliseconds = 1;
 
             /// <summary>Duration of short feedback transitions (appearing, scrollbar widening).</summary>
             public const int ShortDurationMilliseconds = 120;

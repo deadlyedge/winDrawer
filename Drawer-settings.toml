@@ -10,3 +10,4 @@ window_color = "#000533"
 window_opacity = 95
 window_height = 200
 max_drawer_items = 200
+animation_frame_ms = 15

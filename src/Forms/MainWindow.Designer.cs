@@ -31,12 +31,14 @@ namespace winDrawer
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             mainTableLayoutPanel = new TableLayoutPanel();
             headerTableLayoutPanel = new TableLayoutPanel();
             logoLabel = new Label();
+            addDrawerButton = new Button();
             settingsButton = new Button();
             drawerListBox = new DrawerListBox();
-            addDrawerButton = new Button();
+            headerToolTip = new ToolTip(components);
             mainTableLayoutPanel.SuspendLayout();
             headerTableLayoutPanel.SuspendLayout();
             SuspendLayout();
@@ -48,60 +50,79 @@ namespace winDrawer
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             mainTableLayoutPanel.Controls.Add(headerTableLayoutPanel, 0, 0);
             mainTableLayoutPanel.Controls.Add(drawerListBox, 0, 1);
-            mainTableLayoutPanel.Controls.Add(addDrawerButton, 0, 2);
             mainTableLayoutPanel.Dock = DockStyle.Fill;
             mainTableLayoutPanel.Location = new Point(0, 0);
             mainTableLayoutPanel.Name = "mainTableLayoutPanel";
-            mainTableLayoutPanel.RowCount = 3;
+            mainTableLayoutPanel.RowCount = 2;
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
-            mainTableLayoutPanel.Size = new Size(413, 400);
+            mainTableLayoutPanel.Size = new Size(300, 400);
             mainTableLayoutPanel.TabIndex = 0;
             // 
             // headerTableLayoutPanel
             // 
             headerTableLayoutPanel.BackColor = Color.Transparent;
-            headerTableLayoutPanel.ColumnCount = 2;
-            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
-            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            headerTableLayoutPanel.ColumnCount = 3;
+            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 44F));
+            headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 44F));
             headerTableLayoutPanel.Controls.Add(logoLabel, 0, 0);
-            headerTableLayoutPanel.Controls.Add(settingsButton, 1, 0);
+            headerTableLayoutPanel.Controls.Add(addDrawerButton, 1, 0);
+            headerTableLayoutPanel.Controls.Add(settingsButton, 2, 0);
             headerTableLayoutPanel.Dock = DockStyle.Fill;
             headerTableLayoutPanel.Location = new Point(3, 3);
             headerTableLayoutPanel.Name = "headerTableLayoutPanel";
             headerTableLayoutPanel.RowCount = 1;
             headerTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            headerTableLayoutPanel.Size = new Size(407, 44);
+            headerTableLayoutPanel.Size = new Size(294, 44);
             headerTableLayoutPanel.TabIndex = 0;
             // 
             // logoLabel
             // 
+            logoLabel.AutoSize = false;
+            logoLabel.BackColor = Color.Transparent;
             logoLabel.Cursor = Cursors.Default;
             logoLabel.Dock = DockStyle.Fill;
             logoLabel.Font = SystemFonts.MessageBoxFont;
             logoLabel.ForeColor = SystemColors.ButtonFace;
             logoLabel.Location = new Point(3, 0);
             logoLabel.Name = "logoLabel";
-            logoLabel.AutoSize = false;
-            logoLabel.BackColor = Color.Transparent;
-            logoLabel.Size = new Size(278, 44);
+            logoLabel.Size = new Size(200, 44);
             logoLabel.TabIndex = 0;
             logoLabel.Text = "winDrawer";
             logoLabel.TextAlign = ContentAlignment.MiddleLeft;
             // 
+            // addDrawerButton
+            // 
+            addDrawerButton.Cursor = Cursors.Hand;
+            addDrawerButton.Dock = DockStyle.Fill;
+            addDrawerButton.Font = SystemFonts.MessageBoxFont;
+            addDrawerButton.Location = new Point(209, 3);
+            addDrawerButton.Margin = new Padding(3);
+            addDrawerButton.MinimumSize = new Size(1, 1);
+            addDrawerButton.Name = "addDrawerButton";
+            addDrawerButton.Size = new Size(38, 38);
+            addDrawerButton.TabIndex = 1;
+            addDrawerButton.TextAlign = ContentAlignment.MiddleCenter;
+            addDrawerButton.UseMnemonic = false;
+            addDrawerButton.Click += AddDrawerButton_Click;
+            headerToolTip.SetToolTip(addDrawerButton, "Add drawer");
+            // 
             // settingsButton
             // 
             settingsButton.Cursor = Cursors.Hand;
-            settingsButton.Dock = DockStyle.Right;
+            settingsButton.Dock = DockStyle.Fill;
             settingsButton.Font = SystemFonts.MessageBoxFont;
-            settingsButton.Location = new Point(287, 3);
+            settingsButton.Location = new Point(253, 3);
+            settingsButton.Margin = new Padding(3);
             settingsButton.MinimumSize = new Size(1, 1);
             settingsButton.Name = "settingsButton";
-            settingsButton.Size = new Size(117, 38);
-            settingsButton.TabIndex = 1;
-            settingsButton.Text = "settings";
+            settingsButton.Size = new Size(38, 38);
+            settingsButton.TabIndex = 2;
+            settingsButton.TextAlign = ContentAlignment.MiddleCenter;
+            settingsButton.UseMnemonic = false;
             settingsButton.Click += SettingsButton_Click;
+            headerToolTip.SetToolTip(settingsButton, "Settings");
             // 
             // drawerListBox
             // 
@@ -115,22 +136,9 @@ namespace winDrawer
             drawerListBox.Margin = new Padding(4, 0, 4, 0);
             drawerListBox.MinimumSize = new Size(1, 1);
             drawerListBox.Name = "drawerListBox";
-            drawerListBox.Size = new Size(405, 300);
-            drawerListBox.TabIndex = 2;
+            drawerListBox.Size = new Size(292, 350);
+            drawerListBox.TabIndex = 3;
             drawerListBox.Text = "drawerListBox";
-            // 
-            // addDrawerButton
-            // 
-            addDrawerButton.Anchor = AnchorStyles.None;
-            addDrawerButton.Cursor = Cursors.Hand;
-            addDrawerButton.Font = SystemFonts.MessageBoxFont;
-            addDrawerButton.Location = new Point(121, 353);
-            addDrawerButton.MinimumSize = new Size(1, 1);
-            addDrawerButton.Name = "addDrawerButton";
-            addDrawerButton.Size = new Size(170, 44);
-            addDrawerButton.TabIndex = 1;
-            addDrawerButton.Text = "add drawer";
-            addDrawerButton.Click += AddDrawerButton_Click;
             // 
             // MainWindow
             // 
@@ -151,8 +159,9 @@ namespace winDrawer
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel headerTableLayoutPanel;
         private Label logoLabel;
+        private Button addDrawerButton;
         private Button settingsButton;
         private DrawerListBox drawerListBox;
-        private Button addDrawerButton;
+        private ToolTip headerToolTip;
     }
 }

@@ -18,7 +18,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 ## 技术与架构约定
 
 - 这是 Windows-only 的桌面项目；优先沿用单个 WinForms 应用项目和 BCL/WinForms 原生控件，不要仅为“现代架构”引入多项目分层、复杂 MVVM、依赖注入框架或微服务式结构。
-- SunnyUI 已完全移除；不要再引入。当前 UI 使用原生控件和项目内轻量控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`。按钮颜色统一走 `UiButtonTheming`；主操作使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。
+- SunnyUI 已完全移除；不要再引入。当前 UI 使用原生控件和项目内轻量控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`。按钮颜色统一走 `UiButtonTheming`；主操作使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。主窗口标题行的“添加抽屉/设置”是不带文字的图标按钮，字形统一由 `IconGlyphs` 提供（Segoe MDL2 Assets，缺字体时退回 Segoe UI Symbol），不要在窗体或设计器里硬编码私有区字符；主窗口宽度是固定常量，不提供设置项。
 - 使用实施时 Microsoft 官方最新的 GA LTS .NET Windows 版本；当前计划目标是 `net10.0-windows`。实施前核实官方支持周期和 SDK，安装最新 servicing patch；不使用 preview 或 STS。
 - 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。主题设置页只保留颜色预览和独立的透明度滑块；点击颜色预览打开 Windows/WinForms 系统颜色控件（优先 `ColorDialog`）。不要保留 H/S/L 或 HSLA 调色控件，也不要重新实现每个文件一套自绘卡片布局。
 - 抽屉内容区的原生 `ListView` 垂直滚动条用于滚轮/`GetScrollInfo`，但必须通过加宽 ListView 裁剪到宿主外侧，并由 `ThemedScrollBar` 覆盖可见区域；不要恢复可见的系统滚动条，也不要改回移除 `WS_VSCROLL` 后手动处理滚轮的旧方案。

@@ -38,7 +38,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 | `Forms/DrawerSettingsDialog.cs` | 单个抽屉的名称、路径、专属颜色、删除 |
 | `Drawers/` | 直接子项枚举/排序/上限、条目元数据、Shell 图标与缩略图、拖放规划 |
 | `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
-| `Controls/` | `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、按钮/菜单主题、颜色对话框 helper、消息框 |
+| `Controls/` | `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、`IconGlyphs` 图标字形、按钮/菜单主题、颜色对话框 helper、消息框 |
 | `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation` |
 | `Theming/` | `#RRGGBB` 解析、主题派生色、品牌字体、Shell 图标 |
 
@@ -70,6 +70,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 ## 6. 窗口、DPI 与主题
 
 - 主窗口无系统边框，支持拖动；`window_locked = true` 时禁止拖动并隐藏移动光标。位置保存到 `window_position`，高度以 96 DPI 逻辑像素保存到 `window_height`，运行时按当前 DPI 换算并夹取到所在屏幕工作区。
+- 主窗口宽度是固定常量 `AppConstants.Defaults.MainWindowWidth`（96 DPI 逻辑像素，当前 150），不写入配置，也不提供设置项。标题行左侧是 `winDrawer` 品牌文字（`LogoFontSize`，11pt），右侧依次是“添加抽屉”和“设置”两个图标按钮：按钮只显示字形（`IconGlyphs`，Segoe MDL2 Assets 的 `E710`/`E713`，缺少该字体时退回 Segoe UI Symbol 的 `+`/`⚙`），用途由 ToolTip 说明。抽屉列表占满标题行以下的全部空间，底部没有独立的添加区域。
 - 抽屉窗口通过移除 `WS_CAPTION` 隐藏标题栏，保留 `FormBorderStyle.Sizable` 的边缘缩放；底部提供文件夹路径入口、刷新和关闭按钮。窗口尺寸在调整结束/关闭时写回 `drawers[].size`。
 - 设置窗体与抽屉设置对话框每次打开时按主窗口位置偏移 `(100, 100)` 并夹取到主窗口所在屏幕工作区；它们的位置不持久化。
 - 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（0–100）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。
@@ -123,6 +124,6 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 新增抽屉行为：优先改 `Drawers/` 中的纯逻辑，再接到 `DrawerWindow`；保持枚举/排序/上限结果可区分，不要在窗体里复制文件系统逻辑。
 - 修改主题：同时检查主窗口、抽屉、设置窗体和右键菜单的普通/悬停/按下/禁用状态，以及深色/浅色背景对比度。
 - 修改窗口布局：验证 100%/150%/200% DPI、最小尺寸、工作区夹取、无标题栏缩放和退出时的资源释放。
-- UI 控件：优先复用项目内 `DrawerListBox`、`ThemedScrollBar`、`ColorPreviewPanel` 和 `BehaviorCheckBoxGroup`；不要再引入 SunnyUI 或为单个小效果新增大型 UI 框架。按钮颜色统一走 `UiButtonTheming`。
+- UI 控件：优先复用项目内 `DrawerListBox`、`ThemedScrollBar`、`ColorPreviewPanel` 和 `BehaviorCheckBoxGroup`；不要再引入 SunnyUI 或为单个小效果新增大型 UI 框架。按钮颜色统一走 `UiButtonTheming`；主窗口标题行的图标字形统一走 `IconGlyphs`，不要在窗体或设计器里硬编码私有区字符。
 - 每次改动后执行完整 `dotnet build .\src\winDrawer.csproj`（Debug/Release），不要使用 `-t:Compile` 绕过资源生成；构建产物被占用时改用临时输出目录。
 

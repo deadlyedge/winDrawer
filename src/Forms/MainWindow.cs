@@ -10,8 +10,7 @@ namespace winDrawer
         private const int SettingsWindowOffset = 100;
         private const int ShutdownFlushTimeoutMilliseconds = 500;
         private Font? _logoFont;
-        private Font? _settingsButtonFont;
-        private Font? _addDrawerButtonFont;
+        private Font? _headerIconFont;
         private bool _isDragging;
         private Point _dragOffset;
         private readonly SettingsRepository _settingsRepository;
@@ -38,6 +37,7 @@ namespace winDrawer
 
             DrawerLogger.LogDebug($"Loaded {_settingsSnapshot.Drawers.Count} drawers from settings.");
             InitializeComponent();
+            ApplyHeaderButtonGlyphs();
             drawerListBox.MouseDown += DrawerListBox_MouseDown;
             drawerListBox.MouseUp += DrawerListBox_MouseUp;
             drawerListBox.MouseMove += DrawerListBox_MouseMove;
@@ -96,8 +96,7 @@ namespace winDrawer
             ReleaseHotKey();
 
             _logoFont?.Dispose();
-            _settingsButtonFont?.Dispose();
-            _addDrawerButtonFont?.Dispose();
+            _headerIconFont?.Dispose();
 
             try
             {
@@ -215,13 +214,11 @@ namespace winDrawer
         private void ApplyEmbeddedBrandFonts()
         {
             Font? logoFont = null;
-            Font? settingsButtonFont = null;
-            Font? addDrawerButtonFont = null;
+            Font? headerIconFont = null;
             try
             {
                 logoFont = BrandingFont.Create(AppConstants.Defaults.LogoFontSize);
-                settingsButtonFont = BrandingFont.Create(AppConstants.Defaults.CompactButtonFontSize);
-                addDrawerButtonFont = BrandingFont.Create(AppConstants.Defaults.CompactButtonFontSize);
+                headerIconFont = CreateHeaderIconFont();
                 var loadedFamily = BrandingFont.LoadedFamilyName;
                 if (string.IsNullOrEmpty(loadedFamily))
                 {
@@ -235,20 +232,36 @@ namespace winDrawer
             catch (Exception ex)
             {
                 logoFont?.Dispose();
-                settingsButtonFont?.Dispose();
-                addDrawerButtonFont?.Dispose();
+                headerIconFont?.Dispose();
                 DrawerLogger.LogWarning($"Unable to apply the embedded branding font. {ex.Message}");
                 logoFont = BrandingFont.CreateFallback(AppConstants.Defaults.LogoFontSize);
-                settingsButtonFont = BrandingFont.CreateFallback(AppConstants.Defaults.CompactButtonFontSize);
-                addDrawerButtonFont = BrandingFont.CreateFallback(AppConstants.Defaults.CompactButtonFontSize);
+                headerIconFont = BrandingFont.CreateFallback(AppConstants.Defaults.CompactButtonFontSize);
             }
 
             _logoFont = logoFont;
-            _settingsButtonFont = settingsButtonFont;
-            _addDrawerButtonFont = addDrawerButtonFont;
+            _headerIconFont = headerIconFont;
             logoLabel.Font = _logoFont;
-            settingsButton.Font = _settingsButtonFont;
-            addDrawerButton.Font = _addDrawerButtonFont;
+            addDrawerButton.Font = _headerIconFont;
+            settingsButton.Font = _headerIconFont;
+        }
+
+        /// <summary>
+        /// The header actions are icon buttons, so their captions are resolved from the installed
+        /// symbol font at runtime instead of being hard-coded in the designer file.
+        /// </summary>
+        private void ApplyHeaderButtonGlyphs()
+        {
+            addDrawerButton.Text = IconGlyphs.AddDrawer;
+            settingsButton.Text = IconGlyphs.Settings;
+
+            // A glyph caption is not readable, so assistive tools get the action names instead.
+            addDrawerButton.AccessibleName = "Add drawer";
+            settingsButton.AccessibleName = "Settings";
+        }
+
+        private static Font CreateHeaderIconFont()
+        {
+            return new Font(IconGlyphs.FontFamilyName, AppConstants.Defaults.CompactButtonFontSize, FontStyle.Regular, GraphicsUnit.Point);
         }
 
         private void TryApplyIcon(string iconPath)

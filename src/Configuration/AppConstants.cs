@@ -70,10 +70,15 @@ internal static class AppConstants
         public const int MaxDrawerItemsMin = 1;
         public const int MaxDrawerItemsDefault = 200;
         public const int MaxDrawerItemsMax = 10000;
-        public const int MainWindowWidth = 200;
+        /// <summary>
+        /// 96-DPI logical width of the main window. It stays narrow on purpose: the drawer list only
+        /// needs room for folder names, and the header actions are icon buttons.
+        /// </summary>
+        public const int MainWindowWidth = 150;
         public static readonly Color ThemeColor = Color.FromArgb(0, 5, 51);
         public const int ThemeOpacity = 95;
-        public const float LogoFontSize = 14f;
+        /// <summary>Point size of the branding font in the main-window header.</summary>
+        public const float LogoFontSize = 11f;
         public const float ButtonFontSize = 10f;
         public const float CompactButtonFontSize = 9.5f;
     }

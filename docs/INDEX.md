@@ -15,8 +15,8 @@
 ### 当前 UI 栈摘要
 
 - 单个 WinForms 项目，无第三方 UI 框架；依赖 BCL/WinForms 与 Tomlyn。
-- 项目内控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、`EllipsisLabel`。
-- 按钮为原生扁平 `Button`；`Cancel`/`Save` 使用 10F 品牌字体，其他按钮使用 9.5F。
+- 项目内控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、`EllipsisLabel`；主窗口标题行的图标字形由 `IconGlyphs` 提供。
+- 按钮为原生扁平 `Button`；`Cancel`/`Save` 使用 10F 品牌字体，其他按钮使用 9.5F。主窗口的“添加抽屉”“设置”是不带文字、只显示字形的图标按钮。
 - 设置窗体/抽屉设置对话框使用原生 `Form`、`GroupBox`、`TrackBar`、`CheckBox`、`Label`。
 - 抽屉内容区保留原生 ListView 垂直滚动条用于滚轮/`GetScrollInfo`，但通过加宽 ListView 裁剪到宿主外侧；`ThemedScrollBar` 覆盖可见区域，轨道约 3px。
 

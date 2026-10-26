@@ -8,10 +8,10 @@
 
 ## 1. 当前规模
 
-- 56 个 C# 文件，约 8,562 行；其中 Designer 约 770 行，手写代码约 7,792 行。
+- 56 个 C# 文件，约 8,564 行；其中 Designer 约 770 行，手写代码约 7,794 行。
 - 最大文件：
   - `MainWindow.cs` 430 行
-  - `DrawerSettingsDialog.cs` 429 行
+  - `DrawerSettingsDialog.cs` 431 行
   - `SettingsForm.Designer.cs` 396 行
   - `DrawerWindow.FileList.cs` 394 行
   - `SettingsForm.cs` 355 行
@@ -137,7 +137,7 @@
 - 建议：按区域拆成 `BuildHeader/BuildDetails/BuildOverlay/BuildFooter`，把 `CreateLabel/FindLabels` 等通用控件工厂移到小的 UI helper。**不改成 Designer**，避免生成代码增加。
 - 预计减少：约 30–50 行；风险：中（布局/DPI 需手工验证）。
 - 讨论点：目标是“可读”还是“行数”；拆方法可能不减少总行数，只降低单方法长度。
-- 实施结果：`ConfigureLayout` 已拆为 `BuildMainLayout` / `BuildHeader` / `BuildDetails` / `BuildOverlay` / `BuildOverlayColorSelector` / `BuildFooter`；主文件 429 行，diff 净增 58 行，`ConfigureLayout` 约 15 行。颜色区修复了真实溢出：旧 overlay 内容区实际约 95px，却固定了 88+26=114px，并且 FlowLayoutPanel 默认 Margin 再裁掉预览约 2px；新布局用 Percent 行 + TableLayoutPanel，预览填满、Remove overlay 按钮固定 40px 垂直居中。`No overlay` 改为 `Remove overlay`，无颜色时禁用，并补充无障碍文本。另补 `AutoScaleDimensions` + `OnLoad` 按 `DeviceDpi / 96` 缩放，修复 200% DPI 下提示行和整窗裁切。192 DPI 离屏探针确认预览、按钮、提示文字均在父容器内。
+- 实施结果：`ConfigureLayout` 已拆为 `BuildMainLayout` / `BuildHeader` / `BuildDetails` / `BuildOverlay` / `BuildOverlayColorSelector` / `BuildFooter`；主文件约 431 行，相对 A 组基线净增约 60 行，`ConfigureLayout` 约 15 行。颜色区修复了真实溢出：旧 overlay 内容区实际约 95px，却固定了 88+26=114px，并且 FlowLayoutPanel 默认 Margin 再裁掉预览约 2px；新布局用 Percent 行 + TableLayoutPanel，预览填满、Remove overlay 按钮基础 36px 高度并垂直居中。`No overlay` 改为 `Remove overlay`，无颜色时禁用，并补充无障碍文本。另补 `AutoScaleDimensions` + `OnLoad` 阻尼缩放（`1 + (dpi/96 - 1) * 0.55`）：200% 下窗口约 930×775（原 1200×1000），主按钮约 130×54（原 184×76）；基础按钮 84×34、Browse 行 44px、footer 58px。96/192 DPI 离屏探针均确认预览、按钮、提示文字在父容器内。
 
 ### B2 `DrawerWindow.FileList` 的图像缓存/视口加载
 
@@ -211,14 +211,14 @@
 | 组 | 内容 | 实际/预计行数变化 | 风险 | 建议 |
 |---|---|---:|---|---|
 | A1–A9 | 字体/按钮/颜色/拖动/DPI/包装/重复分支/一致性 | 已有文件净减少 162 行；新增共享类 131 行，整体约减少 31 行 | 低 | 已完成 |
-| B1 | 拆分抽屉设置布局 | diff 净 +58；含颜色区/DPI 修复 | 中 | 已完成，需 UI 回归 |
+| B1 | 拆分抽屉设置布局 | diff 净 +60；含颜色区/阻尼 DPI/按钮尺寸 | 中 | 已完成，需 UI 回归 |
 | B2 | 提取图像缓存 | FileList −160；新增缓存 216；净 +56 | 中高 | 已完成，需 UI 回归 |
 | B3 | 拆分抽屉列表绘制/重排 | diff 净 −8（含字段移动） | 中 | 已完成，需拖动回归 |
 | B4 | 简化配置 writer | — | 高 | 本轮不做 |
 | B5 | 移除 HSL 派生 | diff 净 −51 | 高（视觉变化） | 已完成，需视觉确认 |
 | C1 | 移除 SunnyUI | 已实施；代码量可能增加 | 高 | 已完成，见迁移记录 |
 
-结论：A 组整体约减少 31 行；B1/B2/B3/B5 合计约增加 55 行（git diff：B1 +58、B2 +56、B3 −8、B5 −51）。B 组收益是职责分离和可读性，而不是缩小代码库。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
+结论：A 组整体约减少 31 行；B1/B2/B3/B5 合计约增加 57 行（git diff：B1 +60、B2 +56、B3 −8、B5 −51）。B 组收益是职责分离和可读性，而不是缩小代码库。如果目标是显著缩小代码库，应单独讨论“删功能/降配置复杂度”，例如是否保留拖放、主题派生、抽屉专属颜色、全局热键、托盘常驻等。
 
 ## 6. 建议的逐项讨论顺序
 
@@ -235,5 +235,5 @@
 3. B4/B6 本轮明确不做；是否仍要讨论“删功能”以显著减少代码量？如果愿意，哪些功能可以放弃（拖放、主题派生、抽屉颜色、热键、托盘常驻等）？
 4. C1 已完成；C2/C3/C4 维持不做。
 
-验证：Debug 与 Release 完整构建（使用 `-o %TEMP%`，因运行中的 winDrawer 锁定 `bin\Debug`）均为 0 警告 0 错误；B1 使用 192 DPI 离屏探针确认颜色预览、Remove overlay、提示文字均在父容器内；未执行 UI 自动化测试，B2/B3/B5 与 B1 其他 DPI 的人工回归尚未完成。
+验证：Debug 与 Release 完整构建（使用 `-o %TEMP%`，因运行中的 winDrawer 锁定 `bin\Debug`）均为 0 警告 0 错误；B1 使用 96/192 DPI 离屏探针确认颜色预览、Remove overlay、提示文字均在父容器内；未执行 UI 自动化测试，B2/B3/B5 与 B1 其他 DPI 的人工回归尚未完成。
 

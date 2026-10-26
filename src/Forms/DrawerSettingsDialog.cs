@@ -52,12 +52,14 @@ internal sealed class DrawerSettingsDialog : Form
     {
         base.OnLoad(e);
 
-        // The dialog is laid out in 96-DPI pixels. Scale it once when the handle reports the real DPI;
+        // The dialog is laid out in 96-DPI pixels. Scale it once when the handle reports the real DPI.
+        // The scale is damped so 200% displays do not get a dialog that covers most of the screen;
         // the guard keeps a future platform/designer auto-scale pass from scaling it twice.
-        var factor = (float)DpiScale.Factor(DeviceDpi);
-        if (factor > 1f && ClientSize == InitialClientSize)
+        var dpiFactor = (float)DpiScale.Factor(DeviceDpi);
+        var scaleFactor = 1f + ((dpiFactor - 1f) * 0.55f);
+        if (scaleFactor > 1f && ClientSize == InitialClientSize)
         {
-            Scale(new SizeF(factor, factor));
+            Scale(new SizeF(scaleFactor, scaleFactor));
         }
     }
 
@@ -146,7 +148,7 @@ internal sealed class DrawerSettingsDialog : Form
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 52F));
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 168F));
-        _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
+        _layoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 58F));
         _layoutPanel.Controls.Add(_headerPanel, 0, 0);
         _layoutPanel.Controls.Add(_detailsGroup, 0, 1);
         _layoutPanel.Controls.Add(_overlayGroup, 0, 2);
@@ -189,7 +191,7 @@ internal sealed class DrawerSettingsDialog : Form
         _fieldsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-        _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
+        _fieldsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
 
         _nameTextBox.Dock = DockStyle.Fill;
         _nameTextBox.Margin = new Padding(0, 5, 0, 5);
@@ -215,11 +217,11 @@ internal sealed class DrawerSettingsDialog : Form
         _footerPanel.WrapContents = false;
         _footerPanel.Padding = new Padding(10, 10, 18, 8);
 
-        ConfigureButton(_cancelButton, "Cancel", new Size(92, 38));
+        ConfigureButton(_cancelButton, "Cancel", new Size(84, 34));
         _cancelButton.DialogResult = DialogResult.Cancel;
-        ConfigureButton(_saveButton, "Save", new Size(92, 38));
+        ConfigureButton(_saveButton, "Save", new Size(84, 34));
         _saveButton.Click += SaveButton_Click;
-        ConfigureButton(_deleteButton, "Delete", new Size(92, 38));
+        ConfigureButton(_deleteButton, "Delete", new Size(84, 34));
         _deleteButton.Click += DeleteButton_Click;
 
         _footerPanel.Controls.AddRange([_saveButton, _cancelButton, _deleteButton]);
@@ -292,7 +294,7 @@ internal sealed class DrawerSettingsDialog : Form
         _overlayColorLayout.RowCount = 1;
         _overlayColorLayout.Margin = Padding.Empty;
         _overlayColorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _overlayColorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132F));
+        _overlayColorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140F));
         _overlayColorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         _colorPreview.Dock = DockStyle.Fill;
@@ -310,7 +312,7 @@ internal sealed class DrawerSettingsDialog : Form
 
         _removeOverlayButton.Text = "Remove overlay";
         _removeOverlayButton.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        _removeOverlayButton.Size = new Size(132, 40);
+        _removeOverlayButton.Size = new Size(140, 36);
         _removeOverlayButton.MinimumSize = new Size(1, 1);
         _removeOverlayButton.AccessibleName = "Remove overlay color";
         _removeOverlayButton.AccessibleDescription = "Removes this drawer's overlay color. The window theme is used unchanged.";

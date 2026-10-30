@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using winDrawer.Configuration;
 using winDrawer.Theming;
 
@@ -82,10 +83,51 @@ public partial class SettingsForm : Form
         base.OnFormClosing(e);
     }
 
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        AlignTrackBarsWithTheirRows();
+    }
+
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
         ApplyBrandFonts();
+    }
+
+    /// <summary>
+    /// The native track bar paints its thumb and channel flush with the top of the control, so in a
+    /// tall row the slider sits visibly higher than the label and the value beside it. Shift the
+    /// control down until the thumb centre matches the row centre.
+    /// </summary>
+    private void AlignTrackBarsWithTheirRows()
+    {
+        AlignTrackBarWithRow(opacityTrackBar);
+        AlignTrackBarWithRow(windowHeightTrackBar);
+    }
+
+    private static void AlignTrackBarWithRow(TrackBar trackBar)
+    {
+        if (trackBar.Parent is not TableLayoutPanel table)
+        {
+            return;
+        }
+
+        var row = table.GetRow(trackBar);
+        var rowHeights = table.GetRowHeights();
+        var thumb = GetTrackBarThumbRect(trackBar);
+        if (row < 0 || row >= rowHeights.Length || thumb.Bottom <= thumb.Top)
+        {
+            return;
+        }
+
+        // Read the thumb rectangle instead of assuming a height so the offset also follows DPI.
+        var top = Math.Max(0, (rowHeights[row] - (thumb.Top + thumb.Bottom)) / 2);
+        if (trackBar.Margin.Top != top)
+        {
+            var margin = trackBar.Margin;
+            trackBar.Margin = new Padding(margin.Left, top, margin.Right, margin.Bottom);
+        }
     }
 
     public void ApplyResetBaseline(SettingsSnapshot snapshot)
@@ -416,4 +458,26 @@ public partial class SettingsForm : Form
     {
         return behaviorCheckBoxGroup.SelectedIndexes != null && behaviorCheckBoxGroup.SelectedIndexes.Contains(index);
     }
+
+    private static NativeRect GetTrackBarThumbRect(TrackBar trackBar)
+    {
+        var rect = default(NativeRect);
+        SendMessage(trackBar.Handle, TrackBarThumbRectMessage, IntPtr.Zero, ref rect);
+        return rect;
+    }
+
+    /// <summary><c>TBM_GETTHUMBRECT</c>: writes the thumb rectangle, in client coordinates, into lParam.</summary>
+    private const int TrackBarThumbRectMessage = 0x0419;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageW", SetLastError = true)]
+    private static extern IntPtr SendMessage(IntPtr windowHandle, int message, IntPtr wParam, ref NativeRect lParam);
 }

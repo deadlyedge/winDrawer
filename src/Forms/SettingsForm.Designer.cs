@@ -131,17 +131,18 @@ partial class SettingsForm
         windowHeightTableLayoutPanel.BackColor = Color.FromArgb(64, 64, 64);
         windowHeightTableLayoutPanel.ColumnCount = 3;
         windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
-        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        windowHeightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
         windowHeightTableLayoutPanel.Controls.Add(windowHeightLabel, 0, 0);
         windowHeightTableLayoutPanel.Controls.Add(windowHeightTrackBar, 1, 0);
         windowHeightTableLayoutPanel.Controls.Add(windowHeightValueLabel, 2, 0);
         windowHeightTableLayoutPanel.Dock = DockStyle.Fill;
-        windowHeightTableLayoutPanel.Location = new Point(3, 3);
+        windowHeightTableLayoutPanel.Location = new Point(37, 3);
+        windowHeightTableLayoutPanel.Margin = new Padding(34, 3, 34, 3);
         windowHeightTableLayoutPanel.Name = "windowHeightTableLayoutPanel";
         windowHeightTableLayoutPanel.RowCount = 1;
         windowHeightTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        windowHeightTableLayoutPanel.Size = new Size(777, 60);
+        windowHeightTableLayoutPanel.Size = new Size(709, 60);
         windowHeightTableLayoutPanel.TabIndex = 3;
         windowHeightLabel.Dock = DockStyle.Fill;
         windowHeightLabel.ForeColor = Color.FromArgb(224, 224, 224);
@@ -149,7 +150,7 @@ partial class SettingsForm
         windowHeightLabel.AutoSize = false;
         windowHeightLabel.BackColor = Color.Transparent;
         windowHeightLabel.TabIndex = 0;
-        windowHeightLabel.Text = "Window height (100–1000 DIP)";
+        windowHeightLabel.Text = "List Height";
         windowHeightLabel.TextAlign = ContentAlignment.MiddleLeft;
         //
         windowHeightTrackBar.Dock = DockStyle.Fill;
@@ -158,18 +159,18 @@ partial class SettingsForm
         windowHeightTrackBar.AutoSize = false;
         windowHeightTrackBar.BackColor = Color.FromArgb(64, 64, 64);
         windowHeightTrackBar.TickStyle = TickStyle.None;
-        windowHeightTrackBar.Size = new Size(510, 60);
+        windowHeightTrackBar.Size = new Size(369, 60);
         windowHeightTrackBar.TabIndex = 1;
         //
         // windowHeightValueLabel
         //
         windowHeightValueLabel.Dock = DockStyle.Fill;
         windowHeightValueLabel.ForeColor = Color.FromArgb(224, 224, 224);
-        windowHeightValueLabel.Location = new Point(701, 0);
+        windowHeightValueLabel.Location = new Point(567, 0);
         windowHeightValueLabel.Name = "windowHeightValueLabel";
         windowHeightValueLabel.AutoSize = false;
         windowHeightValueLabel.BackColor = Color.Transparent;
-        windowHeightValueLabel.Size = new Size(73, 60);
+        windowHeightValueLabel.Size = new Size(142, 60);
         windowHeightValueLabel.TabIndex = 2;
         windowHeightValueLabel.Text = "400";
         windowHeightValueLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -234,9 +235,9 @@ partial class SettingsForm
         // visualTableLayoutPanel
         //
         visualTableLayoutPanel.ColumnCount = 3;
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
-        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52F));
+        visualTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
         visualTableLayoutPanel.Controls.Add(previewPanel, 0, 0);
         visualTableLayoutPanel.SetColumnSpan(previewPanel, 3);
         visualTableLayoutPanel.Controls.Add(opacityLabel, 0, 1);
@@ -271,7 +272,7 @@ partial class SettingsForm
         opacityTrackBar.AutoSize = false;
         opacityTrackBar.BackColor = Color.FromArgb(64, 64, 64);
         opacityTrackBar.TickStyle = TickStyle.None;
-        opacityTrackBar.Size = new Size(510, 60);
+        opacityTrackBar.Size = new Size(360, 60);
         opacityTrackBar.TabIndex = 6;
         //
         // opacityLabel
@@ -282,7 +283,7 @@ partial class SettingsForm
         opacityLabel.AutoSize = false;
         opacityLabel.BackColor = Color.Transparent;
         opacityLabel.TabIndex = 3;
-        opacityLabel.Text = "Window opacity";
+        opacityLabel.Text = "Opacity";
         opacityLabel.TextAlign = ContentAlignment.MiddleLeft;
         //
         // previewPanel

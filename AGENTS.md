@@ -24,7 +24,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 - 抽屉内容区的原生 `ListView` 垂直滚动条用于滚轮/`GetScrollInfo`，但必须通过加宽 ListView 裁剪到宿主外侧，并由 `ThemedScrollBar` 覆盖可见区域；不要恢复可见的系统滚动条，也不要改回移除 `WS_VSCROLL` 后手动处理滚轮的旧方案。
 - 文件和文件夹的 Shell 操作必须委托给 Windows：使用合适的 Shell 执行方式（例如 `ProcessStartInfo.UseShellExecute = true`），不要自行解析关联程序或拼接命令行。
 - 当前代码已有 `Theming/ShellIcon.cs`、`Drawers/` 的直接子项枚举与排序、`Forms/DrawerWindow.cs` 与 `Forms/DrawerWindow.FileList.cs` 的列表/图像管线、`Forms/MainWindow.cs` 的抽屉列表与托盘协调，以及 `Configuration/SettingsRepository.*` 的 TOML 处理。优先精简、复用并添加测试；避免未经用户确认就换 UI 框架、配置格式或重写整个应用。
-- 主题设置页仅显示当前颜色预览与独立透明度滑块（百分比 0–100）；点击颜色预览打开系统颜色对话框。颜色统一以 `#RRGGBB` 保存到 `startup.window_color`，透明度单独保存到 `startup.window_opacity`；不再持久化 HSLA。抽屉专属颜色沿用 `#RRGGBB`，蒙版强度仍固定为 70%。颜色选择、透明度和实时预览须遵循保存/取消语义。
+- 主题设置页仅显示当前颜色预览与独立透明度滑块（百分比 40–100，最小值 40 由 `AppConstants.Theme.OpacityMin` 决定）；点击颜色预览打开系统颜色对话框。颜色统一以 `#RRGGBB` 保存到 `startup.window_color`，透明度单独保存到 `startup.window_opacity`；不再持久化 HSLA。抽屉专属颜色沿用 `#RRGGBB`，蒙版强度仍固定为 70%。颜色选择、透明度和实时预览须遵循保存/取消语义。
 - 程序尚未发布，不实现 `window_color_hsla` 运行时迁移。切换配置标准时，直接将开发者当前用户目录中的设置手动改为新字段，保留其颜色、透明度和其它设置；不得读取、转换或迁移旧 HSLA 字段。
 - 保留常见图片的 Explorer 风格列表图标预览，至少支持 JPG/JPEG 和 PNG。图片缩略图显示在 `ListView` 图标视图中，不另开预览窗格；非图片项目使用 Windows Shell 图标。缩略图失败时回退为 Shell 图标，不得影响双击打开。
 - 使用 Windows Shell 图标及合适的系统图标尺寸；需要处理 DPI，但不要把图标大小暴露为设置项。

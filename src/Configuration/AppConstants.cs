@@ -90,7 +90,12 @@ internal static class AppConstants
 
     internal static class Theme
     {
-        public const int OpacityMin = 0;
+        /// <summary>
+        /// Lowest allowed window opacity in percent. Below this the window text stops being readable
+        /// on most wallpapers, so both the slider range and the parsed setting stop here.
+        /// </summary>
+        public const int OpacityMin = 40;
+
         public const int OpacityMax = 100;
     }
 

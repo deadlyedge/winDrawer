@@ -6,47 +6,83 @@ namespace winDrawer
     {
         private void PopulateDrawerList(IEnumerable<DrawerDefinition> drawers)
         {
-            drawerListBox.Items.Clear();
-            _currentDrawers.Clear();
-
-            if (drawers != null)
+            drawerListBox.BeginUpdate();
+            try
             {
-                foreach (var drawer in drawers)
+                drawerListBox.Items.Clear();
+                _currentDrawers.Clear();
+
+                if (drawers != null)
                 {
-                    if (drawer == null)
+                    foreach (var drawer in drawers)
                     {
-                        continue;
+                        if (drawer == null)
+                        {
+                            continue;
+                        }
+
+                        _currentDrawers.Add(drawer);
+                        drawerListBox.Items.Add(CreateDrawerListItem(drawer));
                     }
+                }
 
-                    var displayName = string.IsNullOrWhiteSpace(drawer.Name)
-                        ? "(unnamed drawer)"
-                        : drawer.Name;
+                if (_currentDrawers.Count == 0)
+                {
+                    drawerListBox.Items.Add("No drawers configured");
+                    drawerListBox.Enabled = false;
+                }
+                else
+                {
+                    drawerListBox.Enabled = true;
+                }
 
-                    _currentDrawers.Add(drawer);
-                    var itemLabel = Directory.Exists(drawer.Path)
-                        ? displayName
-                        : $"{displayName} (missing)";
-                    drawerListBox.Items.Add(drawer.OverlayColor is { } overlayColor
-                        ? new DrawerListItem(itemLabel, overlayColor)
-                        : itemLabel);
+                _suppressSelectionChange = true;
+                drawerListBox.SelectedIndex = -1;
+                _suppressSelectionChange = false;
+            }
+            finally
+            {
+                drawerListBox.EndUpdate();
+            }
+
+            ClearDragInsertionMarker();
+            DrawerLogger.LogInformation($"Drawer list populated with {_currentDrawers.Count} entries.");
+        }
+
+        /// <summary>
+        /// Whether the new snapshot would produce exactly the same list rows. Size and sort mode are
+        /// intentionally ignored: neither is shown here, and rebuilding for them caused a visible
+        /// flash every time a drawer closed (the window persists its size on close).
+        /// </summary>
+        private static bool HasSameDrawerPresentation(
+            IReadOnlyList<DrawerDefinition> current,
+            IReadOnlyList<DrawerDefinition> next)
+        {
+            if (current.Count != next.Count)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < current.Count; index++)
+            {
+                var left = current[index];
+                var right = next[index];
+                if (!PathComparison.AreSame(left.Path, right.Path) ||
+                    !string.Equals(left.Name, right.Name, StringComparison.Ordinal) ||
+                    left.OverlayColor != right.OverlayColor ||
+                    Directory.Exists(left.Path) != Directory.Exists(right.Path))
+                {
+                    return false;
                 }
             }
 
-            if (_currentDrawers.Count == 0)
-            {
-                drawerListBox.Items.Add("No drawers configured");
-                drawerListBox.Enabled = false;
-            }
-            else
-            {
-                drawerListBox.Enabled = true;
-            }
+            return true;
+        }
 
-            _suppressSelectionChange = true;
-            drawerListBox.SelectedIndex = -1;
-            _suppressSelectionChange = false;
-            ClearDragInsertionMarker();
-            DrawerLogger.LogInformation($"Drawer list populated with {_currentDrawers.Count} entries.");
+        private void ReplaceCurrentDrawers(IReadOnlyList<DrawerDefinition> drawers)
+        {
+            _currentDrawers.Clear();
+            _currentDrawers.AddRange(drawers);
         }
 
         private void OpenOrToggleDrawer(int selectedIndex)
@@ -70,31 +106,49 @@ namespace winDrawer
                 _currentDrawerWindow?.Close();
                 _currentDrawerWindow = null;
                 _currentOpenDrawer = null;
-                _suppressSelectionChange = true;
-                drawerListBox.SelectedIndex = -1; // 立即清空选中状态
-                _suppressSelectionChange = false;
+                ClearDrawerListSelection();
+                return;
             }
-            else
+
+            DrawerLogger.LogInformation($"Opening drawer '{selectedDrawer.Name}'.");
+            // Keep the clicked row selected for the whole open/switch operation. Clearing it here (or
+            // letting the old window's FormClosed handler clear it) made the row fall back to its
+            // normal overlay colour for a few frames before the new drawer appeared.
+            _switchingDrawer = true;
+            try
             {
-                DrawerLogger.LogInformation($"Opening drawer '{selectedDrawer.Name}'.");
-                // 点击不同drawer或没有打开的，关闭当前的（如果有），打开新的
-                _suppressSelectionChange = true;
-                drawerListBox.SelectedIndex = -1; // 立即清空旧的选中状态
-                _suppressSelectionChange = false;
                 if (_currentDrawerWindow != null)
                 {
                     _currentDrawerWindow.Close();
                 }
-                OpenDrawer(selectedDrawer);
-                _currentOpenDrawer = selectedDrawer;
+
+                var opened = OpenDrawer(selectedDrawer);
+                _currentOpenDrawer = opened ? selectedDrawer : null;
+
                 _suppressSelectionChange = true;
-                drawerListBox.SelectedIndex = selectedIndex; // 设置新的选中状态
-                _suppressSelectionChange = false;
+                try
+                {
+                    drawerListBox.SelectedIndex = opened ? selectedIndex : -1;
+                }
+                finally
+                {
+                    _suppressSelectionChange = false;
+                }
+            }
+            finally
+            {
+                _switchingDrawer = false;
             }
         }
 
         private void UpdateSelectedDrawer()
         {
+            // A drawer switch keeps the clicked row selected until the new window is ready.
+            if (_switchingDrawer)
+            {
+                return;
+            }
+
             _suppressSelectionChange = true;
             try
             {

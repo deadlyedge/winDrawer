@@ -21,6 +21,8 @@ namespace winDrawer
         private DrawerWindow? _currentDrawerWindow;
         private DrawerDefinition? _currentOpenDrawer;
         private bool _suppressSelectionChange;
+        private bool _drawerListPopulated;
+        private bool _switchingDrawer;
         private bool? _windowLockedPreview;
         private bool? _alwaysOnTopPreview;
         private TrayController? _trayController;
@@ -513,7 +515,20 @@ namespace winDrawer
             ApplyMainWindowBounds(snapshot);
             ApplyAlwaysOnTop(snapshot.AlwaysOnTop);
             ApplyTheme(snapshot.BuildThemePalette());
-            PopulateDrawerList(snapshot.Drawers);
+
+            // Reloads triggered by closing a drawer or persisting its size must not clear and repaint
+            // the list. Only visible changes (name, path, overlay colour, order or missing state)
+            // rebuild the rows; otherwise the existing rows are kept and only the definitions updated.
+            if (!_drawerListPopulated || !HasSameDrawerPresentation(_currentDrawers, snapshot.Drawers))
+            {
+                PopulateDrawerList(snapshot.Drawers);
+                _drawerListPopulated = true;
+            }
+            else
+            {
+                ReplaceCurrentDrawers(snapshot.Drawers);
+            }
+
             // Keep the list selection in sync with the drawer that is still open.
             UpdateSelectedDrawer();
 
@@ -547,6 +562,7 @@ namespace winDrawer
 
         private void ApplyTheme(ThemePalette theme)
         {
+            var previousTheme = _currentTheme;
             _currentTheme = theme;
             DrawerLogger.LogDebug($"Applying theme palette. Accent={theme.Accent}, WindowOpacity={theme.WindowOpacity:0.00}.");
 
@@ -564,6 +580,7 @@ namespace winDrawer
 
             drawerListBox.FillColor = theme.ContentBackground;
             drawerListBox.ForeColor = theme.ContentTextPrimary;
+            drawerListHostPanel.BackColor = theme.ContentBackground;
             drawerListBox.HoverColor = theme.CardBackground;
             drawerListBox.ItemSelectBackColor = theme.Accent;
             drawerListBox.ItemSelectForeColor = theme.AccentText;
@@ -571,6 +588,14 @@ namespace winDrawer
             if (_currentDrawerWindow != null && !_currentDrawerWindow.IsDisposed)
             {
                 _currentDrawerWindow.ApplyTheme(theme);
+            }
+
+            // The row colours are cached on the items; refresh them only when the relevant palette
+            // entries actually changed, so unrelated snapshots (for example a persisted window size)
+            // do not repaint the list.
+            if (!previousTheme.HasSameDrawerListColors(theme))
+            {
+                RefreshDrawerItemColors();
             }
         }
 

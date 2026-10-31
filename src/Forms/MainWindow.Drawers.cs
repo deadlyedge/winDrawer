@@ -93,6 +93,12 @@ namespace winDrawer
         /// </summary>
         private void ClearDrawerListSelection()
         {
+            // A drawer switch keeps the clicked row selected until the new window is ready.
+            if (_switchingDrawer)
+            {
+                return;
+            }
+
             if (drawerListBox.InvokeRequired)
             {
                 drawerListBox.BeginInvoke(new Action(ClearDrawerListSelection));
@@ -139,19 +145,19 @@ namespace winDrawer
             }
         }
 
-        private void OpenDrawer(DrawerDefinition drawer)
+        private bool OpenDrawer(DrawerDefinition drawer)
         {
             if (string.IsNullOrWhiteSpace(drawer.Path))
             {
                 DrawerLogger.LogWarning($"Requested to open drawer '{drawer.Name}' without a path.");
-                return;
+                return false;
             }
 
             if (!Directory.Exists(drawer.Path))
             {
                 DrawerLogger.LogWarning($"Drawer path not found for '{drawer.Name}': {drawer.Path}");
                 UiMessages.ShowWarning(this, "Drawer Missing", $"Folder not found:{Environment.NewLine}{drawer.Path}");
-                return;
+                return false;
             }
 
             try
@@ -167,10 +173,14 @@ namespace winDrawer
                 drawerWindow.SortModeChanged += (_, _) => ReloadSettingsFromStorage();
                 drawerWindow.FormClosed += (_, _) =>
                 {
-                    ReloadSettingsFromStorage();
+                    // Clear the active state first, so the reload cannot briefly reselect the closed
+                    // drawer. The reload is still needed to pick up the size the window persisted.
+                    // During a drawer switch the selection reset is suppressed, so the clicked row
+                    // stays selected until the new window is ready.
                     _currentDrawerWindow = null;
                     _currentOpenDrawer = null;
                     ClearDrawerListSelection();
+                    ReloadSettingsFromStorage();
                 };
                 // Prepare before showing so the drawer never flashes at its final position first.
                 drawerWindow.PrepareAppearanceTransition(DpiScale.Pixels(
@@ -179,11 +189,13 @@ namespace winDrawer
                 drawerWindow.Show(this);
                 drawerWindow.StartAppearanceTransition();
                 DrawerLogger.LogInformation($"Drawer window displayed for '{drawer.Name}'.");
+                return true;
             }
             catch (Exception ex)
             {
                 DrawerLogger.LogError($"Failed to open drawer '{drawer.Name}'.", ex);
                 UiMessages.ShowError(this, "Drawer Error", $"Failed to open drawer '{drawer.Name}': {ex.Message}");
+                return false;
             }
         }
 

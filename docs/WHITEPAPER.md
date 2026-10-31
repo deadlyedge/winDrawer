@@ -39,7 +39,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 | `Forms/DrawerSettingsDialog.cs` | 单个抽屉的名称、路径、专属颜色、删除 |
 | `Drawers/` | 直接子项枚举/排序/上限、条目元数据、Shell 图标与缩略图、拖放规划 |
 | `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
-| `Controls/` | `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、`IconGlyphs` 图标字形、按钮/菜单主题、颜色对话框 helper、消息框 |
+| `Controls/` | `DrawerListBox`、`CompositedPanel`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、`IconGlyphs` 图标字形、按钮/菜单主题、颜色对话框 helper、消息框 |
 | `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation`、窗口过渡动画 |
 | `Theming/` | `#RRGGBB` 解析、主题派生色、深浅文字判断（`TextContrast`）、品牌字体、Shell 图标 |
 
@@ -79,7 +79,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 按钮使用原生 `Button` 的 `FlatStyle.Flat`：`Cancel`/`Save` 使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。不再使用 SunnyUI 的圆角、`TipsFont` 或独立状态前景色。
 - 设置窗体和抽屉设置对话框使用原生 `Form`/`GroupBox`/`TrackBar`/`CheckBox`/`Label`；颜色预览由 `ColorPreviewPanel` 自绘，行为选项由 `BehaviorCheckBoxGroup` 提供两列布局。
 - 抽屉内容区保留原生 `ListView` 垂直滚动条用于 `GetScrollInfo`、滚轮和原生滚动平滑度，但把 `ListView` 加宽到宿主客户区之外，让原生条被父面板裁掉；`ThemedScrollBar` 只在可见侧绘制约 3px 轨道，并覆盖原生条的约 18px 区域。该裁剪关系是刻意的，不要恢复可见的系统滚动条。
-- 过渡动画统一由 `Infrastructure/WindowAnimation.cs` 提供：`AnimationClock` 用 `Stopwatch` 计时并驱动单个 `System.Windows.Forms.Timer`，帧间隔由 `startup.animation_frame_ms` 决定（默认 15ms，0 表示关闭全部过渡动画），运行期间临时申请 1ms 系统计时精度；`WindowFade` 以"主题透明度为基准值"做淡入，`WindowSlide` 只做视觉位移且终点始终由调用方（`MainWindow` 的抽屉定位）给出。当前效果：抽屉打开时从主窗口右边缘滑出并淡入（160ms）、从隐藏恢复和启动时淡入（120ms）、滚动条悬停或拖动时轨道加宽（3→6 逻辑像素，120ms）、主窗口抽屉列表行悬停高亮渐变（160ms）。抽屉内容条目的悬停高亮不使用动画，由原生条目绘制即时切换。Windows 关闭"动画效果"（`SPI_GETCLIENTAREAANIMATION`）时，所有过渡直接落到终态。
+- 过渡动画统一由 `Infrastructure/WindowAnimation.cs` 提供：`AnimationClock` 用 `Stopwatch` 计时并驱动单个 `System.Windows.Forms.Timer`，帧间隔由 `startup.animation_frame_ms` 决定（默认 15ms，0 表示关闭全部过渡动画），运行期间临时申请 1ms 系统计时精度；`WindowFade` 以"主题透明度为基准值"做淡入，`WindowSlide` 只做视觉位移且终点始终由调用方（`MainWindow` 的抽屉定位）给出。当前效果：抽屉打开时从主窗口右边缘滑出并淡入（160ms）、从隐藏恢复和启动时淡入（120ms）、滚动条悬停或拖动时轨道加宽（3→6 逻辑像素，120ms）。主窗口抽屉列表与抽屉内容列表的悬停高亮都是即时的：原生 ListBox 无法可靠双缓冲，逐帧重绘会造成整表闪动，因此主列表不再使用渐变动画。Windows 关闭"动画效果"（`SPI_GETCLIENTAREAANIMATION`）时，所有过渡直接落到终态。
 - 主窗口和设置页使用 WinForms 自动缩放；抽屉窗口使用 `AutoScaleMode.None`，在 `DpiChanged` 时显式重算图标尺寸、底栏布局、滚动条和图像列表。修改这些尺寸时必须同时验证 100%/150%/200% DPI。
 
 ## 7. 拖放
@@ -116,7 +116,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - **文件列表**：`DrawerWindow.FileList.cs` 约 390 行，负责列表编排、视口图像请求和 ImageList 绑定；`DrawerItemImageCache` 独立管理占位图、图像所有权、取消和释放。拆分后仍必须保持现有生命周期语义。
 - **配置写入**：后台 writer 的状态机偏重，但承担防抖、退出 flush、失败保留和原子写入；不建议为了行数牺牲可靠性。
 - **主题**：`ThemePalette` 使用直接 RGB 混色和按亮度灰去饱和派生颜色，不再做 HSL 往返；修改派生系数会改变实际配色，需接受视觉变化。
-- **抽屉列表**：主窗口使用 owner-draw 和拖动重排，已拆为 `MainWindow.DrawerList.cs`、`MainWindow.DrawerList.Paint.cs`、`MainWindow.DrawerReorder.cs`；没有 UI 自动化测试。
+- **抽屉列表**：主窗口使用 owner-draw 和拖动重排，已拆为 `MainWindow.DrawerList.cs`、`MainWindow.DrawerList.Paint.cs`、`MainWindow.DrawerReorder.cs`；没有 UI 自动化测试。每行的普通/选中/悬停颜色（含 `overlay_color` 混色）在填充列表或主题变化时预计算，绘制时直接使用缓存值、不再做颜色混色运算；只有名称、路径、专属色、顺序或目录存在状态变化时才重建行，尺寸/排序变化只同步定义，避免抽屉关闭持久化尺寸时整表闪烁。打开/切换抽屉期间保留点击行的选中状态（`_switchingDrawer` 抑制选中重置），只有真正关闭抽屉时才清空选中。列表宿主是启用 `WS_EX_COMPOSITED` 的 `CompositedPanel`：原生 ListBox 的局部失效可能触发整个客户区重绘，合成面板先把子窗口绘制到离屏缓冲区。
 - **滚动条**：`DrawerWindow.FileList.PositionDrawerScrollBar` 通过加宽 ListView 裁剪原生垂直条，`ThemedScrollBar` 负责可见轨道和拖动。这个组合依赖原生滚动信息、图标视图和 DPI，布局或滚动逻辑改动后必须做 100%/150%/200% 手工回归。
 - **测试**：仓库没有测试工程；纯逻辑使用 `%TEMP%` 下的临时 harness 验证，UI 行为依赖人工回归。
 - 更细的代码审查项和历史收益记录见 [`development-history/CODE_REVIEW_STAGE_10.md`](development-history/CODE_REVIEW_STAGE_10.md)。

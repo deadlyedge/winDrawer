@@ -61,6 +61,21 @@ public sealed class ThemePalette
             Math.Clamp(opacity, AppConstants.Theme.OpacityMin, AppConstants.Theme.OpacityMax) / 100d);
     }
 
+    /// <summary>
+    /// True when both palettes produce the same main-window drawer-list colours. The list caches its
+    /// row colours, so this is used to skip an unnecessary repaint when only unrelated settings
+    /// (opacity, window height, ...) changed.
+    /// </summary>
+    internal bool HasSameDrawerListColors(ThemePalette other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return ContentBackground == other.ContentBackground &&
+               ContentTextPrimary == other.ContentTextPrimary &&
+               CardBackground == other.CardBackground &&
+               Accent == other.Accent &&
+               AccentText == other.AccentText;
+    }
+
     public static bool TryParseHexColor(string? value, out Color color)
     {
         color = Color.Empty;

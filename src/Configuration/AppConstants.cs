@@ -143,9 +143,6 @@ internal static class AppConstants
             /// <summary>Duration of the drawer slide and other full transitions.</summary>
             public const int NormalDurationMilliseconds = 160;
 
-            /// <summary>Duration of the drawer-list hover highlight fade.</summary>
-            public const int HoverDurationMilliseconds = 160;
-
             /// <summary>Distance the drawer starts to the left of its final position.</summary>
             public const int DrawerSlideDistanceLogical = 24;
 

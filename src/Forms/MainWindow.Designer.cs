@@ -38,9 +38,11 @@ namespace winDrawer
             addDrawerButton = new Button();
             settingsButton = new Button();
             drawerListBox = new DrawerListBox();
+            drawerListHostPanel = new CompositedPanel();
             headerToolTip = new ToolTip(components);
             mainTableLayoutPanel.SuspendLayout();
             headerTableLayoutPanel.SuspendLayout();
+            drawerListHostPanel.SuspendLayout();
             SuspendLayout();
             // 
             // mainTableLayoutPanel
@@ -49,7 +51,7 @@ namespace winDrawer
             mainTableLayoutPanel.ColumnCount = 1;
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             mainTableLayoutPanel.Controls.Add(headerTableLayoutPanel, 0, 0);
-            mainTableLayoutPanel.Controls.Add(drawerListBox, 0, 1);
+            mainTableLayoutPanel.Controls.Add(drawerListHostPanel, 0, 1);
             mainTableLayoutPanel.Dock = DockStyle.Fill;
             mainTableLayoutPanel.Location = new Point(0, 0);
             mainTableLayoutPanel.Name = "mainTableLayoutPanel";
@@ -132,13 +134,24 @@ namespace winDrawer
             drawerListBox.HoverColor = Color.FromArgb(155, 200, 255);
             drawerListBox.ItemHeight = 50;
             drawerListBox.ItemSelectForeColor = Color.White;
-            drawerListBox.Location = new Point(4, 50);
-            drawerListBox.Margin = new Padding(4, 0, 4, 0);
+            drawerListBox.Location = new Point(0, 0);
+            drawerListBox.Margin = Padding.Empty;
             drawerListBox.MinimumSize = new Size(1, 1);
             drawerListBox.Name = "drawerListBox";
             drawerListBox.Size = new Size(292, 350);
-            drawerListBox.TabIndex = 3;
+            drawerListBox.TabIndex = 0;
             drawerListBox.Text = "drawerListBox";
+            //
+            // drawerListHostPanel
+            //
+            drawerListHostPanel.BackColor = Color.FromArgb(64, 64, 64);
+            drawerListHostPanel.Controls.Add(drawerListBox);
+            drawerListHostPanel.Dock = DockStyle.Fill;
+            drawerListHostPanel.Location = new Point(4, 50);
+            drawerListHostPanel.Margin = new Padding(4, 0, 4, 0);
+            drawerListHostPanel.Name = "drawerListHostPanel";
+            drawerListHostPanel.Size = new Size(292, 350);
+            drawerListHostPanel.TabIndex = 3;
             // 
             // headerToolTip
             // 
@@ -160,6 +173,7 @@ namespace winDrawer
             Text = "winDrawerMainWindow";
             mainTableLayoutPanel.ResumeLayout(false);
             headerTableLayoutPanel.ResumeLayout(false);
+            drawerListHostPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -171,6 +185,7 @@ namespace winDrawer
         private Button addDrawerButton;
         private Button settingsButton;
         private DrawerListBox drawerListBox;
+        private CompositedPanel drawerListHostPanel;
         private ToolTip headerToolTip;
     }
 }

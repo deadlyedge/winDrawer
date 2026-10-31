@@ -96,4 +96,13 @@
 - `DrawerWindow.ApplyTheme` 不再使用主题的 `ContentTextPrimary`/`TextSecondary`，而是对叠加 `overlay_color` 后的 `contentBackground`/`windowBackground` 调用 `TextContrast.For`；底栏次级文字由同一结果再向窗口背景混合 35%。
 - `MainWindow.DrawerList.Paint` 对带专属色的条目按 `BlendOverlayColor` 后的行背景调用 `TextContrast.For`；选中/悬停仍按“先强调色或悬停底色、再叠加 overlay”的顺序合成，激活行继续显示专属色；文字色从非悬停背景推导，避免悬停渐变时跳色。选中且无 overlay 时仍使用 `ItemSelectForeColor`（强调色文字）。
 - `AppConstants.Theme.TextLuminanceThreshold` 默认值从 0.6 调整为 0.229：这是 `#303030` 与 `#F2F2F2` 对比度相等的交叉点，可避免白色/浅色 overlay 被误判为深色背景。仍可通过修改该常量并重建来调整倾向。
-- 已验证（脚本计算）：白色 overlay 在默认主题下混合后 luminance≈0.511，0.6 会选浅色文字（对比度 1.67），0.229 选深色文字（对比度 6.75）。
+## 8. 性能优化：抽屉列表颜色缓存与刷新（2026-03）
+
+- `DrawerListItem` 改为携带预计算颜色的可变对象：普通背景、前景、选中背景/前景、悬停目标色在列表填充或主题变化时计算；绘制时直接使用缓存值，悬停只在进入/离开行时各失效一次，不再逐帧执行 `Math.Pow`、overlay 混色或 `Blend`。
+- 主题变化时原地更新条目颜色并只调用一次 `Invalidate()`；不替换 ListBox 条目，避免选中状态丢失或逐行重绘。
+- `PopulateDrawerList` 使用 `BeginUpdate/EndUpdate`，避免清空/重建过程中的中间帧。
+- `ApplySettingsSnapshot` 增加展示比较：只有名称、路径、专属色、顺序或目录存在状态变化时才重建列表；仅尺寸或排序变化时保留行与选中状态，只同步 `_currentDrawers` 定义（抽屉关闭会持久化尺寸，这是切换抽屉时闪动的主要来源）。
+- 抽屉关闭事件先清理激活状态再重载设置，避免短暂重新选中已关闭的抽屉。
+- 打开/切换抽屉期间使用 `_switchingDrawer` 抑制 `ClearDrawerListSelection`/`UpdateSelectedDrawer`，不再在打开前清空选中：点击行从鼠标按下的选中态一直保持到新抽屉显示完成，避免“选中背景 → 普通背景 → 选中背景”的闪动。`OpenDrawer` 现在返回是否成功，失败时清除选中，避免留下没有窗口的激活行。
+- 去掉主抽屉列表的 160ms 悬停渐变：原生 `ListBox` 关闭了 `UserPaint`，`DoubleBuffered` 对原生绘制无效；逐帧 `InvalidateItem` 会让整个列表反复重绘并闪动。现在悬停直接使用预计算的 `HoverBackground`，只在进入/离开行时各失效一次。其它动画（抽屉滑入/淡入、滚动条加宽）不受影响。
+- 新增 `Controls/CompositedPanel.cs` 作为抽屉列表的宿主（`WS_EX_COMPOSITED`）：原生 ListBox 即使只失效一行，也可能擦除并重绘整个客户区；把列表放进启用子窗口合成的面板后，原生绘制先落在离屏缓冲区，再整体呈现，避免单次失效造成的整表闪动。

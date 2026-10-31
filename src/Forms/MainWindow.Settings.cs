@@ -7,6 +7,16 @@ namespace winDrawer
     {
         private void SettingsButton_Click(object sender, EventArgs e)
         {
+            OpenSettingsPanel();
+        }
+
+        /// <summary>
+        /// Single entry point for the settings panel: the header button, the tray menu and a
+        /// right-click on the title bar all go through here. An existing panel is shown and activated
+        /// instead of creating a second one.
+        /// </summary>
+        private void OpenSettingsPanel()
+        {
             DrawerLogger.LogInformation("Opening settings window.");
 
             if (_settingsForm is { IsDisposed: false } existingSettings)
@@ -173,11 +183,7 @@ namespace winDrawer
         private void Settings_WindowLockPreviewChanged(bool windowLocked)
         {
             _windowLockedPreview = windowLocked;
-            logoLabel.Cursor = windowLocked ? Cursors.Default : Cursors.SizeAll;
-            if (windowLocked)
-            {
-                _isDragging = false;
-            }
+            ApplyWindowLocked(windowLocked);
         }
 
         private void Settings_AlwaysOnTopPreviewChanged(bool alwaysOnTop)

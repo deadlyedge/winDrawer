@@ -11,3 +11,13 @@ window_opacity = 95
 window_height = 200
 max_drawer_items = 200
 animation_frame_ms = 15
+
+# 首次启动时使用的示例抽屉；已存在的配置文件不会被模板覆盖。
+# winDrawer 抽屉指向本配置目录，demoDrawer 存放示例文件（首次运行时写入）。
+[[drawers]]
+name = "winDrawer"
+path = "%USERPROFILE%\\.config\\winDrawer"
+
+[[drawers]]
+name = "demoDrawer"
+path = "%USERPROFILE%\\.config\\winDrawer\\demoDrawer"

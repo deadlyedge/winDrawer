@@ -28,6 +28,9 @@
     <EmbeddedResource Include="..\assets\fonts\Lobster-Regular.ttf">
       <LogicalName>winDrawer.Branding.Lobster-Regular.ttf</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\assets\demoDrawer\**\*">
+      <LogicalName>winDrawer.Demo.%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <Content Include="..\assets\drawer.icon.4.ico">
       <Link>assets\drawer.icon.4.ico</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

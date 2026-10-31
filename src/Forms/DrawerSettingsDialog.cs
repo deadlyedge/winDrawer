@@ -492,8 +492,8 @@ internal sealed class DrawerSettingsDialog : Form
 
         var blendedColor = ThemePalette.BlendOverlayColor(Color.FromArgb(64, 64, 64), color);
         _colorPreview.FillColor = blendedColor;
-        _colorPreview.RectColor = ThemePalette.GetReadableTextColor(blendedColor);
-        _colorPreview.ForeColor = ThemePalette.GetReadableTextColor(blendedColor);
+        _colorPreview.RectColor = TextContrast.For(blendedColor);
+        _colorPreview.ForeColor = TextContrast.For(blendedColor);
         _colorPreview.AccessibleDescription = $"Overlay color {ThemePalette.FormatHexColor(color)}. Click to change color.";
         _colorPreview.Text = $"Click to change color{Environment.NewLine}{ThemePalette.FormatHexColor(color)}";
     }

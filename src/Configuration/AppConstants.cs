@@ -24,6 +24,9 @@ internal static class AppConstants
     internal static class Directories
     {
         public const string Assets = "assets";
+
+        /// <summary>Folder created inside the configuration directory for the first-run demo.</summary>
+        public const string DemoDrawer = "demoDrawer";
     }
 
     internal static class Logging
@@ -46,6 +49,9 @@ internal static class AppConstants
     internal static class Branding
     {
         public const string ApplicationDisplayName = "winDrawer";
+
+        /// <summary>Project page opened by the settings window link.</summary>
+        public const string RepositoryUrl = "https://github.com/deadlyedge/winDrawer";
     }
 
     /// <summary>
@@ -97,6 +103,19 @@ internal static class AppConstants
         public const int OpacityMin = 40;
 
         public const int OpacityMax = 100;
+
+        /// <summary>
+        /// Relative luminance (0..1) above which a surface counts as light and gets dark text. Lower
+        /// values switch more backgrounds to light text. Change this constant and rebuild to tune the
+        /// visual result; it is intentionally not a user setting.
+        /// </summary>
+        public const double TextLuminanceThreshold = 0.6d;
+
+        /// <summary>Text colour used on light surfaces.</summary>
+        public static readonly Color DarkTextColor = Color.FromArgb(48, 48, 48);
+
+        /// <summary>Text colour used on dark surfaces.</summary>
+        public static readonly Color LightTextColor = Color.FromArgb(242, 242, 242);
     }
 
     internal static class Ui

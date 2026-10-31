@@ -18,7 +18,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 ## 技术与架构约定
 
 - 这是 Windows-only 的桌面项目；优先沿用单个 WinForms 应用项目和 BCL/WinForms 原生控件，不要仅为“现代架构”引入多项目分层、复杂 MVVM、依赖注入框架或微服务式结构。
-- SunnyUI 已完全移除；不要再引入。当前 UI 使用原生控件和项目内轻量控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`。按钮颜色统一走 `UiButtonTheming`；主操作使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。主窗口标题行的“添加抽屉/设置”是不带文字的图标按钮，字形统一由 `IconGlyphs` 提供（Segoe MDL2 Assets，缺字体时退回 Segoe UI Symbol），不要在窗体或设计器里硬编码私有区字符；主窗口宽度是固定常量，不提供设置项；这两个按钮的 ToolTip 必须设置 `ShowAlways = true`（主窗口经常不是前台窗口，否则不会弹出）。
+- SunnyUI 已完全移除；不要再引入。当前 UI 使用原生控件和项目内轻量控件：`DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`。按钮颜色统一走 `UiButtonTheming`；主操作使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。主窗口标题行的“添加抽屉/设置”是不带文字的图标按钮，字形统一由 `IconGlyphs` 提供（Segoe MDL2 Assets，缺字体时退回 Segoe UI Symbol），不要在窗体或设计器里硬编码私有区字符；主窗口宽度是固定常量，不提供设置项；这两个按钮的 ToolTip 必须设置 `ShowAlways = true`（主窗口经常不是前台窗口，否则不会弹出）。设置面板统一通过 `MainWindow.OpenSettingsPanel()` 打开；标题文字右键也走该入口。`window_locked` 为真时隐藏这两个按钮并让标题文字跨三列，但设置入口（托盘菜单/标题右键）必须保持可用。
 - 使用实施时 Microsoft 官方最新的 GA LTS .NET Windows 版本；当前计划目标是 `net10.0-windows`。实施前核实官方支持周期和 SDK，安装最新 servicing patch；不使用 preview 或 STS。
 - 文件列表优先使用 WinForms `ListView` 的图标视图和 `ImageList`，让系统控件负责排列、选择和滚动。常见图片使用 Explorer 风格的图像缩略图作为列表图标；不另开图片预览窗格。主题设置页只保留颜色预览和独立的透明度滑块；点击颜色预览打开 Windows/WinForms 系统颜色控件（优先 `ColorDialog`）。不要保留 H/S/L 或 HSLA 调色控件，也不要重新实现每个文件一套自绘卡片布局。
 - 抽屉内容区的原生 `ListView` 垂直滚动条用于滚轮/`GetScrollInfo`，但必须通过加宽 ListView 裁剪到宿主外侧，并由 `ThemedScrollBar` 覆盖可见区域；不要恢复可见的系统滚动条，也不要改回移除 `WS_VSCROLL` 后手动处理滚轮的旧方案。
@@ -35,7 +35,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 - 抽屉显示所选目录的**直接子项**；不在抽屉内递归扫描目录。
 - 抽屉在 `ListView` 图标视图中显示直接子项；JPG/JPEG/PNG 等常见图片显示缩略图，其他文件使用 Windows Shell 图标。单击只选择条目；双击将其交给 Windows Shell 执行默认 `open` 行为。目录通常在资源管理器中打开；文件由 Windows 默认关联程序打开，和在资源管理器中双击的行为一致。
 - 不在抽屉内实现子目录导航或任意文件类型预览。若需求变更为“在资源管理器中选中某文件”而不是打开它，先向用户确认，再实现相应 Shell 行为。
-- 应用自身不主动删除、移动、重命名或修改用户文件；唯一例外是用户在抽屉列表上**显式拖放**、且完全由 Windows Shell 执行的移动/拷贝（拖出由资源管理器执行，拖入经 `IFileOperation` 执行）。不实现删除、重命名、新建文件夹、复制/剪切/粘贴，也不自建文件传输、进度或撤销 UI。
+- 应用自身不主动删除、移动、重命名或修改用户文件；唯一例外是用户在抽屉列表上**显式拖放**、且完全由 Windows Shell 执行的移动/拷贝（拖出由资源管理器执行，拖入经 `IFileOperation` 执行）。另一项受限例外是首次启动：活动设置文件不存在时，在 `%USERPROFILE%\.config\winDrawer\demoDrawer` 下创建内嵌示例文件，只补缺失文件、绝不覆盖，失败只记录日志。不实现删除、重命名、新建文件夹、复制/剪切/粘贴，也不自建文件传输、进度或撤销 UI。
 - 对不存在的目录、拒绝访问和 Shell 调用失败给出可理解的提示；错误不能导致整个程序退出。
 
 ## 代码与验证
@@ -48,6 +48,6 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，在�
 - 临时/外部探针不要跨进程发送带指针的 `LVM_*` 消息（例如 `LVM_GETITEMRECT`、`LVM_GETITEMPOSITION`）：`lParam` 是调用方进程的地址，目标进程写入时会破坏自身内存并直接崩溃（表现为 `coreclr.dll` 的 `CallWindowProc` 访问冲突）。需要条目几何时改用截图/像素采样，或在同一进程内验证。
 - 退出与关闭必须走单一路径：所有退出请求（托盘菜单、设置面板）都调用 `MainWindow.ShutdownApplication(reason)`；不要在窗体或分部文件里直接调用 `Application.Exit()`、`Environment.Exit()` 或 `Process.Kill()`（仅 `ForceProcessExit()` 作为最后兜底允许）。`SettingsRepository.Dispose()` 必须在 `MainWindow.OnFormClosed` 中调用（顺序：字体 → 托盘 → 仓储）。注意 `Application.Exit()` 会以 `CloseReason.ApplicationExitCall` 触发 `FormClosing/FormClosed`，`e.Cancel` 被尊重；拥有窗体在关闭时会二次触发 `FormClosed`，且**不得**在拥有窗体的 `FormClosed` 处理器里调用属主窗口的 `Close()`（会递归/栈溢出）。
 - 日志统一用 `DrawerLogger`：默认最低级别 `Information`（挂调试器时为 `Debug`），可用 `WINDRAWER_LOG_LEVEL` 覆盖；活动日志超过 `AppConstants.Logging.MaxLogFileBytes`（1 MB）轮转为 `Drawer.log.1`。不要在逐项/逐帧的热路径里写 `Debug` 日志，也不要在日志内部再调用日志方法（用 `Debug.WriteLine`）。
-- 共用工具只保留一份，新增同类逻辑前先复用：用户提示走 `UiMessages`（不要直接 `MessageBox.Show`）、按钮配色走 `UiButtonTheming`、颜色对话框预设与 Enter/Space 激活走 `UiDialogHelpers`、路径相等判断走 `PathComparison`、TOML 键名走 `SettingsKeys`（不要在序列化/解析里写字符串字面量）。
+- 共用工具只保留一份，新增同类逻辑前先复用：用户提示走 `UiMessages`（不要直接 `MessageBox.Show`）、按钮配色走 `UiButtonTheming`、颜色对话框预设与 Enter/Space 激活走 `UiDialogHelpers`、路径相等判断走 `PathComparison`、TOML 键名走 `SettingsKeys`（不要在序列化/解析里写字符串字面量）、深浅文字判断走 `Theming/TextContrast.cs`（阈值是 `AppConstants.Theme.TextLuminanceThreshold`，只通过改常量并重新构建来调试）。
 - 过渡动画统一走 `Infrastructure/WindowAnimation.cs`（`AnimationClock`、`WindowFade`、`WindowSlide`），时长/偏移/起始透明度常量放在 `AppConstants.Ui.Animation`，帧间隔来自 `startup.animation_frame_ms`（0 关闭全部过渡）。不要在各窗体重复实现 Timer 动画，也不要在逐帧回调里写日志。动画结束时必须把 `Opacity` 还原为配置的透明度，并且系统关闭"动画效果"（`SPI_GETCLIENTAREAANIMATION`）时直接落到终态。
 - 抽屉内容列表的悬停高亮必须走原生条目绘制：在 `ScrollableListView` 里拦截反射的 `NM_CUSTOMDRAW` 并设置 `clrTextBk`。不要改回 owner-draw（`DrawDefault` 会擦掉自绘背景、完全自绘又要复刻图标/标签布局）或 `WM_PAINT` 之后叠加绘制（会闪烁并残留旧高亮）。收到 `WM_MOUSELEAVE` 时不要直接清高亮：条目 tooltip 会盖住指针并触发该消息，必须用 `Cursor.Position` 判断指针是否真的离开客户区。

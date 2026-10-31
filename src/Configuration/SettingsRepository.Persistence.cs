@@ -257,6 +257,7 @@ internal sealed partial class SettingsRepository
             DrawerLogger.LogInformation($"Settings file not found. Initializing from embedded defaults at '{path}'.");
             var table = LoadEmbeddedDefaultTable();
             WriteTable(path, table);
+            WasInitializedFromDefaults = true;
             return table;
         }
 

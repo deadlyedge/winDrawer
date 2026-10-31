@@ -165,10 +165,13 @@ public partial class SettingsForm : Form
         windowHeightTrackBar.Maximum = AppConstants.Defaults.MainWindowHeightMax;
 
         behaviorCheckBoxGroup.AccessibleName = "Behavior options";
-        behaviorCheckBoxGroup.AccessibleDescription = "Toggles for startup, window position lock, always-on-top and the Win+Shift+D shortcut.";
+        behaviorCheckBoxGroup.AccessibleDescription = "Toggles for startup, window lock, always-on-top and the Win+Shift+D shortcut.";
+
+        githubLinkLabel.AccessibleName = "Project on GitHub";
+        githubLinkLabel.AccessibleDescription = "Opens the winDrawer project repository in the default web browser.";
 
         previewPanel.FillColor = _workingSnapshot.WindowColor;
-        previewPanel.RectColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
+        previewPanel.RectColor = TextContrast.For(_workingSnapshot.WindowColor);
 
         previewPanel.Cursor = Cursors.Hand;
         previewPanel.TabStop = true;
@@ -191,6 +194,7 @@ public partial class SettingsForm : Form
         shutDownButton.Click += ShutDownButton_Click;
         defaultSettingsButton.Click += DefaultSettingsButton_Click;
         openSettingsTomlButton.Click += OpenSettingsTomlButton_Click;
+        githubLinkLabel.LinkClicked += GithubLinkLabel_LinkClicked;
     }
 
     private void WireDragHandlers()
@@ -347,6 +351,26 @@ public partial class SettingsForm : Form
         }
     }
 
+    private void GithubLinkLabel_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
+    {
+        try
+        {
+            DrawerLogger.LogInformation($"Opening the project page '{AppConstants.Branding.RepositoryUrl}'.");
+            Process.Start(new ProcessStartInfo(AppConstants.Branding.RepositoryUrl)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            DrawerLogger.LogError("Unable to open the project page.", ex);
+            UiMessages.ShowError(
+                this,
+                "Open Project Page",
+                $"The project page could not be opened.{Environment.NewLine}{Environment.NewLine}{ex.Message}");
+        }
+    }
+
     private bool TrySynchronizeStartupRegistration()
     {
         var requestedState = IsBehaviorChecked(StartWithWindowsIndex);
@@ -414,7 +438,7 @@ public partial class SettingsForm : Form
         var palette = _workingSnapshot.BuildThemePalette();
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = palette.Border;
-        previewPanel.ForeColor = ThemePalette.GetReadableTextColor(_workingSnapshot.WindowColor);
+        previewPanel.ForeColor = TextContrast.For(_workingSnapshot.WindowColor);
         previewPanel.Text = $"Click to change color{Environment.NewLine}{ThemePalette.FormatHexColor(_workingSnapshot.WindowColor)}";
         ThemePreviewChanged?.Invoke(this, new ThemePreviewEventArgs(palette));
     }

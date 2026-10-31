@@ -51,6 +51,7 @@ partial class SettingsForm
         openSettingsTomlButton = new Button();
         cancelButton = new Button();
         saveButton = new Button();
+        githubLinkLabel = new LinkLabel();
         mainTableLayoutPanel.SuspendLayout();
         headerTableLayoutPanel.SuspendLayout();
         settingsTableLayoutPanel.SuspendLayout();
@@ -83,6 +84,7 @@ partial class SettingsForm
         headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
         headerTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
         headerTableLayoutPanel.Controls.Add(headerSettings, 0, 0);
+        headerTableLayoutPanel.Controls.Add(githubLinkLabel, 1, 0);
         headerTableLayoutPanel.Dock = DockStyle.Fill;
         headerTableLayoutPanel.Location = new Point(3, 3);
         headerTableLayoutPanel.Name = "headerTableLayoutPanel";
@@ -105,6 +107,22 @@ partial class SettingsForm
         headerSettings.TabIndex = 0;
         headerSettings.Text = "winDrawer settings";
         headerSettings.TextAlign = ContentAlignment.MiddleLeft;
+        //
+        // githubLinkLabel
+        //
+        githubLinkLabel.ActiveLinkColor = Color.White;
+        githubLinkLabel.Dock = DockStyle.Fill;
+        githubLinkLabel.LinkBehavior = LinkBehavior.HoverUnderline;
+        githubLinkLabel.LinkColor = Color.FromArgb(124, 196, 255);
+        githubLinkLabel.Location = new Point(543, 0);
+        githubLinkLabel.Name = "githubLinkLabel";
+        githubLinkLabel.Size = new Size(231, 44);
+        githubLinkLabel.TabIndex = 1;
+        githubLinkLabel.TabStop = true;
+        githubLinkLabel.Text = "Project on GitHub";
+        githubLinkLabel.TextAlign = ContentAlignment.MiddleRight;
+        githubLinkLabel.UseMnemonic = false;
+        githubLinkLabel.VisitedLinkColor = Color.FromArgb(124, 196, 255);
         // 
         // settingsTableLayoutPanel
         // 
@@ -402,4 +420,5 @@ partial class SettingsForm
     private Button defaultSettingsButton;
     private Button shutDownButton;
     private Button openSettingsTomlButton;
+    private LinkLabel githubLinkLabel;
 }

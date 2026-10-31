@@ -15,6 +15,7 @@ Although the visual style is quite different now, I sincerely hope that a simila
 - **Drag and drop** – Drag items to Explorer, or drop files/folders into a drawer; Windows performs the move/copy.
 - **Large folders are capped** – A drawer shows at most `max_drawer_items` entries (default 200); larger folders show a status instead, and the folder path can still open them in Explorer.
 - **Tray control** – Use the tray icon or `Win+Shift+D` to show/hide the main window and current drawer.
+- **Window lock** – Locking hides the add/settings buttons and disables dragging; settings stay reachable from the tray menu or by right-clicking the title text.
 
 ## Quick start
 
@@ -35,7 +36,7 @@ A drawer lists only the selected folder's direct children; it does not recurse o
 
 ![winDrawer settings](docs/images/settings.png)
 
-Choose the theme color through the Windows color dialog, adjust window opacity, set the main window height, and toggle login startup, window lock, always-on-top, and the global shortcut.
+Choose the theme color through the Windows color dialog, adjust window opacity, set the main window height, and toggle login startup, window lock, always-on-top, and the global shortcut. Window lock hides the header buttons; settings remain available from the tray menu or a right-click on the title text. The header link opens the project page on GitHub.
 
 ## Configuration
 
@@ -44,6 +45,8 @@ Settings are stored at:
 ```text
 %USERPROFILE%\.config\winDrawer\Drawer-settings.toml
 ```
+
+On first start (when that file does not exist) winDrawer writes the default template and creates two drawers: the configuration directory itself and a `demoDrawer` folder with sample files (a text file, the app logo image, and a folder to open). Existing settings are never overwritten, and sample files are only created when missing.
 
 The drawer limit can be changed directly in the TOML file:
 

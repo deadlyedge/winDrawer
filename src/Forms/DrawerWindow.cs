@@ -105,8 +105,8 @@ namespace winDrawer
             drawerButtonTableLayoutPanel.BackColor = Color.Transparent;
 
             drawerContentsListView.BackColor = contentBackground;
-            drawerContentsListView.ForeColor = _theme.TextPrimary;
-            drawerContentsListView.HoverHighlightColor = _theme.TextPrimary;
+            drawerContentsListView.ForeColor = _theme.ContentTextPrimary;
+            drawerContentsListView.HoverHighlightColor = _theme.ContentTextPrimary;
             drawerContentsScrollBar.FillColor = contentBackground;
             drawerContentsScrollBar.ThumbColor = _theme.Border;
             drawerContentsScrollBar.HoverColor = _theme.Border;
@@ -282,7 +282,7 @@ namespace winDrawer
             var fillColor = isCloseButton ? Color.FromArgb(180, 45, 45) : _theme.Accent;
             var hoverColor = isCloseButton ? Color.FromArgb(146, 36, 36) : _theme.AccentHover;
             var pressColor = isCloseButton ? Color.FromArgb(112, 25, 25) : _theme.AccentPressed;
-            var textColor = isCloseButton ? Color.White : ThemePalette.GetReadableTextColor(fillColor);
+            var textColor = isCloseButton ? Color.White : TextContrast.For(fillColor);
 
             UiButtonTheming.ApplyColorPalette(button, fillColor, hoverColor, pressColor, textColor);
             UiButtonTheming.ApplyBorderPalette(button, _theme.Border);

@@ -10,6 +10,12 @@ internal sealed partial class SettingsRepository : IDisposable
     private readonly string _settingsPath;
     private TomlTable _root;
 
+    /// <summary>
+    /// True when the settings file did not exist and was created from the embedded template. The
+    /// main window uses it to create the packaged first-run demo exactly once.
+    /// </summary>
+    public bool WasInitializedFromDefaults { get; private set; }
+
     // Background writer state
     private readonly SemaphoreSlim _writeSignal = new(0);
     private readonly CancellationTokenSource _writerCts = new();

@@ -26,6 +26,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 托盘菜单和设置面板的退出入口最终都走 `MainWindow.ShutdownApplication(reason)`，再通过 `Application.Exit()` 走常规 `FormClosing/FormClosed` 路径。
 - `MainWindow.OnFormClosed` 的释放顺序为：热键、品牌字体、托盘控制器、`SettingsRepository`；`ForceProcessExit()` 只在常规退出抛异常时作为最后兜底。
 - 托盘菜单继续由 `NotifyIcon.ContextMenuStrip` 拥有，避免弹出菜单出现在任务栏。WinForms 的 `NotifyIcon` 内部会走 `ContextMenuStrip.ShowInTaskbar`，在多显示器/跨屏任务栏/混合 DPI 下可能选错屏幕；`TrayController` 在 `Opening` 中按鼠标所在屏幕的工作区计算位置，并在 `Opened` 中使用 `SetWindowPos` 做最终纠正。
+- 设置面板的统一入口是 `MainWindow.OpenSettingsPanel()`：标题栏按钮、托盘菜单和标题文字右键都走它；已打开的设置面板只会被显示并激活。
 
 ## 3. 模块边界
 
@@ -40,14 +41,14 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 | `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
 | `Controls/` | `DrawerListBox`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、`IconGlyphs` 图标字形、按钮/菜单主题、颜色对话框 helper、消息框 |
 | `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation`、窗口过渡动画 |
-| `Theming/` | `#RRGGBB` 解析、主题派生色、品牌字体、Shell 图标 |
+| `Theming/` | `#RRGGBB` 解析、主题派生色、深浅文字判断（`TextContrast`）、品牌字体、Shell 图标 |
 
 依赖方向应保持为：窗体 → 业务/配置/基础设施；`Drawers/` 与 `Configuration/` 不反向依赖具体窗体。不要为了形式上的分层新增接口或工厂。
 
 ## 4. 配置与持久化
 
 - 活动配置：`%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；日志同目录 `Drawer.log`。
-- 首次启动时，如果活动配置不存在，从程序集内嵌的根目录 `Drawer-settings.toml` 初始化；已存在的配置绝不被模板覆盖。
+- 首次启动时，如果活动配置不存在，从程序集内嵌的根目录 `Drawer-settings.toml` 初始化；模板包含两个默认抽屉（配置目录与 `demoDrawer`），随后 `DemoDrawerInitializer` 把内嵌的示例文件写入 `%USERPROFILE%\.config\winDrawer\demoDrawer`。只创建缺失文件，不覆盖用户修改；写入失败只记录日志。已存在的配置绝不被模板覆盖，也不会再次生成示例。
 - TOML 解析先验证类型，再生成 `SettingsSnapshot`；缺失字段使用默认值，未知字段在写回时保留。
 - 写入由 `SettingsRepository` 的后台 writer 合并/防抖；退出前通过 `SavePendingChanges`/`Dispose` flush。写入使用同目录临时文件再原子替换，失败不覆盖旧文件。
 - **Default** 按钮只重置 `[startup]`，保留 `drawers` 和未知键，并同步当前用户的登录启动状态；Save/Cancel 管理 Default 之后的草稿。
@@ -69,11 +70,11 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 
 ## 6. 窗口、DPI 与主题
 
-- 主窗口无系统边框，支持拖动；`window_locked = true` 时禁止拖动并隐藏移动光标。位置保存到 `window_position`，高度以 96 DPI 逻辑像素保存到 `window_height`，运行时按当前 DPI 换算并夹取到所在屏幕工作区。
-- 主窗口宽度是固定常量 `AppConstants.Defaults.MainWindowWidth`（96 DPI 逻辑像素，当前 150），不写入配置，也不提供设置项。标题行左侧是 `winDrawer` 品牌文字（`LogoFontSize`，11pt），右侧依次是“添加抽屉”和“设置”两个图标按钮：按钮只显示字形（`IconGlyphs`，Segoe MDL2 Assets 的 `E710`/`E713`，缺少该字体时退回 Segoe UI Symbol 的 `+`/`⚙`），用途由 ToolTip 说明（必须开启 `ShowAlways`，因为主窗口经常不是活动窗口，否则不会弹出）。抽屉列表占满标题行以下的全部空间，底部没有独立的添加区域。
+- 主窗口无系统边框，支持拖动；`window_locked = true` 时禁止拖动、隐藏移动光标，并隐藏标题行的添加/设置按钮，让标题文字跨三列显示；解锁后恢复。锁定期间设置仍可从托盘菜单或标题文字右键打开。位置保存到 `window_position`，高度以 96 DPI 逻辑像素保存到 `window_height`，运行时按当前 DPI 换算并夹取到所在屏幕工作区。
+- 主窗口宽度是固定常量 `AppConstants.Defaults.MainWindowWidth`（96 DPI 逻辑像素，当前 150），不写入配置，也不提供设置项。标题行左侧是 `winDrawer` 品牌文字（`LogoFontSize`，11pt），右侧依次是“添加抽屉”和“设置”两个图标按钮：按钮只显示字形（`IconGlyphs`，Segoe MDL2 Assets 的 `E710`/`E713`，缺少该字体时退回 Segoe UI Symbol 的 `+`/`⚙`），用途由 ToolTip 说明（必须开启 `ShowAlways`，因为主窗口经常不是活动窗口，否则不会弹出）。标题文字支持右键打开设置，锁定时也会更新提示文案。抽屉列表占满标题行以下的全部空间，底部没有独立的添加区域。
 - 抽屉窗口通过移除 `WS_CAPTION` 隐藏标题栏，保留 `FormBorderStyle.Sizable` 的边缘缩放；底部提供文件夹路径入口、刷新和关闭按钮。窗口尺寸在调整结束/关闭时写回 `drawers[].size`。
 - 设置窗体与抽屉设置对话框每次打开时按主窗口位置偏移 `(100, 100)` 并夹取到主窗口所在屏幕工作区；它们的位置不持久化。
-- 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（40–100，低于 40 的窗口内容难以辨认）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。
+- 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（40–100，低于 40 的窗口内容难以辨认）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。文字颜色统一由 `Theming/TextContrast.cs` 判断：相对亮度高于 `AppConstants.Theme.TextLuminanceThreshold`（默认 0.6）用深色文字，否则用浅色；窗口文字按窗口背景判断，内容区与右键菜单文字按内容背景判断。判断只基于纯色主题背景，不模拟透明度叠加壁纸后的实际观感。
 - 抽屉专属颜色以 `overlay_color` 保存，固定以 70% 不透明度混合到抽屉背景，不提供单独 Alpha。未设置时不叠加。
 - 按钮使用原生 `Button` 的 `FlatStyle.Flat`：`Cancel`/`Save` 使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。不再使用 SunnyUI 的圆角、`TipsFont` 或独立状态前景色。
 - 设置窗体和抽屉设置对话框使用原生 `Form`/`GroupBox`/`TrackBar`/`CheckBox`/`Label`；颜色预览由 `ColorPreviewPanel` 自绘，行为选项由 `BehaviorCheckBoxGroup` 提供两列布局。

@@ -14,7 +14,7 @@ namespace winDrawer
                 () =>
                 {
                     EnsureMainWindowAndDrawerShown();
-                    SettingsButton_Click(this, EventArgs.Empty);
+                    OpenSettingsPanel();
                 },
                 () =>
                 {

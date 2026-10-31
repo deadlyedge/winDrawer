@@ -17,6 +17,7 @@ public sealed class ThemePalette
         Color contentBackground,
         Color cardBackground,
         Color textPrimary,
+        Color contentTextPrimary,
         Color textSecondary,
         double windowOpacity)
     {
@@ -29,6 +30,7 @@ public sealed class ThemePalette
         ContentBackground = contentBackground;
         CardBackground = cardBackground;
         TextPrimary = textPrimary;
+        ContentTextPrimary = contentTextPrimary;
         TextSecondary = textSecondary;
         WindowOpacity = windowOpacity;
     }
@@ -42,6 +44,13 @@ public sealed class ThemePalette
     public Color ContentBackground { get; }
     public Color CardBackground { get; }
     public Color TextPrimary { get; }
+
+    /// <summary>
+    /// Text colour for the content surface (<see cref="ContentBackground"/>), which differs slightly
+    /// from <see cref="WindowBackground"/> and is therefore classified separately.
+    /// </summary>
+    public Color ContentTextPrimary { get; }
+
     public Color TextSecondary { get; }
     public double WindowOpacity { get; }
 
@@ -105,9 +114,10 @@ public sealed class ThemePalette
             Color.White,
             cardBackgroundLighten);
 
-        var textPrimary = GetReadableTextColor(windowBackground);
+        var textPrimary = TextContrast.For(windowBackground);
+        var contentTextPrimary = TextContrast.For(contentBackground);
         var textSecondary = Blend(textPrimary, windowBackground, 0.35f);
-        var accentText = GetReadableTextColor(accent);
+        var accentText = TextContrast.For(accent);
 
         return new ThemePalette(
             accent,
@@ -119,6 +129,7 @@ public sealed class ThemePalette
             contentBackground,
             cardBackground,
             textPrimary,
+            contentTextPrimary,
             textSecondary,
             opacity);
     }
@@ -132,14 +143,6 @@ public sealed class ThemePalette
             (int)Math.Round(background.B * (1 - overlayOpacity) + overlay.B * overlayOpacity));
     }
 
-    internal static Color GetReadableTextColor(Color background)
-    {
-        var luminance = GetRelativeLuminance(background);
-        return luminance > 0.6
-            ? Color.FromArgb(48, 48, 48)
-            : Color.FromArgb(242, 242, 242);
-    }
-
     /// <summary>
     /// Blends a colour toward its perceived luminance grey. Large surfaces use this instead of an
     /// HSL saturation conversion.
@@ -148,23 +151,6 @@ public sealed class ThemePalette
     {
         var grey = (int)Math.Round((color.R * 0.299) + (color.G * 0.587) + (color.B * 0.114));
         return Blend(color, Color.FromArgb(grey, grey, grey), amount);
-    }
-
-    private static double GetRelativeLuminance(Color color)
-    {
-        static double LineariseChannel(int component)
-        {
-            var channel = component / 255d;
-            return channel <= 0.03928
-                ? channel / 12.92
-                : Math.Pow((channel + 0.055) / 1.055, 2.4);
-        }
-
-        var r = LineariseChannel(color.R);
-        var g = LineariseChannel(color.G);
-        var b = LineariseChannel(color.B);
-
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     }
 
     /// <summary>

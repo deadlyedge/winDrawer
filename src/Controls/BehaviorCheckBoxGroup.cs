@@ -11,7 +11,7 @@ internal sealed class BehaviorCheckBoxGroup : GroupBox
     private static readonly string[] OptionTexts =
     [
         "Start with Windows",
-        "Lock position",
+        "Lock window",
         "Always on top",
         "Enable Win+Shift+D"
     ];

@@ -11,6 +11,7 @@
 | [`../README.md`](../README.md) | 用户功能、快速开始、构建/发布和项目结构 |
 | [`../AGENTS.md`](../AGENTS.md) | 开发约定；SunnyUI 不再引入、滚动条裁剪等约束 |
 | [`TODOs.md`](TODOs.md) | 用户维护的待办列表；开发过程不代为覆盖 |
+| [`IMPLEMENTATION_PLAN_TODOS.md`](IMPLEMENTATION_PLAN_TODOS.md) | 2026-03 四项待办的实施方案、决策与验证记录 |
 
 ### 当前 UI 栈摘要
 

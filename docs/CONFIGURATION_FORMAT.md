@@ -37,12 +37,14 @@ name = "Downloads"
 path = "%USERPROFILE%\\Downloads"
 ```
 
+随程序部署的模板还包含两个默认抽屉（配置目录 `%USERPROFILE%\.config\winDrawer` 与 `demoDrawer`），只在活动配置不存在、首次初始化时写入。
+
 ## 3. 字段定义
 
 | 字段 | 类型 | 默认值 | 有效范围/语义 |
 |---|---|---:|---|
 | `startup.start_with_windows` | Boolean | `false` | 是否在 Windows 登录时启动。若 UI 提供该选项，必须真正生效；是否纳入首版见产品需求。 |
-| `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止通过拖动区域移动主窗口，并隐藏标题区的移动光标提示；解锁后立即恢复拖动与提示。 |
+| `startup.window_locked` | Boolean | `false` | 为 `true` 时禁止拖动主窗口、隐藏移动光标提示，并隐藏标题行的添加/设置按钮（标题文字跨三列显示）；解锁后恢复拖动、提示和按钮。锁定期间设置仍可从托盘菜单或标题文字右键打开。 |
 | `startup.always_on_top` | Boolean | `false` | 为 `true` 时把主窗口和当前抽屉内容窗口设为置顶（`Form.TopMost`）。设置面板本身不置顶；该选项不影响托盘入口、显示/隐藏、任务栏归属和窗口锁定。缺失或类型无效时按 `false` 处理。 |
 | `startup.toggle_hotkey_enabled` | Boolean | `true` | 为 `true` 时在启动时注册全局快捷键 Win+Shift+D（语义与托盘 `Show/Hide` 相同）。缺失或类型无效时按 `true` 处理。注册失败（例如组合键已被其它程序占用）不改变该值：应用只记录日志，并在下次启动或主窗口句柄重建时重试；在设置面板显式打开该项时失败会给出一次可见提示。 |
 | `startup.window_height` | Integer | `200` | 主窗口客户区高度，单位为 96 DPI 逻辑像素（DIP），支持范围 100–1000。屏幕空间不足时运行时高度会临时受工作区限制，但保存的期望值不变。缺失或类型无效时使用默认高度 200。 |
@@ -83,6 +85,7 @@ path = "%USERPROFILE%\\Downloads"
 - 推荐先写入同目录临时文件、完成 flush 后原子替换目标文件；保留旧文件直到新文件确认写入成功。
 - 仅由 settings repository 负责 TOML 序列化、备份和原子写入。
 - 设置文件默认位于 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；日志文件为同目录下的 `Drawer.log`。配置目录由应用在首次创建设置或写入日志时按需创建；日志路径或写入失败不会阻止应用运行。
+- 首次启动（活动设置文件不存在）时，内嵌模板会写入两个默认抽屉：配置目录 `%USERPROFILE%\.config\winDrawer` 与 `%USERPROFILE%\.config\winDrawer\demoDrawer`。随后应用把内嵌演示文件写入 `demoDrawer`，只创建缺失文件、不覆盖用户修改；失败只记录日志。已存在的配置不会触发示例创建，也不会因用户删除示例文件而重建。
 - 设置页的 **Open Settings TOML** 按钮使用 Windows Notepad 打开当前活动的 TOML 文件。
 - 抽屉的拖入/拖出、底栏文件夹入口和列表右键排序菜单都是运行时交互，不会新增或改写任何配置键；文件拖放只作用于磁盘文件，不写入设置。
 
@@ -117,5 +120,7 @@ path = "%USERPROFILE%\\Downloads"
 - [ ] TOML 损坏、只读目录、磁盘写入失败时保留原文件并报告错误。
 - [ ] 不执行旧路径或旧 HSLA 配置自动迁移；新默认配置按目标路径和根目录模板创建，不触碰其它位置文件。
 - [ ] 设置文件新默认路径为 `%USERPROFILE%\.config\winDrawer\Drawer-settings.toml`；Notepad 打开按钮指向同一活动文件。
+- [ ] 首次启动且活动配置不存在时创建两个默认抽屉与 `demoDrawer` 示例文件；已有配置、二次启动和用户修改过的示例文件都不会被覆盖或重建。
+- [ ] `window_locked = true` 时标题按钮隐藏、拖动失效；解锁后按钮恢复，托盘菜单与标题文字右键都能打开设置。
 
 阶段 6.7 的临时 smoke harness 已验证：嵌入模板可解析并生成当前默认字段；仓储在仅有临时目标文件时可从模板初始化；损坏的既有 TOML 被拒绝且文件内容保持不变；当前 `#RRGGBB` 颜色、整数透明度/高度、两整数位置数组、标准 `[[drawers]]` 与 `size`/`overlay_color` 可读；旧 HSLA 不迁移、字符串标量回退当前默认值、旧 `[drawers.size]` 不导入。测试只操作随机命名的 `%TEMP%` 目录，不访问真实用户配置；它不替代本节其余未勾选的配置读写、故障注入和 UI 手工回归。

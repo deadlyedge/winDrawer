@@ -33,6 +33,7 @@ namespace winDrawer
             DrawerLogger.LogInformation("Initializing MainWindow.");
 
             _settingsRepository = new SettingsRepository(SettingsRepository.GetDefaultPath());
+            InitializeFirstRunDemo();
             _settingsSnapshot = _settingsRepository.GetSnapshot();
             _currentTheme = _settingsSnapshot.BuildThemePalette();
 
@@ -211,6 +212,30 @@ namespace winDrawer
             }
         }
 
+        /// <summary>
+        /// Copies the embedded demo folder once, when the settings file was just created. The drawer
+        /// entries come from the template, so the demo only needs to be written on the first run.
+        /// </summary>
+        private void InitializeFirstRunDemo()
+        {
+            if (!_settingsRepository.WasInitializedFromDefaults)
+            {
+                return;
+            }
+
+            try
+            {
+                var demoDirectory = Path.Combine(
+                    AppConstants.GetUserConfigurationDirectory(),
+                    AppConstants.Directories.DemoDrawer);
+                DemoDrawerInitializer.EnsureCreated(demoDirectory);
+            }
+            catch (Exception ex)
+            {
+                DrawerLogger.LogError("Failed to create the first-run demo drawer.", ex);
+            }
+        }
+
         private void LoadBrandingAssets()
         {
             var baseDir = AppContext.BaseDirectory;
@@ -270,6 +295,7 @@ namespace winDrawer
             // A glyph caption is not readable, so assistive tools get the action names instead.
             addDrawerButton.AccessibleName = "Add drawer";
             settingsButton.AccessibleName = "Settings";
+            logoLabel.AccessibleDescription = "Drag to move the window. Right-click to open settings.";
         }
 
         private static Font CreateHeaderIconFont()
@@ -320,8 +346,26 @@ namespace winDrawer
         private void WireDragHandlers()
         {
             logoLabel.MouseDown += HeaderDragBegin;
+            logoLabel.MouseDown += LogoBar_MouseDown;
             logoLabel.MouseMove += HeaderDragMove;
             logoLabel.MouseUp += HeaderDragEnd;
+            headerTableLayoutPanel.MouseDown += LogoBar_MouseDown;
+        }
+
+        /// <summary>
+        /// Opens the settings panel from the title bar. Using the right button keeps the left button
+        /// free for dragging and gives a locked window a way to reach the settings even though the
+        /// header buttons are hidden.
+        /// </summary>
+        private void LogoBar_MouseDown(object? sender, MouseEventArgs args)
+        {
+            if (args.Button != MouseButtons.Right)
+            {
+                return;
+            }
+
+            DrawerLogger.LogInformation("Settings requested from the main-window title bar.");
+            OpenSettingsPanel();
         }
 
         private void HeaderDragBegin(object? sender, MouseEventArgs args)
@@ -359,8 +403,33 @@ namespace winDrawer
         }
 
         private bool IsWindowLocked => _windowLockedPreview ?? _settingsSnapshot.WindowLocked;
-
         private bool IsAlwaysOnTop => _alwaysOnTopPreview ?? _settingsSnapshot.AlwaysOnTop;
+
+        /// <summary>
+        /// Applies the window-lock state: dragging is disabled, the header action buttons are hidden
+        /// and the title spans all header columns, so only the title text and the drawer list stay
+        /// clickable. Settings remain reachable from the tray menu or a right-click on the title bar.
+        /// </summary>
+        private void ApplyWindowLocked(bool locked)
+        {
+            logoLabel.Cursor = locked ? Cursors.Default : Cursors.SizeAll;
+            if (locked)
+            {
+                _isDragging = false;
+            }
+
+            addDrawerButton.Visible = !locked;
+            settingsButton.Visible = !locked;
+
+            // Let the title span all three header columns while the action buttons are hidden, so the
+            // brand text keeps its full width without caching (DPI-dependent) column widths.
+            headerTableLayoutPanel.SetColumnSpan(logoLabel, locked ? 3 : 1);
+            headerTableLayoutPanel.PerformLayout();
+
+            headerToolTip.SetToolTip(
+                logoLabel,
+                locked ? "Right-click for settings" : "Drag to move · Right-click for settings");
+        }
 
         /// <summary>
         /// Applies the always-on-top option to the main window and to the drawer window that is
@@ -436,11 +505,7 @@ namespace winDrawer
             DrawerLogger.LogDebug("Applying settings snapshot to UI.");
 
             StartPosition = FormStartPosition.Manual;
-            logoLabel.Cursor = snapshot.WindowLocked ? Cursors.Default : Cursors.SizeAll;
-            if (snapshot.WindowLocked)
-            {
-                _isDragging = false;
-            }
+            ApplyWindowLocked(snapshot.WindowLocked);
 
             // The frame interval lives in the TOML file; applying it here covers startup and reloads.
             Animations.Configure(snapshot.AnimationFrameMilliseconds);
@@ -491,14 +556,14 @@ namespace winDrawer
             mainTableLayoutPanel.BackColor = theme.WindowBackground;
             headerTableLayoutPanel.BackColor = Color.Transparent;
 
-            logoLabel.ForeColor = theme.TextPrimary;
+            logoLabel.ForeColor = TextContrast.For(theme.WindowBackground);
             logoLabel.BackColor = Color.Transparent;
 
             UiButtonTheming.ApplyAccentPalette(settingsButton, theme);
             UiButtonTheming.ApplyAccentPalette(addDrawerButton, theme);
 
             drawerListBox.FillColor = theme.ContentBackground;
-            drawerListBox.ForeColor = theme.TextPrimary;
+            drawerListBox.ForeColor = theme.ContentTextPrimary;
             drawerListBox.HoverColor = theme.CardBackground;
             drawerListBox.ItemSelectBackColor = theme.Accent;
             drawerListBox.ItemSelectForeColor = theme.AccentText;

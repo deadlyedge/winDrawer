@@ -16,13 +16,13 @@ internal static class UiContextMenuTheming
 
         menu.RenderMode = ToolStripRenderMode.Professional;
         menu.BackColor = theme.ContentBackground;
-        menu.ForeColor = theme.TextPrimary;
+        menu.ForeColor = theme.ContentTextPrimary;
         menu.Renderer = new PaletteRenderer(new PaletteColorTable(theme), theme);
 
         foreach (ToolStripItem item in menu.Items)
         {
             item.BackColor = theme.ContentBackground;
-            item.ForeColor = theme.TextPrimary;
+            item.ForeColor = theme.ContentTextPrimary;
         }
     }
 
@@ -77,8 +77,8 @@ internal static class UiContextMenuTheming
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
             e.TextColor = e.Item.Selected && e.Item.Enabled
-                ? ThemePalette.GetReadableTextColor(_theme.Accent)
-                : _theme.TextPrimary;
+                ? TextContrast.For(_theme.Accent)
+                : _theme.ContentTextPrimary;
             base.OnRenderItemText(e);
         }
 
@@ -94,7 +94,7 @@ internal static class UiContextMenuTheming
                 return;
             }
 
-            var color = e.Item.Selected ? ThemePalette.GetReadableTextColor(_theme.Accent) : _theme.TextPrimary;
+            var color = e.Item.Selected ? TextContrast.For(_theme.Accent) : _theme.ContentTextPrimary;
             var left = bounds.Left + 1;
             var middle = bounds.Left + (bounds.Width / 3);
             var right = bounds.Right - 1;

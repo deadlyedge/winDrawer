@@ -94,8 +94,9 @@
 ## 7. 追加：抽屉背景色决定前景色（2026-03）
 
 - `DrawerWindow.ApplyTheme` 不再使用主题的 `ContentTextPrimary`/`TextSecondary`，而是对叠加 `overlay_color` 后的 `contentBackground`/`windowBackground` 调用 `TextContrast.For`；底栏次级文字由同一结果再向窗口背景混合 35%。
-- `MainWindow.DrawerList.Paint` 对带专属色的条目按 `BlendOverlayColor` 后的行背景调用 `TextContrast.For`；选中/悬停仍按“先强调色或悬停底色、再叠加 overlay”的顺序合成，激活行继续显示专属色；文字色从非悬停背景推导，避免悬停渐变时跳色。选中且无 overlay 时仍使用 `ItemSelectForeColor`（强调色文字）。
+- `MainWindow.DrawerList.Paint` 对带专属色的条目按 `BlendOverlayColor` 后的行背景调用 `TextContrast.For`；选中/悬停仍按“先强调色或悬停底色、再叠加 overlay”的顺序合成，激活行继续显示专属色；文字色从非悬停背景推导，避免悬停时跳色。选中且无 overlay 时仍使用 `ItemSelectForeColor`（强调色文字）。
 - `AppConstants.Theme.TextLuminanceThreshold` 默认值从 0.6 调整为 0.229：这是 `#303030` 与 `#F2F2F2` 对比度相等的交叉点，可避免白色/浅色 overlay 被误判为深色背景。仍可通过修改该常量并重建来调整倾向。
+
 ## 8. 性能优化：抽屉列表颜色缓存与刷新（2026-03）
 
 - `DrawerListItem` 改为携带预计算颜色的可变对象：普通背景、前景、选中背景/前景、悬停目标色在列表填充或主题变化时计算；绘制时直接使用缓存值，悬停只在进入/离开行时各失效一次，不再逐帧执行 `Math.Pow`、overlay 混色或 `Blend`。

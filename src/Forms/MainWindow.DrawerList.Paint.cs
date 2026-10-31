@@ -12,7 +12,7 @@ namespace winDrawer
         /// <summary>
         /// One drawer row with its precomputed colours. They depend only on the current theme and the
         /// drawer's overlay colour, so they are calculated when the list is populated or the theme
-        /// changes instead of on every paint (the hover animation repaints rows every frame).
+        /// changes instead of on every paint (a hover only invalidates the affected rows once).
         /// </summary>
         private sealed class DrawerListItem(string text)
         {

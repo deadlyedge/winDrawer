@@ -572,7 +572,7 @@ namespace winDrawer
             mainTableLayoutPanel.BackColor = theme.WindowBackground;
             headerTableLayoutPanel.BackColor = Color.Transparent;
 
-            logoLabel.ForeColor = TextContrast.For(theme.WindowBackground);
+            logoLabel.ForeColor = theme.TextPrimary;
             logoLabel.BackColor = Color.Transparent;
 
             UiButtonTheming.ApplyAccentPalette(settingsButton, theme);

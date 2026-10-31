@@ -171,7 +171,7 @@ public sealed class ThemePalette
     /// <summary>
     /// Blends two colours channel by channel: <paramref name="amount"/> 0 keeps
     /// <paramref name="from"/>, 1 returns <paramref name="to"/>. Shared by theme derivation and the
-    /// animated hover highlight.
+    /// native hover highlight blend.
     /// </summary>
     internal static Color Blend(Color from, Color to, float amount)
     {

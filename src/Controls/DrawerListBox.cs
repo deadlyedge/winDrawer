@@ -17,7 +17,7 @@ internal sealed class DrawerListBox : ListBox
         DrawMode = DrawMode.OwnerDrawFixed;
         BorderStyle = BorderStyle.None;
         IntegralHeight = false;
-        DoubleBuffered = true;
+        // DoubleBuffered has no effect on a native ListBox; the CompositedPanel host buffers it.
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

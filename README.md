@@ -89,8 +89,8 @@ The single-file build is written under the project's `bin\Release\...\publish` f
 - `src/Forms/` – Main window, drawer window, settings windows.
 - `src/Drawers/` – Direct-child enumeration, sorting, item limits, icons/thumbnails, drop planning.
 - `src/Configuration/` – TOML model and persistence.
-- `src/Controls/` – Native WinForms controls and project-local controls: `DrawerListBox`, `ThemedScrollBar`, `ColorPreviewPanel`, `BehaviorCheckBoxGroup`, `ScrollableListView`, and UI helpers.
-- `src/Theming/` – Theme palette, branding font, Shell icons.
+- `src/Controls/` – Native WinForms controls and project-local controls: `DrawerListBox`, `CompositedPanel`, `ThemedScrollBar`, `ColorPreviewPanel`, `BehaviorCheckBoxGroup`, `ScrollableListView`, and UI helpers.
+- `src/Theming/` – Theme palette, text contrast, branding font, Shell icons.
 - `src/Infrastructure/` – Logging, tray, startup registration, hotkey, Shell file operations.
 - `docs/` – [Documentation index](docs/INDEX.md), configuration format, white paper, screenshots, and [development history](docs/development-history/README.md) for completed stage plans, reviews, and migration records.
 

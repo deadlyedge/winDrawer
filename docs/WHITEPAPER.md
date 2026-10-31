@@ -74,7 +74,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - 主窗口宽度是固定常量 `AppConstants.Defaults.MainWindowWidth`（96 DPI 逻辑像素，当前 150），不写入配置，也不提供设置项。标题行左侧是 `winDrawer` 品牌文字（`LogoFontSize`，11pt），右侧依次是“添加抽屉”和“设置”两个图标按钮：按钮只显示字形（`IconGlyphs`，Segoe MDL2 Assets 的 `E710`/`E713`，缺少该字体时退回 Segoe UI Symbol 的 `+`/`⚙`），用途由 ToolTip 说明（必须开启 `ShowAlways`，因为主窗口经常不是活动窗口，否则不会弹出）。标题文字支持右键打开设置，锁定时也会更新提示文案。抽屉列表占满标题行以下的全部空间，底部没有独立的添加区域。
 - 抽屉窗口通过移除 `WS_CAPTION` 隐藏标题栏，保留 `FormBorderStyle.Sizable` 的边缘缩放；底部提供文件夹路径入口、刷新和关闭按钮。窗口尺寸在调整结束/关闭时写回 `drawers[].size`。
 - 设置窗体与抽屉设置对话框每次打开时按主窗口位置偏移 `(100, 100)` 并夹取到主窗口所在屏幕工作区；它们的位置不持久化。
-- 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（40–100，低于 40 的窗口内容难以辨认）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。文字颜色统一由 `Theming/TextContrast.cs` 判断：相对亮度高于 `AppConstants.Theme.TextLuminanceThreshold`（默认 0.6）用深色文字，否则用浅色；窗口文字按窗口背景判断，内容区与右键菜单文字按内容背景判断。判断只基于纯色主题背景，不模拟透明度叠加壁纸后的实际观感。
+- 主题颜色以 `#RRGGBB` 保存，透明度单独保存为 `startup.window_opacity`（40–100，低于 40 的窗口内容难以辨认）。`ThemePalette` 由基础颜色派生背景、卡片、强调色和可读文字色；按钮/菜单/列表共用这些派生色。文字颜色统一由 `Theming/TextContrast.cs` 判断：相对亮度高于 `AppConstants.Theme.TextLuminanceThreshold`（默认 0.229，即两种文字色对比度相等的交叉点）用深色文字，否则用浅色；窗口文字按窗口背景判断，内容区与右键菜单文字按内容背景判断。带 `overlay_color` 的抽屉按叠加后的实际背景判断列表与底栏文字，主窗口带专属色的抽屉条目也按混合后的行背景判断。判断只基于纯色主题背景，不模拟透明度叠加壁纸后的实际观感。
 - 抽屉专属颜色以 `overlay_color` 保存，固定以 70% 不透明度混合到抽屉背景，不提供单独 Alpha。未设置时不叠加。
 - 按钮使用原生 `Button` 的 `FlatStyle.Flat`：`Cancel`/`Save` 使用 `ButtonFontSize`（10F），其他按钮使用 `CompactButtonFontSize`（9.5F）。不再使用 SunnyUI 的圆角、`TipsFont` 或独立状态前景色。
 - 设置窗体和抽屉设置对话框使用原生 `Form`/`GroupBox`/`TrackBar`/`CheckBox`/`Label`；颜色预览由 `ColorPreviewPanel` 自绘，行为选项由 `BehaviorCheckBoxGroup` 提供两列布局。

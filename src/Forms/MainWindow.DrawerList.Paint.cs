@@ -22,25 +22,38 @@ namespace winDrawer
 
             var bounds = e.Bounds;
             var selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-            var background = drawerListBox.FillColor;
-            var foreground = drawerListBox.ForeColor;
-            if (selected)
+            var item = drawerListBox.Items[e.Index];
+            var overlayColor = item is DrawerListItem coloredDrawerItem
+                ? coloredDrawerItem.OverlayColor
+                : (Color?)null;
+
+            // Compose the row background in the original order: selection or hover first, then the
+            // drawer overlay. The overlay therefore stays visible on the active row as well.
+            var rowBackground = selected
+                ? drawerListBox.ItemSelectBackColor
+                : drawerListBox.FillColor;
+            if (overlayColor is { } rowOverlay)
             {
-                background = drawerListBox.ItemSelectBackColor;
-                foreground = drawerListBox.ItemSelectForeColor;
-            }
-            else if (drawerListBox.HoveredIndex == e.Index)
-            {
-                background = ThemePalette.Blend(
-                    background,
-                    drawerListBox.HoverColor,
-                    (float)drawerListBox.HoverProgress);
+                rowBackground = ThemePalette.BlendOverlayColor(rowBackground, rowOverlay);
             }
 
-            var item = drawerListBox.Items[e.Index];
-            if (item is DrawerListItem coloredDrawerItem)
+            // Derive the text colour from the stable (non-hover) background so a hover fade cannot make
+            // the text switch between dark and light mid-animation.
+            var foreground = selected && overlayColor is null
+                ? drawerListBox.ItemSelectForeColor
+                : TextContrast.For(rowBackground);
+
+            var background = rowBackground;
+            if (!selected && drawerListBox.HoveredIndex == e.Index)
             {
-                background = ThemePalette.BlendOverlayColor(background, coloredDrawerItem.OverlayColor);
+                background = ThemePalette.Blend(
+                    drawerListBox.FillColor,
+                    drawerListBox.HoverColor,
+                    (float)drawerListBox.HoverProgress);
+                if (overlayColor is { } hoverOverlay)
+                {
+                    background = ThemePalette.BlendOverlayColor(background, hoverOverlay);
+                }
             }
 
             using var backgroundBrush = new SolidBrush(background);

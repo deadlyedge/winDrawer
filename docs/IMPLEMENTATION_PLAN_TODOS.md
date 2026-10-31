@@ -90,3 +90,10 @@
 - GitHub 链接点击（依赖默认浏览器）。
 - 100%/150%/200% DPI 下的布局。
 - 真实首次启动路径（需备份并临时改名用户配置后才能触发）。
+
+## 7. 追加：抽屉背景色决定前景色（2026-03）
+
+- `DrawerWindow.ApplyTheme` 不再使用主题的 `ContentTextPrimary`/`TextSecondary`，而是对叠加 `overlay_color` 后的 `contentBackground`/`windowBackground` 调用 `TextContrast.For`；底栏次级文字由同一结果再向窗口背景混合 35%。
+- `MainWindow.DrawerList.Paint` 对带专属色的条目按 `BlendOverlayColor` 后的行背景调用 `TextContrast.For`；选中/悬停仍按“先强调色或悬停底色、再叠加 overlay”的顺序合成，激活行继续显示专属色；文字色从非悬停背景推导，避免悬停渐变时跳色。选中且无 overlay 时仍使用 `ItemSelectForeColor`（强调色文字）。
+- `AppConstants.Theme.TextLuminanceThreshold` 默认值从 0.6 调整为 0.229：这是 `#303030` 与 `#F2F2F2` 对比度相等的交叉点，可避免白色/浅色 overlay 被误判为深色背景。仍可通过修改该常量并重建来调整倾向。
+- 已验证（脚本计算）：白色 overlay 在默认主题下混合后 luminance≈0.511，0.6 会选浅色文字（对比度 1.67），0.229 选深色文字（对比度 6.75）。

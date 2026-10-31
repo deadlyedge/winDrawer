@@ -105,11 +105,13 @@ internal static class AppConstants
         public const int OpacityMax = 100;
 
         /// <summary>
-        /// Relative luminance (0..1) above which a surface counts as light and gets dark text. Lower
-        /// values switch more backgrounds to light text. Change this constant and rebuild to tune the
-        /// visual result; it is intentionally not a user setting.
+        /// Relative luminance above which a surface counts as light and gets dark text. The default is
+        /// the point where the two text colours (<see cref="DarkTextColor"/> and
+        /// <see cref="LightTextColor"/>) have the same contrast ratio, so arbitrary overlay colours get
+        /// the more readable option. Raise it to keep light text on more backgrounds; it is
+        /// intentionally a build-time constant and not a user setting.
         /// </summary>
-        public const double TextLuminanceThreshold = 0.6d;
+        public const double TextLuminanceThreshold = 0.229d;
 
         /// <summary>Text colour used on light surfaces.</summary>
         public static readonly Color DarkTextColor = Color.FromArgb(48, 48, 48);

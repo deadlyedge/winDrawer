@@ -96,6 +96,13 @@ namespace winDrawer
             var windowBackground = _drawer.OverlayColor is { } overlayColor
                 ? ThemePalette.BlendOverlayColor(_theme.WindowBackground, overlayColor)
                 : _theme.WindowBackground;
+
+            // The overlay changes the actual surface colours, so the text follows the blended result
+            // instead of the application theme. Without an overlay these are exactly the theme colours.
+            var contentTextColor = TextContrast.For(contentBackground);
+            var windowTextColor = TextContrast.For(windowBackground);
+            var secondaryTextColor = ThemePalette.Blend(windowTextColor, windowBackground, 0.35f);
+
             // The client area is covered by mainTableLayoutPanel except for the top resize strip, which
             // must be indistinguishable from the list content instead of showing the window frame.
             BackColor = contentBackground;
@@ -104,16 +111,17 @@ namespace winDrawer
             drawerHeaderTableLayoutPanel.BackColor = Color.Transparent;
             drawerButtonTableLayoutPanel.BackColor = Color.Transparent;
 
+            drawerContentsHostPanel.BackColor = contentBackground;
             drawerContentsListView.BackColor = contentBackground;
-            drawerContentsListView.ForeColor = _theme.ContentTextPrimary;
-            drawerContentsListView.HoverHighlightColor = _theme.ContentTextPrimary;
+            drawerContentsListView.ForeColor = contentTextColor;
+            drawerContentsListView.HoverHighlightColor = contentTextColor;
             drawerContentsScrollBar.FillColor = contentBackground;
             drawerContentsScrollBar.ThumbColor = _theme.Border;
             drawerContentsScrollBar.HoverColor = _theme.Border;
             drawerContentsScrollBar.PressColor = _theme.Border;
             SynchronizeDrawerScrollBar();
 
-            fullPathLabel.ForeColor = _theme.TextSecondary;
+            fullPathLabel.ForeColor = secondaryTextColor;
             fullPathLabel.BackColor = Color.Transparent;
 
             ApplyThemeToButton(closeDrawerButton, isCloseButton: true);

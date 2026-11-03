@@ -46,6 +46,7 @@ partial class SettingsForm
         opacityLabel = new Label();
         previewPanel = new ColorPreviewPanel();
         footerGroupBox = new GroupBox();
+        versionLabel = new Label();
         shutDownButton = new Button();
         defaultSettingsButton = new Button();
         openSettingsTomlButton = new Button();
@@ -318,6 +319,7 @@ partial class SettingsForm
         // 
         // footerGroupBox
         // 
+        footerGroupBox.Controls.Add(versionLabel);
         footerGroupBox.Controls.Add(cancelButton);
         footerGroupBox.Controls.Add(saveButton);
         footerGroupBox.Dock = DockStyle.Fill;
@@ -330,6 +332,17 @@ partial class SettingsForm
         footerGroupBox.TabIndex = 3;
         footerGroupBox.Text = null;
         // 
+        // versionLabel
+        //
+        versionLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        versionLabel.AutoSize = true;
+        versionLabel.BackColor = Color.Transparent;
+        versionLabel.ForeColor = Color.FromArgb(160, 160, 160);
+        versionLabel.Location = new Point(12, 34);
+        versionLabel.Name = "versionLabel";
+        versionLabel.TabIndex = 6;
+        versionLabel.Text = "v0.0.0";
+        //
         // shutDownButton
         // 
         shutDownButton.Location = new Point(3, 4);
@@ -415,6 +428,7 @@ partial class SettingsForm
     private Label opacityLabel;
     private ColorPreviewPanel previewPanel;
     private GroupBox footerGroupBox;
+    private Label versionLabel;
     private Button cancelButton;
     private Button saveButton;
     private Button defaultSettingsButton;

@@ -6,6 +6,12 @@ Although the visual style is quite different now, I sincerely hope that a simila
 
 ![winDrawer main window](docs/images/main-window.png)
 
+## Download
+
+Prebuilt executables are published on the [Releases page](https://github.com/deadlyedge/winDrawer/releases). Download `winDrawer-v<version>-win-x64.exe` and run it; the release build is a self-contained single file, so no separate .NET runtime is required.
+
+> **The executable is not digitally signed.** This project does not have a code-signing certificate, so Windows SmartScreen or your antivirus may warn that the publisher is unknown. Only continue if the file came from this repository's Releases page and its SHA256 hash matches the one listed in `SHA256SUMS.txt` there. Choose **More info → Run anyway** after verifying the download.
+
 ## What it does
 
 - **Folder drawers** – Keep a list of folders and open any of them in a compact drawer.
@@ -36,7 +42,7 @@ A drawer lists only the selected folder's direct children; it does not recurse o
 
 ![winDrawer settings](docs/images/settings.png)
 
-Choose the theme color through the Windows color dialog, adjust window opacity, set the main window height, and toggle login startup, window lock, always-on-top, and the global shortcut. Window lock hides the header buttons; settings remain available from the tray menu or a right-click on the title text. The header link opens the project page on GitHub.
+Choose the theme color through the Windows color dialog, adjust window opacity, set the main window height, and toggle login startup, window lock, always-on-top, and the global shortcut. Window lock hides the header buttons; settings remain available from the tray menu or a right-click on the title text. The header link opens the project page on GitHub. The running version is shown in the lower-left corner of the panel.
 
 ## Configuration
 
@@ -68,21 +74,38 @@ animation_frame_ms = 15
 
 ## Build a single file
 
+A local framework-dependent single-file build:
+
 ```powershell
 dotnet publish .\src\winDrawer.csproj -c Release
 ```
+
+The build is written under the project's `bin\Release\...\publish` folder.
+
+The release pipeline publishes a self-contained single file instead, so the executable runs without an installed .NET runtime:
 
 ```powershell
 dotnet publish .\src\winDrawer.csproj `
   -c Release `
   -r win-x64 `
-  --self-contained false `
+  --self-contained true `
   -p:PublishSingleFile=true `
-  -p:IncludeAllContentForSelfExtract=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:EnableCompressionInSingleFile=true `
   -o .\publish\win-x64
 ```
 
-The single-file build is written under the project's `bin\Release\...\publish` folder.
+## Versioning and releases
+
+Versions use the `yy.M.patch` format, for example `26.11.1`: the last two digits of the year, the month without a leading zero, and a release counter that restarts every month. The version is defined by `<Version>` in `src/winDrawer.csproj`, and the running value appears in the lower-left corner of the settings panel.
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) publishes a release automatically on every push to `main`; it can also be started manually from the Actions tab, optionally with an exact version. For each run it:
+
+1. Computes the next version from the existing `v*` tags (`26.11.1`, `26.11.2`, ... within the same month) using [`scripts/Get-NextWinDrawerVersion.ps1`](scripts/Get-NextWinDrawerVersion.ps1).
+2. Publishes a self-contained single-file `win-x64` executable.
+3. Creates the GitHub release with generated notes, the executable, and `SHA256SUMS.txt`.
+
+Add `[skip release]` to a commit message to skip the automatic release for that push. The workflow needs the repository's default `GITHUB_TOKEN` with `contents: write` permission. See [docs/RELEASE.md](docs/RELEASE.md) for the release checklist and local verification steps.
 
 ## Project layout
 
@@ -91,7 +114,8 @@ The single-file build is written under the project's `bin\Release\...\publish` f
 - `src/Configuration/` – TOML model and persistence.
 - `src/Controls/` – Native WinForms controls and project-local controls: `DrawerListBox`, `CompositedPanel`, `ThemedScrollBar`, `ColorPreviewPanel`, `BehaviorCheckBoxGroup`, `ScrollableListView`, and UI helpers.
 - `src/Theming/` – Theme palette, text contrast, branding font, Shell icons.
-- `src/Infrastructure/` – Logging, tray, startup registration, hotkey, Shell file operations.
+- `src/Infrastructure/` – Logging, tray, startup registration, hotkey, Shell file operations, window animations, application version.
+- `scripts/` – Release helpers; `Get-NextWinDrawerVersion.ps1` computes the next `yy.M.patch` version.
 - `docs/` – [Documentation index](docs/INDEX.md), configuration format, white paper, screenshots, and [development history](docs/development-history/README.md) for completed stage plans, reviews, and migration records.
 
 Screenshots use demo folders and images. They were captured before the native-control migration and before the main window was narrowed; the drawer and settings screenshots are still representative, but the main-window screenshot still shows the old footer **add drawer** button, which is now an icon button in the header.

@@ -27,6 +27,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 - `MainWindow.OnFormClosed` 的释放顺序为：热键、品牌字体、托盘控制器、`SettingsRepository`；`ForceProcessExit()` 只在常规退出抛异常时作为最后兜底。
 - 托盘菜单继续由 `NotifyIcon.ContextMenuStrip` 拥有，避免弹出菜单出现在任务栏。WinForms 的 `NotifyIcon` 内部会走 `ContextMenuStrip.ShowInTaskbar`，在多显示器/跨屏任务栏/混合 DPI 下可能选错屏幕；`TrayController` 在 `Opening` 中按鼠标所在屏幕的工作区计算位置，并在 `Opened` 中使用 `SetWindowPos` 做最终纠正。
 - 设置面板的统一入口是 `MainWindow.OpenSettingsPanel()`：标题栏按钮、托盘菜单和标题文字右键都走它；已打开的设置面板只会被显示并激活。
+- 程序集版本由 `src/winDrawer.csproj` 的 `<Version>`（`yy.M.patch`）决定，设置面板左下角通过 `AppVersion` 显示 `v<版本>`；发布工作流覆盖该属性，使 Release 中的 exe 与界面显示一致。自动发布规则见 [`RELEASE.md`](RELEASE.md)。
 
 ## 3. 模块边界
 
@@ -40,7 +41,7 @@ winDrawer 是一个 Windows 桌面小工具：维护一组常用文件夹，选�
 | `Drawers/` | 直接子项枚举/排序/上限、条目元数据、Shell 图标与缩略图、拖放规划 |
 | `Configuration/` | TOML 模型、快照解析、抽屉增删改、后台写盘、原子写入 |
 | `Controls/` | `DrawerListBox`、`CompositedPanel`、`ThemedScrollBar`、`ScrollableListView`、`ColorPreviewPanel`、`BehaviorCheckBoxGroup`、省略号标签、`IconGlyphs` 图标字形、按钮/菜单主题、颜色对话框 helper、消息框 |
-| `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation`、窗口过渡动画 |
+| `Infrastructure/` | 日志、托盘、登录启动、路径比较、全局热键、`IFileOperation`、窗口过渡动画、程序版本（`AppVersion`） |
 | `Theming/` | `#RRGGBB` 解析、主题派生色、深浅文字判断（`TextContrast`）、品牌字体、Shell 图标 |
 
 依赖方向应保持为：窗体 → 业务/配置/基础设施；`Drawers/` 与 `Configuration/` 不反向依赖具体窗体。不要为了形式上的分层新增接口或工厂。

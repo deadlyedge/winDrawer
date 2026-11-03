@@ -9,6 +9,7 @@
 | [`WHITEPAPER.md`](WHITEPAPER.md) | 当前架构、运行模型、模块边界、抽屉管线、主题/DPI、不变量和技术债 |
 | [`CONFIGURATION_FORMAT.md`](CONFIGURATION_FORMAT.md) | `Drawer-settings.toml` 当前 schema、默认值、夹取和错误处理 |
 | [`../README.md`](../README.md) | 用户功能、快速开始、构建/发布和项目结构 |
+| [`RELEASE.md`](RELEASE.md) | 版本编号规则、自动 GitHub Release 流程、本地验证和无签名提醒 |
 | [`../AGENTS.md`](../AGENTS.md) | 开发约定；SunnyUI 不再引入、滚动条裁剪等约束 |
 | [`TODOs.md`](TODOs.md) | 用户维护的待办列表；开发过程不代为覆盖 |
 | [`IMPLEMENTATION_PLAN_TODOS.md`](IMPLEMENTATION_PLAN_TODOS.md) | 2026-03 四项待办的实施方案、决策与验证记录 |

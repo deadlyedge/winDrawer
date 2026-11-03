@@ -170,6 +170,10 @@ public partial class SettingsForm : Form
         githubLinkLabel.AccessibleName = "Project on GitHub";
         githubLinkLabel.AccessibleDescription = "Opens the winDrawer project repository in the default web browser.";
 
+        versionLabel.Text = AppVersion.VersionText;
+        versionLabel.AccessibleName = "Application version";
+        versionLabel.AccessibleDescription = $"Version {AppVersion.Current} of the running winDrawer build.";
+
         previewPanel.FillColor = _workingSnapshot.WindowColor;
         previewPanel.RectColor = TextContrast.For(_workingSnapshot.WindowColor);
 

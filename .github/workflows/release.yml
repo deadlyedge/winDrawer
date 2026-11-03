@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact version (yy.M.patch, for example 26.11.2). Leave empty to compute the next version for the current month."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Determine the next version
+        id: version
+        shell: pwsh
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:COMMIT_MESSAGE -match '\[skip release\]') {
+            Write-Host 'Release skipped: the commit message contains [skip release].'
+            "skip=true" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          $version = ./scripts/Get-NextWinDrawerVersion.ps1 -Version $env:REQUESTED_VERSION
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "skip=false" >> $env:GITHUB_OUTPUT
+          Write-Host "Release version: $version"
+
+      - name: Publish the single-file executable
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $assemblyVersion = "$env:VERSION.0"
+
+          dotnet publish ./src/winDrawer.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            "-p:Version=$env:VERSION" `
+            "-p:VersionPrefix=$env:VERSION" `
+            "-p:AssemblyVersion=$assemblyVersion" `
+            "-p:FileVersion=$assemblyVersion" `
+            -o artifacts
+          if ($LASTEXITCODE -ne 0) {
+            throw "dotnet publish failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Prepare release assets
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $asset = "winDrawer-v$($env:VERSION)-win-x64.exe"
+          if (-not (Test-Path -LiteralPath 'artifacts/winDrawer.exe')) {
+            throw 'The single-file executable was not produced.'
+          }
+
+          Move-Item -LiteralPath 'artifacts/winDrawer.exe' -Destination $asset -Force
+          $hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $asset" | Set-Content -LiteralPath 'SHA256SUMS.txt' -Encoding ascii
+          Get-Item -LiteralPath $asset | Select-Object Name, Length
+
+      - name: Store the build artifact
+        if: steps.version.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: winDrawer-v${{ steps.version.outputs.version }}-win-x64
+          path: |
+            winDrawer-v${{ steps.version.outputs.version }}-win-x64.exe
+            SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Create the GitHub release
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v$($env:VERSION)"
+          $asset = "winDrawer-$tag-win-x64.exe"
+
+          gh release view $tag --json tagName 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists; uploading assets."
+            gh release upload $tag $asset SHA256SUMS.txt --clobber
+          }
+          else {
+            gh release create $tag $asset SHA256SUMS.txt `
+              --title "winDrawer $tag" `
+              --generate-notes `
+              --target $env:GITHUB_SHA `
+              --latest
+          }
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "gh release failed with exit code $LASTEXITCODE."
+          }

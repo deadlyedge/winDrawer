@@ -8,9 +8,12 @@ Although the visual style is quite different now, I sincerely hope that a simila
 
 ## Download
 
-Prebuilt executables are published on the [Releases page](https://github.com/deadlyedge/winDrawer/releases). Download `winDrawer-v<version>-win-x64.exe` and run it; the release build is a self-contained single file, so no separate .NET runtime is required.
+Two single-file builds are attached to every release:
 
-> **The executable is not digitally signed.** This project does not have a code-signing certificate, so Windows SmartScreen or your antivirus may warn that the publisher is unknown. Only continue if the file came from this repository's Releases page and its SHA256 hash matches the one listed in `SHA256SUMS.txt` there. Choose **More info → Run anyway** after verifying the download.
+- `winDrawer-v<version>-win-x64-standalone.exe` – self-contained; includes the .NET runtime, so it runs without anything else installed.
+- `winDrawer-v<version>-win-x64-framework-dependent.exe` – smaller; requires the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
+
+> **The executables are not digitally signed.** This project does not have a code-signing certificate, so Windows SmartScreen or your antivirus may warn that the publisher is unknown. Only continue if the file came from this repository's Releases page and its SHA256 hash matches the one listed in `SHA256SUMS.txt` there. Choose **More info → Run anyway** after verifying the download.
 
 ## What it does
 
@@ -74,15 +77,18 @@ animation_frame_ms = 15
 
 ## Build a single file
 
-A local framework-dependent single-file build:
+A local framework-dependent single-file build (requires the .NET 10 Desktop Runtime when run):
 
 ```powershell
-dotnet publish .\src\winDrawer.csproj -c Release
+dotnet publish .\src\winDrawer.csproj `
+  -c Release `
+  -p:PublishSingleFile=true `
+  -p:IncludeAllContentForSelfExtract=true
 ```
 
 The build is written under the project's `bin\Release\...\publish` folder.
 
-The release pipeline publishes a self-contained single file instead, so the executable runs without an installed .NET runtime:
+The release pipeline also publishes a standalone single file, which runs without an installed .NET runtime:
 
 ```powershell
 dotnet publish .\src\winDrawer.csproj `
@@ -92,7 +98,7 @@ dotnet publish .\src\winDrawer.csproj `
   -p:PublishSingleFile=true `
   -p:IncludeNativeLibrariesForSelfExtract=true `
   -p:EnableCompressionInSingleFile=true `
-  -o .\publish\win-x64
+  -o .\publish\win-x64-standalone
 ```
 
 ## Versioning and releases
@@ -102,8 +108,8 @@ Versions use the `yy.M.patch` format, for example `26.11.1`: the last two digits
 [`.github/workflows/release.yml`](.github/workflows/release.yml) publishes a release automatically on every push to `main`; it can also be started manually from the Actions tab, optionally with an exact version. For each run it:
 
 1. Computes the next version from the existing `v*` tags (`26.11.1`, `26.11.2`, ... within the same month) using [`scripts/Get-NextWinDrawerVersion.ps1`](scripts/Get-NextWinDrawerVersion.ps1).
-2. Publishes a self-contained single-file `win-x64` executable.
-3. Creates the GitHub release with generated notes, the executable, and `SHA256SUMS.txt`.
+2. Publishes two single-file `win-x64` executables: standalone (bundled runtime) and framework-dependent (requires the .NET 10 Desktop Runtime).
+3. Creates the GitHub release with generated notes, both executables, and `SHA256SUMS.txt`.
 
 Add `[skip release]` to a commit message to skip the automatic release for that push. The workflow needs the repository's default `GITHUB_TOKEN` with `contents: write` permission. See [docs/RELEASE.md](docs/RELEASE.md) for the release checklist and local verification steps.
 
